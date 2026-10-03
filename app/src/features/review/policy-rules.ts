@@ -16,16 +16,17 @@
  * write with the offending code named puts the diagnosis where the author is, and it keeps a
  * persisted row from being the reason a demo's refusal beat cannot happen.
  *
- * **Scope of the check.** Only an assistant-applicable rule (`applies_to` of `assistant` or `all`) is
- * checked. A `uploads`- or `discussion`-scoped code that the mapping does not know is inert for the
- * Assistant by construction (`05` section 3.3.1 contributes only rules whose `applies_to` includes
- * `assistant`), so refusing it would invent a restriction `06` does not have.
- *
- * **No new export is needed from `src/lib/guardrail/`.** `capabilitiesForPolicyRuleCode` is already
- * exported for the refusal renderer, so the guard reads the same table the guardrail computes with
- * and cannot drift from it. The policy editor therefore offers the codes the bundle already contains
- * (the Analyst's proposals and the seeded policy) plus free text, and this guard is what makes a
- * wrong code impossible to persist.
+ * **Scope of the check, and the defect this paragraph exists to prevent.** The guardrail requires a
+ * capability mapping only for an `ALLOW` or `PROHIBIT` rule: `policyFromRows` enforces those two
+ * effects through the capability algebra and enforces `ESCALATE_TO_TUTOR`/`CLARIFY` through a named
+ * subject (`capabilitiesForPolicyRuleCode` is not consulted at all for them, and an unknown escalation
+ * subject defaults rather than failing). A guard that asked for a mapping for **every**
+ * assistant-applicable code therefore invented refusals the guardrail does not make -- and it did:
+ * Phase 4's own acceptance run refused `route_uncertain_requests_to_tutor`, the seeded demo policy's
+ * escalation rule, which the guardrail has always accepted (`I-42`, trap **T31**). The rule this
+ * module now follows is that a write-time guard must mirror the read-time validator exactly, because
+ * a guard stricter than the validator is not "fail closed" -- it is a second, wrong definition of the
+ * policy's validity, and it would have stopped a demo from publishing a legitimate escalation rule.
  */
 
 import { capabilitiesForPolicyRuleCode } from '@/lib/guardrail/policy-source';
@@ -46,7 +47,22 @@ export function isAssistantApplicable(appliesTo: string): boolean {
   return appliesTo === 'assistant' || appliesTo === 'all';
 }
 
-export function checkPolicyRuleCode(ruleCode: string, appliesTo: string): PolicyRuleCodeCheck {
+/**
+ * True when the rule's effect is enforced through the capability algebra.
+ *
+ * Mirrors `policyFromRows`'s `isCapabilityRule`. The duplication is deliberate and is the reason
+ * **T31** exists: if `policy-source.ts` ever widens which effects need a mapping, this predicate must
+ * change with it, and the test that pins both is `tests/review/artifacts.test.ts`.
+ */
+export function isCapabilityRule(effect: string): boolean {
+  return effect === 'ALLOW' || effect === 'PROHIBIT';
+}
+
+export function checkPolicyRuleCode(
+  ruleCode: string,
+  appliesTo: string,
+  effect: string,
+): PolicyRuleCodeCheck {
   if (!RULE_CODE_PATTERN.test(ruleCode)) {
     return {
       ok: false,
@@ -56,6 +72,12 @@ export function checkPolicyRuleCode(ruleCode: string, appliesTo: string): Policy
   }
 
   const capabilities = capabilitiesForPolicyRuleCode(ruleCode);
+
+  // An escalation or clarification rule needs no capability mapping, whatever its scope.
+  if (!isCapabilityRule(effect)) {
+    return capabilities === undefined ? { ok: true } : { ok: true, capabilities };
+  }
+
   if (capabilities === undefined) {
     if (!isAssistantApplicable(appliesTo)) {
       // Inert for the Assistant, so it cannot cause POL_INVALID; the row is still worth writing.

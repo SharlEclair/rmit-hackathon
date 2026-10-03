@@ -320,23 +320,30 @@ Also verified without a network connection: unplug the network, repeat the uploa
 
 **Effort.** 6 h.
 
-**Status (Phase 2, partial - see `05-ISSUES.md` I-35).** The five passes, the prompt version, the
-constraints and the offline path are delivered and verified. Two file-map deviations, both recorded:
+**Status (Phase 4: the live run is now verified; I-35 closed).** The five passes, the prompt version,
+the constraints and the offline path were delivered in Phase 2, and **Phase 4 completed the live
+run**: `pnpm exec tsx --env-file-if-exists=.env scripts/ingest-once.ts --fixture demo --pace-ms 14000`
+-> `ok: true`, `status: succeeded`, `stage: S7`, counts `sources 2 / chunks 24 / requirements 24 /
+rubricSections 5 / milestones 5 / checklistItems 28 / faqEntries 8 / policyRules 5 / findings 4`.
+Getting there needed two fixes, and neither was the provider schema; both are recorded:
 
-1. There is no `analyst.v1.schema.ts` and no separate `policy-draft.ts` / `ambiguity.ts`. The
-   structured contract lives in **`src/lib/llm/schema.ts`**, which is frozen at Phase 2
-   (`handoff/04-INTERFACES.md`): one module owns every structured-output schema, because the
-   adapter's `response_format` and the caller's validation must be the same object. The policy and
-   ambiguity passes are the (d)/(e) instructions in `prompts/analyst.v1.ts` plus their resolvers in
-   `analyst.ts`.
-2. The **live** run against `gemini` is not verified. The first structured call returned
-   `HTTP 400 invalid_request` (the provider's opaque schema-compatibility refusal), and before that
-   could be isolated the free tier's **20 requests/day** cap was exhausted (reset ~4 h later). What
-   *is* verified live is the call shape (`input` + `system_instruction` + `steps[] -> model_output`)
-   and that `nullable: true` is accepted. The provider-facing schema was then minimised to the
-   keyword set the provider is asked to honour (bounds dropped; zod remains the contract) -- see
-   **D91**. The next session can confirm the fix with one paced run; nothing in the offline path
-   depends on it.
+1. **The `400 invalid_request` is gone.** The minimised provider-facing schema of **D91** is accepted
+   live, and a structured call returns JSON that `parseStructured` accepts. The reduction was a reason
+   for a year of doubt; it is now measured.
+2. **The real failure was output truncation.** The ceiling for an Analyst pass was 8,192 output tokens,
+   while thinking tokens are billed as output (**D73**, **D89**) and `LLM_THINKING_ANALYST=high`
+   (**D62**) spends most of them thinking, so the JSON body was cut mid-string and reported as
+   `LLM_OUTPUT_INVALID` with the note "the model did not return a usable structure". The default is now
+   **65,536** (**D104**, trap **T32**); the diagnosis path is still thin and is **I-42**.
+
+Two file-map deviations stand, both recorded: there is no `analyst.v1.schema.ts` and no separate
+`policy-draft.ts` / `ambiguity.ts`, because the structured contract lives in the frozen
+**`src/lib/llm/schema.ts`** (one module owns every structured-output schema -- the adapter's
+`response_format` and the caller's validation must be the same object), and the (d)/(e) passes are
+instructions in `prompts/analyst.v1.ts` plus their resolvers in `analyst.ts`. One live-run quality
+finding is **I-43**: the model persisted one rubric section whose `criteria_text` is not a verbatim span
+of its chunk (it abbreviated a table's dash rule), which the review surface correctly refuses to
+approve.
 
 **Verification gate**
 
@@ -363,6 +370,10 @@ Observable behaviour, checked by a human, not a script: open the proposal and re
 
 ### WP-06 -- Tutor review, amendment and approval
 
+**Status (Phase 4, complete, with the UI half named as partial).** The state machine, the query layer,
+the six tutor routes and one student read landed in Phase 4; the review **page** did not. What was run
+and what was not is recorded below the acceptance criteria rather than left implied.
+
 **Goal.** The tutor reads the proposal, edits it, discards what is wrong, approves what is right, and the approval is what makes content student-visible. Amending an approved artifact returns it to review.
 
 **Deliverables**
@@ -370,12 +381,13 @@ Observable behaviour, checked by a human, not a script: open the proposal and re
 | File | What it is |
 |---|---|
 | `app/src/features/review/transitions.ts` | The state machine `AI_GENERATED -> NEEDS_REVIEW -> EDITED -> APPROVED -> PUBLISHED` plus `REJECTED`, all in one place (D22) |
-| `app/src/features/review/transitions.test.ts` | Illegal transitions are rejected, including "approve without review" and "edit after publish without re-review" |
-| `app/src/app/(tutor)/assignments/[id]/review/page.tsx` | The review surface: side-by-side source chunk and proposal, per-artifact status, inline edit |
-| `app/src/app/(tutor)/assignments/[id]/review/policy-editor.tsx` | Per-assignment AI Usage Policy editor (T6) |
-| `app/src/app/api/assignments/[id]/artifacts/[artifactId]/route.ts` | Edit / discard / approve / publish |
-| `app/src/app/api/assignments/[id]/policy/route.ts` | Policy read and approve |
-| `app/src/components/ai-provenance-badge.tsx` | Carries the literal string `AI generated - requires tutor approval` in every review state (C3) |
+| `app/src/features/review/actions.ts` | The tutor actions: the ordering of the checks, the write, and the audit row |
+| `app/src/lib/db/queries/review.ts` | The review reads and the revision-guarded artifact writes (migration `0012`, D98) |
+| `app/src/lib/db/queries/student-visibility.ts` | Gate rule G1 as a query-layer predicate (T3, D99) |
+| `app/tests/review/` | The state machine and the pure review rules |
+| `app/scripts/verify-review.ts` | WP-06's gate over HTTP, against the live database |
+| `app/src/app/(tutor)/assignments/[id]/review/page.tsx` | The review surface: sources beside artifacts, per-artifact status, inline edit -- **NOT DELIVERED in Phase 4** (see the status note) |
+| `app/src/components/ai-provenance-badge.tsx` | The literal string `AI generated - requires tutor approval` in every review state (C3) -- **NOT DELIVERED in Phase 4** |
 
 **Dependencies.** WP-02, WP-05.
 
@@ -384,22 +396,55 @@ Observable behaviour, checked by a human, not a script: open the proposal and re
 **Verification gate**
 
 ```bash
-cd app && pnpm test -- tests/review
-pnpm db:seed && pnpm dev
-# With a student session cookie, request an unapproved artifact:
-curl -s -b /tmp/student.txt http://localhost:3000/api/student/assignments/<unapproved-id>/structure   # 404 or 403, never 200; there is no /api/milestones/* route (06 S5.4, D70)
-# Approve in the tutor UI, repeat: 200
+cd app && pnpm test -- tests/review          # the state machine and the pure rules, offline
+pnpm exec tsx --env-file-if-exists=.env scripts/verify-review.ts
+# Drives the whole gate over HTTP against a running server and a migrated database:
+#   1. a NEEDS_REVIEW assignment is NOT_FOUND to a student (G1, before approval);
+#   2. approving does not change that -- APPROVED is still not student-visible (D99);
+#   3. publishing makes the same request 200, and the student sees only PUBLISHED artifacts;
+#   4. editing a PUBLISHED artifact returns it to EDITED and the student request is 404 again
+#      (transition 8, T-18);
+#   5. two PATCHes with the same expectedRevision produce one 200 and one 409 STALE_REVISION (T-19);
+#   6. PATCHing verbatimText is 409 IMMUTABLE_FIELD (C2, I-2);
+#   7. a rule code with no guardrail mapping is refused at write time (T22, D101).
 ```
 
 **Acceptance criteria**
-- [ ] A student-facing request for a non-`APPROVED` artifact returns 404 or 403 and never its content.
-- [ ] The AI provenance badge and the exact string `AI generated - requires tutor approval` are present in every pre-approval state (C3).
-- [ ] Editing an `APPROVED` or `PUBLISHED` artifact moves it to `NEEDS_REVIEW` and hides it from students. The transition test covers this.
-- [ ] `REJECTED` artifacts are retained in the database, not deleted (glossary S4).
-- [ ] The AI Usage Policy cannot be approved as an empty string; a tutor must supply text.
-- [ ] The API returns 409 on an illegal transition with the attempted transition named in the body.
+- [x] A student-facing request for a non-`PUBLISHED` artifact returns 404 and never its content. **The
+  predicate is `PUBLISHED`, not `APPROVED`** (D99): `06` section 3.4 (G1), section 3.1 and D21 make
+  `PUBLISHED` the threshold, and WP-06's original wording here ("non-`APPROVED` ... approve in the
+  tutor UI, repeat: 200") treated `APPROVED` as it, which would have been a second visibility rule.
+  Verified by `scripts/verify-review.ts` steps 1-4.
+- [ ] The AI provenance badge and the exact string `AI generated - requires tutor approval` are
+  present in every pre-approval state (C3). **Not delivered:** the review page is not built, so the
+  string exists nowhere in `app/`. The API carries the data the badge needs
+  (`ReviewArtifactResponse.publicationStatus`, `origin`, `provenance`).
+- [x] Editing an `APPROVED` or `PUBLISHED` artifact moves it to `NEEDS_REVIEW` and hides it from
+  students. **The transition is to `EDITED`, not `NEEDS_REVIEW`** -- `06` section 3.2 rows 6 and 8 are
+  the authority, and the effect G1 cares about is identical: the artifact leaves student-visible reads
+  immediately. The transition test covers it, and `scripts/verify-review.ts` step 4 verifies it
+  against the database.
+- [x] `REJECTED` artifacts are retained in the database, not deleted (glossary S4). `DELETE
+  /api/tutor/structure-artifacts/{artifactId}` writes `REJECTED` and leaves `deleted_at` null, so the
+  row is still readable through the review bundle with its provenance.
+- [x] The AI Usage Policy cannot be approved as an empty string; a tutor must supply text. Enforced by
+  `ck_ai_policy_rules_rule_text_length` (10-600) and by `ruleText` validation on the create route.
+- [x] The API returns 409 on an illegal transition with the attempted transition named in the body.
+  `resolveTransition`'s refusal message names the status and the action, and `apiError` carries it in
+  `error.message`.
 
 **Spec owner.** `06` S3, `07` S5, `05` S5.
+
+**Phase 4 status note.** Three things this packet's letter asks for are not done, and each has a
+recorded reason rather than a note implying it is nearly finished:
+1. **The review page.** Phase 4 delivered the boundary and the contract behind it, not the surface.
+   Owner: the next UI phase (WP-07's track, which already owns `src/app/(student)/**` and
+   `src/components/**`, now also owns the tutor surface).
+2. **`ai-provenance-badge.tsx`.** It belongs with the page; without a rendered artifact there is no
+   pre-approval state to badge. The string is fixed in `07` section 2.5.
+3. **A live model call.** Phase 4 makes none: reviewing, approving and publishing are deterministic.
+   That is deliberate, and it is why the whole gate runs under `LLM_PROVIDER=mock` or with no provider
+   configured at all.
 
 ---
 

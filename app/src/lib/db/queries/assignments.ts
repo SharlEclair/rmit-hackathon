@@ -12,6 +12,7 @@
  */
 
 import type { Executor } from './courses';
+import { isoTimestampRequired } from '../values';
 
 /** `assignments.status` (`06` section 7.2.1). Distinct from every `publication_status`. */
 export type AssignmentStatus = 'draft' | 'ingesting' | 'in_review' | 'published' | 'archived';
@@ -255,7 +256,7 @@ export async function listSources(
     contentHash: row.content_hash,
     extractionStatus: row.extraction_status as AssignmentSourceSummary['extractionStatus'],
     extractionError: row.extraction_error,
-    createdAt: row.created_at.toISOString(),
+    createdAt: isoTimestampRequired(row.created_at),
   }));
 }
 

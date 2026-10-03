@@ -16,7 +16,12 @@ import type { T1Chunk } from '@/lib/db/queries/assignments';
 import { createMockProvider } from '@/lib/llm/mock';
 import { LlmError, type LlmProvider, type LlmRequest, type LlmResponse } from '@/lib/llm/types';
 import { renderGroundingChunks } from '@/lib/llm/prompt';
-import { buildAnalystRequest, runAnalyst, selectGrounding } from '@/features/ingest/analyst';
+import {
+  ANALYST_DEFAULT_MAX_OUTPUT_TOKENS,
+  buildAnalystRequest,
+  runAnalyst,
+  selectGrounding,
+} from '@/features/ingest/analyst';
 import { PASS_PREFIX_IDS } from '@/features/ingest/prompts/analyst.v1';
 
 function chunk(overrides: Partial<T1Chunk> = {}): T1Chunk {
@@ -86,6 +91,24 @@ describe('buildAnalystRequest', () => {
     expect(user?.role).toBe('user');
     expect(JSON.stringify(system)).toContain('Non-negotiable constraints');
     expect(JSON.stringify(user)).toContain('TASK (pass C of 5)');
+  });
+
+  it('gives every pass an output ceiling large enough to hold thinking plus the JSON body', () => {
+    // Trap T32 / D104, measured live on the demo fixture: the ceiling was 8,192 while
+    // `LLM_THINKING_ANALYST=high` spends most of the output budget thinking (thinking is billed as
+    // output -- D73, D89), so the body was cut mid-string and the run reported `LLM_OUTPUT_INVALID`,
+    // which blames the schema. This pins the *wiring* (a pass carries the exported constant) rather
+    // than the number, so a future change to the ceiling is a deliberate act with this test in view.
+    const request = buildAnalystRequest({
+      assignmentId: 'a',
+      pass: 'structure',
+      chunks: CHUNKS,
+      approved: APPROVED,
+      modelId: 'mock',
+      sessionId: 'job-1',
+    });
+    expect(request.maxOutputTokens).toBe(ANALYST_DEFAULT_MAX_OUTPUT_TOKENS);
+    expect(ANALYST_DEFAULT_MAX_OUTPUT_TOKENS).toBeGreaterThanOrEqual(65_536);
   });
 
   it('numbers the grounding chunks the way the prompt tells the model to cite them', () => {

@@ -39,6 +39,7 @@ import type {
   RubricSectionPayload,
 } from '@/lib/api/types';
 import type { StampEffect } from '@/features/review/transitions';
+import { isoTimestamp, isoTimestampRequired } from '../values';
 import type { Executor } from './courses';
 import type { Origin, Provenance, PublicationStatus } from './structure';
 
@@ -88,7 +89,7 @@ interface RawArtifact {
   provenance: Provenance | null;
   grounding_chunk_ids: string[];
   revision: number;
-  created_at: Date;
+  created_at: Date | string;
   cited_chunk_id: string | null;
   cited_chunk_text: string | null;
 }
@@ -109,7 +110,7 @@ function toRow(
     provenance: raw.provenance,
     groundingChunkIds: raw.grounding_chunk_ids,
     revision: raw.revision,
-    createdAt: raw.created_at.toISOString(),
+    createdAt: isoTimestampRequired(raw.created_at),
     payload,
     citedChunkId: raw.cited_chunk_id,
     citedChunkText: raw.cited_chunk_text,
@@ -147,7 +148,7 @@ export async function readAssignmentHeader(
       id: string;
       title: string;
       status: string;
-      due_at: Date | null;
+      due_at: Date | string | null;
       current_structure_id: string | null;
     }[]
   >`
@@ -162,7 +163,7 @@ export async function readAssignmentHeader(
     id: row.id,
     title: row.title,
     status: row.status as AssignmentHeader['status'],
-    dueAt: row.due_at === null ? null : row.due_at.toISOString(),
+    dueAt: isoTimestamp(row.due_at),
     currentStructureId: row.current_structure_id,
   };
 }

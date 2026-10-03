@@ -25,6 +25,7 @@ import type {
   AssignmentMapResponse,
 } from '@/lib/api/types';
 import type { Executor } from '@/lib/db/queries/courses';
+import { isoTimestampRequired } from '@/lib/db/values';
 import {
   listVisibleChecklistItems,
   listVisibleMilestones,
@@ -136,14 +137,14 @@ export async function buildAssignmentMap(
     push(edges, nodeIds, edge.rubric_section_id, edge.milestone_id, 'rubric_milestone');
   }
 
-  const generated = await ex<{ created_at: Date }[]>`
+  const generated = await ex<{ created_at: Date | string }[]>`
     select created_at from assignment_structures where id = ${scope.structureId}::uuid
   `;
 
   return {
     assignmentId: scope.assignmentId,
     structureId: scope.structureId,
-    generatedAt: (generated[0]?.created_at ?? new Date()).toISOString(),
+    generatedAt: isoTimestampRequired(generated[0]?.created_at ?? new Date()),
     label: MAP_LABEL,
     disclaimer: MAP_DISCLAIMER,
     nodes,

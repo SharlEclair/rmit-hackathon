@@ -30,7 +30,7 @@ import {
   truthTierFor,
   validationFor,
 } from '@/features/review/artifacts';
-import { checkPolicyRuleCode, isAssistantApplicable } from '@/features/review/policy-rules';
+import { checkPolicyRuleCode, isAssistantApplicable, isCapabilityRule } from '@/features/review/policy-rules';
 import { computeGates } from '@/features/review/gates';
 import type { GateInputs } from '@/lib/db/queries/review';
 import type { ReviewArtifactResponse } from '@/lib/api/types';
@@ -243,28 +243,53 @@ describe('the planning level follows the wording, not the client', () => {
   });
 });
 
-describe('the AI Usage Policy rule-code guard (T22, D83)', () => {
-  it('refuses an unmapped code that applies to the assistant', () => {
-    const result = checkPolicyRuleCode('totally_new_code', 'assistant');
+describe('the AI Usage Policy rule-code guard (T22, D83, T31)', () => {
+  it('refuses an unmapped code on a capability rule that applies to the assistant', () => {
+    const result = checkPolicyRuleCode('totally_new_code', 'assistant', 'PROHIBIT');
     expect(result.ok).toBe(false);
     expect(result.message).toContain('totally_new_code');
     expect(result.message).toMatch(/disable the Assistant/);
   });
 
   it('allows an unmapped code scoped away from the assistant, which cannot cause POL_INVALID', () => {
-    expect(checkPolicyRuleCode('some_upload_rule', 'uploads').ok).toBe(true);
+    expect(checkPolicyRuleCode('some_upload_rule', 'uploads', 'ALLOW').ok).toBe(true);
+  });
+
+  it('allows an unmapped ESCALATE_TO_TUTOR or CLARIFY rule, which the guardrail does not map', () => {
+    // T31: `policyFromRows` enforces these two effects through a named subject and never consults the
+    // capability table, so demanding a mapping here would refuse `route_uncertain_requests_to_tutor`
+    // -- the seeded demo policy's own escalation rule. Phase 4's acceptance run found exactly that.
+    expect(checkPolicyRuleCode('route_uncertain_requests_to_tutor', 'assistant', 'ESCALATE_TO_TUTOR').ok).toBe(
+      true,
+    );
+    expect(checkPolicyRuleCode('no_such_code_at_all', 'assistant', 'CLARIFY').ok).toBe(true);
+    expect(checkPolicyRuleCode('no_such_code_at_all', 'all', 'ESCALATE_TO_TUTOR').ok).toBe(true);
+  });
+
+  it('still refuses an unmapped CLARIFY code on a capability rule, whatever the effect name', () => {
+    expect(checkPolicyRuleCode('no_such_code_at_all', 'assistant', 'PROHIBIT').ok).toBe(false);
+    expect(checkPolicyRuleCode('no_such_code_at_all', 'assistant', 'ALLOW').ok).toBe(false);
   });
 
   it('allows a mapped code and reports its capabilities', () => {
     const seeded = 'no_ai_evaluation_of_work';
-    const result = checkPolicyRuleCode(seeded, 'assistant');
+    const result = checkPolicyRuleCode(seeded, 'assistant', 'PROHIBIT');
     expect(result.ok).toBe(true);
     expect(result.capabilities?.length ?? 0).toBeGreaterThan(0);
   });
 
   it('refuses a code that does not match the column shape before it reaches the CHECK', () => {
-    expect(checkPolicyRuleCode('No-Caps', 'assistant').ok).toBe(false);
-    expect(checkPolicyRuleCode('ab', 'assistant').ok).toBe(false);
+    expect(checkPolicyRuleCode('No-Caps', 'assistant', 'PROHIBIT').ok).toBe(false);
+    expect(checkPolicyRuleCode('ab', 'assistant', 'PROHIBIT').ok).toBe(false);
+  });
+
+  it('agrees with the guardrail about which effects need a capability mapping', () => {
+    // T31's pin: if `policyFromRows` ever changes which effects consult the table, this predicate and
+    // the guardrail diverge, and the divergence is a false refusal rather than a visible failure.
+    expect(isCapabilityRule('ALLOW')).toBe(true);
+    expect(isCapabilityRule('PROHIBIT')).toBe(true);
+    expect(isCapabilityRule('ESCALATE_TO_TUTOR')).toBe(false);
+    expect(isCapabilityRule('CLARIFY')).toBe(false);
   });
 
   it('treats applies_to "all" as assistant-applicable', () => {

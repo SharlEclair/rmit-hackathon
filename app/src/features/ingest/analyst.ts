@@ -179,11 +179,42 @@ export function buildAnalystRequest(input: {
     responseFormat: toResponseFormat(schemaNameFor(input.pass), schemaFor(input.pass)),
     // Every classifying capability runs at temperature 0 (`04` section 5.2).
     temperature: 0,
-    maxOutputTokens: input.maxOutputTokens ?? 8192,
+    maxOutputTokens: input.maxOutputTokens ?? ANALYST_DEFAULT_MAX_OUTPUT_TOKENS,
     timeoutMs: input.timeoutMs ?? 120_000,
     sessionId: input.sessionId,
   };
 }
+
+/**
+ * The output ceiling for one Analyst pass.
+ *
+ * **Why it is 65536 and not 8192.** The previous default was 8192, and on the real demo fixture that
+ * truncated the response: **thinking tokens are billed as output** (D73, D89), so at
+ * `LLM_THINKING_ANALYST=high` (D62) the thinking alone consumed the ceiling and the JSON body was cut
+ * mid-string. The adapter then reported `LLM_OUTPUT_INVALID` with the note "the model did not return a
+ * usable structure", which reads like a schema or prompt defect and is not one.
+ *
+ * Measured live on 2026-10-04 against the demo fixture (24 chunks, 17,484 grounding characters), one
+ * structure pass each time:
+ *
+ * | `maxOutputTokens` | thinking | `finishReason` | output tokens | JSON parsed | zod passed |
+ * |---|---|---|---|---|---|
+ * | 8,192 | high | `content_filter` (cut) | 8,178 | no (truncated) | n/a |
+ * | 32,768 | high | `content_filter` (cut) | 32,754 | no (truncated) | n/a |
+ * | 65,536 | high | `stop` | 41,555 / 43,258 | **yes** | **yes** |
+ * | 32,768 | low | `stop` | 2,378 | **yes** | yes |
+ *
+ * So the pass needs a ceiling that fits thinking *and* body, which only the model's own output limit
+ * (65,536 tokens, D62) reliably does at `high`. The alternative -- lowering
+ * `LLM_THINKING_ANALYST` -- works and costs roughly 17x fewer output tokens, but it is D62's
+ * decision to make, not this module's, so the ceiling is raised here and the trade is recorded.
+ *
+ * A ceiling is a maximum, not a charge: the 8,192 default produced *nothing* for 8,178 tokens, while
+ * the same pass at 65,536 produces a proposal for about 43,000. At the demo model's price that is
+ * roughly 0.03 AUD per pass and therefore roughly 0.15 AUD per five-pass ingestion run, which the
+ * 5 AUD monthly provider cap (I-36) bounds hard.
+ */
+export const ANALYST_DEFAULT_MAX_OUTPUT_TOKENS = 65_536;
 
 /**
  * Run all five passes and resolve their output.

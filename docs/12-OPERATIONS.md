@@ -68,6 +68,27 @@ Rotating `ANON_ID_SECRET` mid-assignment does not change the label of any post t
 | `LLM_BASE_URL` | No | *(empty)* | Overrides the provider base URL for proxies or self-hosted gateways. |
 | `LLM_MAX_CALLS_PER_SESSION` | No | `12` | Hard ceiling on model calls per assistant session. A runaway retry loop must fail loudly rather than quietly burn the budget. |
 
+**The provider account, and what bounds spending.** The project's Gemini key is a **paid Tier 1 key with
+a provider-side monthly spend cap of 5 AUD** (Phase 4, 2026-10-04; handoff **I-36**). The free tier's
+20-requests-per-day ceiling no longer applies, so the binding constraint is money rather than quota.
+Three controls bound a runaway, in the order they bite:
+
+1. **The provider's monthly cap.** It is outside this repository and is the only control that holds when
+   the code is wrong; it is also a hard stop rather than a warning, so a spend cap that is reached fails
+   a live run the way a quota does. Periodically check the remaining budget before a rehearsal.
+2. **`LLM_MAX_CALLS_PER_SESSION`**, enforced through `llm_call_counters` and incremented **before** the
+   call is issued (`04` section 5.6, **D68**). Five Analyst passes plus retries fit inside the default;
+   an image extraction has its own scope key and never shares the assistant session counter.
+3. **`LLM_PROVIDER=mock`**, which is the offline default and the mode every `pnpm test` run uses. It
+   makes no network call at all, so a rehearsal costs nothing.
+
+Measured cost, so a rehearsal budget is arithmetic rather than a guess: one live five-pass ingestion run
+against the demo fixture costs roughly **0.15 AUD**, because a pass must fit its thinking plus its body
+and the analyst pass runs at `high` (**D104** showed ~42,000 output tokens for the structure pass alone).
+That is about 30 live runs per month inside the cap. `04` section 5.4's per-minute limit still applies
+and is why `AnalystInput.paceMs` exists (**D96**) -- pace a live run rather than issuing five passes back
+to back.
+
 ### 2.4 Object storage
 
 | Variable | Required | Template default | Notes |

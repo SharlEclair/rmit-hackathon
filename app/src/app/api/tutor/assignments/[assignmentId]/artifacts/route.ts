@@ -238,7 +238,7 @@ function buildArtifact(body: CreateBody, assignmentId: string, structureId: stri
       if (!['assistant', 'uploads', 'discussion', 'all'].includes(appliesTo)) {
         return invalid('appliesTo must be assistant, uploads, discussion or all.', 'appliesTo');
       }
-      const check = checkPolicyRuleCode(ruleCode, appliesTo);
+      const check = checkPolicyRuleCode(ruleCode, appliesTo, effect);
       if (!check.ok) {
         return invalid(check.message ?? 'That rule code cannot be used.', 'ruleCode');
       }

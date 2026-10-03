@@ -142,13 +142,14 @@ export async function applyTutorTransition(
   if (artifact.kind === 'ai_policy_rule' && action !== 'reject') {
     const code = typeof merged['ruleCode'] === 'string' ? merged['ruleCode'] : '';
     const appliesTo = typeof merged['appliesTo'] === 'string' ? merged['appliesTo'] : '';
-    const check = checkPolicyRuleCode(code, appliesTo);
+    const effect = typeof merged['effect'] === 'string' ? merged['effect'] : '';
+    const check = checkPolicyRuleCode(code, appliesTo, effect);
     if (!check.ok) {
       return {
         ok: false,
         code: 'VALIDATION_FAILED',
         message: check.message ?? 'That AI Usage Policy rule code cannot be used.',
-        details: { ruleCode: code, appliesTo },
+        details: { ruleCode: code, appliesTo, effect },
       };
     }
   }
