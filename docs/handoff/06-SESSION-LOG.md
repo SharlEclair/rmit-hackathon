@@ -182,3 +182,63 @@ every student/tutor surface.
 3. **`HealthResponse` is referenced and never defined (`06` section 5.4, I-03).** WP-01 builds the
    route that returns it, so it is defined here (**D76**) and added to `06` section 5.5 in the same
    commit, per standing agreement 9.
+4. **No lint stack survives the `typescript 7.0.2` pin.** Every package in the `typescript-eslint`
+   family **aborts on import** when the installed TypeScript major is >= 7, so `eslint-config-next`
+   cannot load; and `@babel/eslint-parser` supports `eslint ^7 || ^8 || ^9` only, so eslint 10 is
+   also unusable. Recorded as **D78** with the chosen stack and the rejected alternatives.
+5. **`04` section 9.1's "server-side session row" has no table.** `06` defines no session entity
+   anywhere, and WP-03's own acceptance criterion requires a stateless token that survives a
+   restart. Recorded as **D79**.
+6. **`.local/spec/schema.md` is wrong on ambiguity `A1`.** It claims `06` section 4.6 classifies
+   `queries` as pseudonymous; 4.6 classifies it as **identity-bearing**, which is what D50 requires.
+   The extract contradicts itself here as well. A1 is void. This is the second time a `.local/spec/`
+   claim was wrong on re-check, so a trust note was added to `01-DECISIONS.md` section J. `A2` was
+   genuine and became **D80** (`06` section 7.2.2 corrected to match D57).
+
+### WP-01 -- delivered, with evidence
+
+| Item | Evidence (command + observed result) |
+|---|---|
+| 26-file `app/` tree | `git show --stat 9c84ef8` -- `app/package.json`, `tsconfig.json`, `next.config.ts`, `tailwind.config.ts`, `postcss.config.mjs`, `eslint.config.mjs`, `vitest.config.ts`, `.env.example`, `README.md`, `compose.yaml`, `pnpm-workspace.yaml`, `scripts/check-c8.mjs`, `src/app/{layout,page}.tsx`, `src/app/api/health/route.ts`, `src/lib/config.ts`, `src/lib/api/types.ts`, `src/lib/db/{client,migrate}.ts`, `src/lib/db/migrations/0001_baseline.sql`, five files under `src/styles/` |
+| `pnpm typecheck` passes | no `error TS` line; `strict`, `noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess` all on |
+| `pnpm lint` passes | `eslint .` clean, then `check-c8.mjs` -> `C8 import/endpoint gate: ok` |
+| `pnpm db:migrate` applies then no-ops | run 1 -> `apply 0001_baseline` / `1 applied, 0 already applied`; run 2 -> `skip 0001_baseline (already applied)` / `no pending migrations (1 already applied)`; ledger read back with `psql ... select version, name from schema_migrations` -> one row, `0001 | baseline` |
+| Migration-head guard aborts | with a pending `0002_probe.sql` present, `tsx ... migrate.ts --check` -> `MIGRATION_HEAD_MISMATCH: 1 migration(s) not applied: 0002_probe`, exit code **78** |
+| Checksum immutability guard fires | after appending one comment line to the applied `0001_baseline.sql`, `pnpm db:migrate` -> `migration 0001_baseline.sql changed after it was applied (checksum mismatch)`, exit code 1. File restored and the runner then reported `no pending migrations` again |
+| `pnpm dev` serves the skeleton | `/` -> HTTP 200; the stylesheet link resolves and the CSS asset is served, 5935 bytes (Tailwind v4 + `@config` + the four token imports all compile) |
+| `/api/health` reports up | `{"ok":true,"db":"up","llmProvider":"gemini","commit":"9dccd0f"}` |
+| `db: "down"` without crashing (WP-01 acceptance) | with `DATABASE_URL` removed from the local `.env`, `/api/health` -> `{"ok":false,"db":"down","llmProvider":"gemini","commit":"9dccd0f"}` and `/` still returned HTTP 200 from the same live process. `.env` restored afterwards |
+| `pnpm build` compiles | `Compiled successfully in 7.8s`; routes `/` (dynamic), `/api/health` (dynamic), `/_not-found` (static) |
+| `pnpm start` runs the head check then serves | `migration head matches (1 applied)`, then `/api/health` -> `{"ok":true,"db":"up",...}` and `/` -> 200 (`04` section 5.4, last line) |
+| `.env`, `node_modules`, `.next` are untracked | `git status --porcelain --untracked-files=all` for `app/` lists exactly the 26 intended files; `git check-ignore -v` resolves `app/.env` to `.gitignore:10`, `app/node_modules` to `.gitignore:55`, `app/.next` to `.gitignore:57` |
+
+### WP-01 -- decisions and their rejections
+
+- **D74** migrations: rejected `drizzle-kit` as the runner, because its journal cannot express
+  `text` + named `CHECK` (section 6.3), the two circular FKs (section 8.2), the partial unique
+  indexes, the `DO` block or the two views without the SQL being hand-edited anyway.
+- **D75** Tailwind: rejected dropping `app/tailwind.config.ts` in favour of pure `@theme`, because
+  `17` sections 6.2/6.3 and `components.json` both name that path and gate G5 inspects it.
+  Token *values* are deliberately not seeded: `17` section 6.1 rule 2 forbids inventing a value.
+- **D78** lint: rejected pinning `typescript` back to 6.x (7.0.2 is available, so `04` section 2.2
+  rule 3 does not permit moving the pin) and rejected installing a second, older TypeScript for the
+  linter alone (two compilers can disagree about the same code). Cost paid: no type-aware lint
+  rules. Compensating control: `tsc --noEmit` with `strict` plus the two unused-symbol flags.
+- **D77** `DATABASE_URL`: the one place `04` section 11's "a missing required variable aborts" is
+  relaxed, because WP-01's acceptance criterion cannot be satisfied otherwise. Recorded rather than
+  implemented silently.
+
+### WP-01 -- what was added beyond the packet's file list, and why
+
+- `app/pnpm-workspace.yaml` -- pnpm 12 no longer reads `package.json`'s `pnpm` field, and it refuses
+  to install at all until `esbuild` and `unrs-resolver` build scripts are explicitly allowed. Both
+  names carry a reason in the file, because that setting grants install-time code execution in a
+  public repository.
+- `app/scripts/check-c8.mjs` -- `04` section 5.9 requires **two** C8 checks, and the second one (a
+  raw provider endpoint or bearer header outside `src/lib/llm/`) is not expressible as an ESLint
+  rule. Wired into `pnpm lint`.
+- `pdfjs-dist@6.3.289` added to `app/package.json` -- the pinned extractor, added early so the
+  demo fixture's "text-layer PDF" claim (trap **T8**) can be verified with the real reader rather
+  than asserted. WP-04 needs the same package.
+- `app/src/lib/api/types.ts` -- the home for the response types I-03 says to define when their route
+  is built.

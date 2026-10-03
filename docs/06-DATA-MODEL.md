@@ -1499,7 +1499,7 @@ Purpose: a tutor-uploaded source document; T1 material. Class: identity-free (up
 | `kind` | text | not null; `CHECK (kind in ('brief','rubric','ai_policy','marking_guide','supplementary'))` |
 | `original_filename` | text | not null; length <= 255; displayed to the tutor only |
 | `storage_key` | text | not null; unique; never returned by an API (I-7) |
-| `mime_type` | text | not null; must be in the supported set for tutor uploads (O5): `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `...presentationml.presentation`, `image/png`, `image/jpeg` |
+| `mime_type` | text | not null; must be in the supported set for tutor uploads (O5, **D57**, **D80**): `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/vnd.openxmlformats-officedocument.presentationml.presentation`, `image/png`, `image/jpeg`, `text/plain`, `text/markdown`. The last two were added by D80: this row previously printed only the five binary types, which contradicted D57 on the ground that the extraction path for plain text and Markdown is the same as for a PDF text layer |
 | `byte_size` | bigint | not null; `CHECK (byte_size > 0 and byte_size <= 26214400)` |
 | `page_count` | integer | null; `CHECK (page_count is null or page_count >= 0)` |
 | `content_hash` | text | not null; `CHECK (length(content_hash) = 64)`; SHA-256 of the stored bytes, used for duplicate detection |

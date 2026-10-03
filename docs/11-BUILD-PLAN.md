@@ -151,7 +151,12 @@ pnpm db:migrate                       # idempotent: run twice, second run is a n
 pnpm db:seed
 pnpm db:seed                          # run twice on purpose
 psql "$DATABASE_URL" -c "select count(*) from users where role='student'"     # 37
-psql "$DATABASE_URL" -c "select count(*) from milestones where status='APPROVED'"  # >= 4
+# NOTE (corrected in Phase 1): an artifact's lifecycle column is `publication_status`, never
+# `status` -- `06` section 3.6 makes `assignment.status` and `artifact.publicationStatus` two
+# different fields, and `06` section 6.3 attaches the six-value CHECK to `publication_status`.
+# The original query here asked for `milestones.status`, which does not exist. See
+# `docs/handoff/05-ISSUES.md` I-18.
+psql "$DATABASE_URL" -c "select count(*) from milestones where publication_status='APPROVED'"  # >= 4
 pnpm test -- tests/db
 ```
 
@@ -159,11 +164,12 @@ Observable behaviour: after two consecutive `pnpm db:seed` runs, row counts are 
 
 **Acceptance criteria**
 - [ ] Every table has `id`, `created_at`, `updated_at` (`AGENTS.md` S5.3).
-- [ ] `publication_status` is a Postgres enum whose values are exactly `AI_GENERATED`, `NEEDS_REVIEW`, `EDITED`, `APPROVED`, `PUBLISHED`, `REJECTED` (D22, glossary S4).
+- [ ] Artifact lifecycle values are the six in `06` section 6.3, stored on `publication_status` as `text` + a named `CHECK`, and **never** as a Postgres `enum` type (D22, glossary S4, trap **T19**).
 - [ ] Every AI-generated artifact row has a non-null `provenance` JSON column (model id, prompt version, timestamp, `groundingChunkIds`).
 - [ ] The seed produces at least one milestone whose seeded elapsed time and question count both exceed the cohort average, so the difficulty signal in WP-11 has something real to compute (D34).
-- [ ] The seed writes **no** real personal data. Student names are synthetic; anonymous identities are derived from `ANON_ID_SECRET` (D27).
+- [ ] The seed writes **no** real personal data. Student names are synthetic; analytics identity is `subject_ref`, the domain-separated one-way pseudonym from `06` section 4.7.1 (D27).
 - [ ] Migrations are files in the repo; no schema change was made by hand against a live database.
+- [ ] `pnpm db:seed` is idempotent: a second run leaves every row count identical, verified rather than asserted.
 
 **Spec owner.** `06` S3-5, `08` S4.
 

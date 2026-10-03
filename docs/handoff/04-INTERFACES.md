@@ -39,7 +39,7 @@ Some signatures cannot move without a register change, so they are effectively f
 
 ## 3. Frozen in Phase 1 (WP-01)
 
-Frozen at commit `phase-01-wp01`. A later phase may **add**, but changing any of these means:
+Frozen at commit `9c84ef8` (WP-01). A later phase may **add**, but changing any of these means:
 raise it in [`05-ISSUES.md`](05-ISSUES.md), record why in [`02-DECISIONS.md`](02-DECISIONS.md),
 then update this file in the same commit.
 
