@@ -887,3 +887,60 @@ export interface FaqEntryResponse {
 export interface FaqEntryListResponse {
   items: FaqEntryResponse[];
 }
+
+// ---------------------------------------------------------------------------------------------
+// Phase 6 (WP-11): assignment health. `06` section 5.5.11.
+//
+// **Every metric field is nullable, and null is not "zero".** `06` section 5.5.11's rule: "when
+// `dataState = 'insufficient_data'`, every metric field is `null` and the UI renders the glossary state
+// **Insufficient data**". So a milestone below the k-anonymity floor is *absent from the table* (trap
+// T38: the floor is a `having`, and absence is uniform so a reader cannot distinguish 0 students from 4),
+// and a metric the Insight Engine has not computed is `null` rather than missing.
+//
+// No field here identifies a student, and no endpoint parameter selects one (C5, D31, A-ID-5). That is a
+// property of the response shape and not only of the query: `contributorCount` is the one field that
+// touches contributor identity, and it is an integer.
+// ---------------------------------------------------------------------------------------------
+
+export interface MilestoneMetricResponse {
+  milestoneId: string;
+  milestoneTitle: string;
+  dataState: 'ready' | 'insufficient_data';
+  contributorCount: number | null;
+  startedCount: number | null;
+  completedCount: number | null;
+  completionRate: number | null;
+  averageElapsedSeconds: number | null;
+  medianElapsedSeconds: number | null;
+  discussionPostCount: number | null;
+  /** Metric **M6**, reported separately and never part of question volume (D49). */
+  assistantTurnCount: number | null;
+  /** Tutor-directed questions only -- private Queries plus flagged discussion posts (D49). */
+  questionCount: number | null;
+  difficultyScore: number | null;
+}
+
+export interface AssignmentHealthResponse {
+  assignmentId: string;
+  window: { from: string; to: string };
+  dataState: 'ready' | 'insufficient_data';
+  headline: {
+    enrolledCount: number;
+    /** `null` when fewer than 5 students have contributed (C5, D32). */
+    activeCount: number | null;
+    averageCompletionRate: number | null;
+    potentialDifficultyAreaCount: number | null;
+  };
+  milestones: MilestoneMetricResponse[];
+  potentialDifficultyAreas: Array<{
+    milestoneId: string;
+    milestoneTitle: string;
+    /** An evidence sentence with no prescription (D35). */
+    reason: string;
+    averageElapsedSeconds: number;
+    questionCount: number;
+    completionRate: number;
+  }>;
+  /** States the aggregation window in words. */
+  windowNote: string;
+}
