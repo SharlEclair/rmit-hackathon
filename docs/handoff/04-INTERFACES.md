@@ -295,8 +295,84 @@ is only meaningful next to the transitions that decide what `PUBLISHED` means.
    `pnpm test` to pass with no network and no database. It mints its own session with
    `signSessionToken` (the login route's own function) rather than reading the demo password. Eighteen
    checks; the report lands in `.local/phase4-review-verify.json`.
-2. **`app/src/styles/tokens.css` is still empty, and that is the next UI phase's first job** (**I-44**).
-   Every Tailwind colour key in `app/tailwind.config.ts` resolves to an undefined custom property, so
-   no screen can render correctly and no design-system gate (`17` section 12) exists to catch it. Phase
-   4 therefore delivered WP-06's boundary and contract but **not** its review page or the
-   `AI generated - requires tutor approval` badge; the order that avoids rework is in I-44.
+2. **`app/src/styles/tokens.css` declared no token, which is why Phase 4 built no page** (**I-44**).
+   Phase 5 landed the token layer and then the page, so this constraint is now historical: see section 8.
+
+---
+
+## 8. Frozen in Phase 5 (WP-07 and WP-09)
+
+Frozen at the Phase 5 exit commit, tagged `phase-05-complete`. Same rules as section 3: a later phase may
+**add**, but changing any of these means raising it in [`05-ISSUES.md`](05-ISSUES.md), recording why in
+[`../../01-DECISIONS.md`](../../01-DECISIONS.md), and updating this file in the same commit.
+
+`18` section 5 makes Phase 5 hand off "**SSE event order** and the citation shape". Both are below, plus
+the student-visibility surface the phase had to complete in order to render them at all.
+
+### 8.1 The SSE event order and citation shape (`app/src/features/assistant/stream.ts`) -- the phase's handoff
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `SseFrame`, `assistantStreamFrames`, `encodeSseFrame`, `guardrailEventFor`, `refusalPayloadFor`, `tokenFrames`, `TOKEN_FRAME_CHARS` | The order, stated once and asserted by a test rather than inferred from a route: **permitted turn** `guardrail` -> `token`* -> `citations` -> `message` -> `done`; **refusal turn** `guardrail` -> `message` -> `done`; **failed answer** `guardrail` -> `message` -> `error` -> `done`. `guardrail` is first, **always** (trap **T4**), and it carries the **persisted** decision -- a post-check trip or a schema failure replaces an initially-permitted verdict with `REFUSE`, so a client never waits for tokens that will not arrive. A refusal therefore emits **zero `token` frames**. Pure: no I/O, no clock. | `06` section 5.5.9; trap **T4**, **T5**; **I4**, **T13**; **D108**'s neighbour `D69` |
+| `STREAM_PACING_MS` | **Transport pacing only.** Applied to `token` frames alone, so `guardrail` reaches the client immediately and `message`/`done`/`error` are never held behind cosmetics. It changes when a frame becomes readable, never its content or order. | `07` sections 2.1, 4.7.2 rule 4 |
+
+**The client's half of the contract is frozen too, because a server order nobody honours is not a
+contract.** `app/src/components/assistant-panel.tsx` tracks `seenGuardrail` and cancels the stream if a
+`token` frame arrives first, discarding the partial text: `06` section 5.5.9 rule 1 requires exactly
+that. Its frame parser is deliberately **independent** of the acceptance script's, so one bug cannot
+satisfy both sides.
+
+### 8.2 The student-visibility surface (`app/src/features/workspace/`, `app/src/lib/db/queries/student-workspace.ts`)
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `buildStudentWorkspace`, `buildBriefResponse`, `buildChecklistResponse`, `buildAiPolicyResponse`, `buildChecklistProgressResponse` | One builder per `06` section 5.5 response, so the workspace bootstrap cannot drift from the endpoints it summarises. Every read takes a `VisibleScope` -- there is **no** `(ex, assignmentId)` variant -- so nothing here can widen what a caller sees (trap **T3**). | `06` sections 5.5.3, 5.5.4, 5.5.6, 5.5.7; trap **T3** |
+| `listPublishedSourceManifests`, `listBriefSections`, `listBriefPageText`, `listOwnChecklistProgress`, `readWorkspaceCounts`, `readWorkspaceHeader`, `readPolicyPublishedAt`, `findVisibleChecklistItem`, `findOwnChecklistProgress`, `findChecklistItemAssignmentId` | The student reads. `findChecklistItemAssignmentId` is **deliberately ungated and must stay that way**: a checklist transition addresses an item, so it needs the assignment id *before* gate G1 can run, and it returns one id and no content. Returning item text from it would be the T3 bug. | `06` sections 3.4, 5.4, 7.3; trap **T3** |
+| `applyChecklistTransition` | The three transitions in one module, because they share a five-step order (resolve item -> gate -> rollup row -> write -> read back) and three copies is three places for the gate to be forgotten. `reopen` takes an optional `expectedReopenCount`; a mismatch is `INVALID_STATE_TRANSITION` rather than a silent double increment. | `06` sections 5.1, 5.1.1, 7.3.2; **D48**, **D108** |
+| `uiStateOf`, `ChecklistItemUiState` | The API's three-value `state` mapped to the row component's four-value one, deriving `reopened` from `reopenCount`. It lives in `ui-state.ts` alone because a **client** component needs it and importing the bundle would put the query layer in the browser bundle. | `07` section 4.6 rule 6; **D48**, **D108** |
+| `loadWorkspace`, `loadBrief`, `loadChecklist`, `loadCourses`, `loadCourseAssignments`, `requireStudentPage` | The pages' server-side loading. They read the query layer, not their own HTTP API: a `fetch` from a server component would need to forward the session cookie, run a second request inside the first, and put the URL contract between two halves of one process. | `07` sections 3.4, 3.5, 4.1-4.6 |
+| `getServerSession`, `getStudentServerSession` | Session resolution for **server components**, which have no `NextRequest`. The order is `roles.ts`'s (`readSessionCookie` -> `verifySessionToken` -> `findUserProfileById` -> `listCourseMemberships`), so the page path cannot drift from the route path. Every failure is `null`; the role is read from the `users` row, never the token claim. | `04` section 9.1; `_shared.ts` |
+| `loadReviewBundle`, `loadTutorCourses`, `loadTutorCourseAssignments`, `requireTutorPage` | The tutor pages' loading, applying the routes' own gate order to a page: assignment, then tutor enrolment on its course, all three answering `404`. | `06` section 5.2 rule 2 |
+
+### 8.3 The provenance badge and the review surface (`app/src/components/`)
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `ArtifactProvenanceBadge`, `ArtifactProvenanceLine`, `ArtifactPageCitation` | **C3 made visible, and it decides rather than being told.** The badge is derived from `origin` and `publicationStatus`, so the three unapproved AI states all render the fixed pre-approval string and **no caller can pass one that does not**. A tutor-authored row is not labelled as AI output; an approved-but-unpublished row says so rather than borrowing the published label, because **D99** makes `PUBLISHED` the threshold. | C3, **I2**, **D99**; `07` section 2.2; `17` section 5.2 |
+| `ReviewPanel` | The review surface's two rules: approving is not publishing (separate controls, no combined action), and a `VERBATIM_MISMATCH` row cannot be approved (C2 makes it unacknowledgeable), so the control is disabled and the card says why. Every write sends the row's `revision`, and the four refusal codes are reported as four different things. | **D99**, C2, **D102**; `06` sections 5.4, 5.5.8 |
+
+### 8.4 The two acceptance runs, and what a later phase must know
+
+1. **`app/scripts/verify-student.ts`** is Phase 5's run (**D107**'s neighbour `D105`'s pattern): **18
+   checks** over HTTP against a running server and the seeded database, building its own published
+   fixture so it depends on no seed state. It covers gate G1 in both directions, the whole workspace
+   bootstrap, the brief manifest, the policy card, the checklist before any transition, `start` and its
+   idempotency, `complete` and the **T7** analytics rows on data, the D48 no-op, `reopen` and its stale
+   guard, re-completion, the **SSE refusal beat** (200, `guardrail` first, zero `token` frames), the
+   permitted turn's token frames, and an unenrolled student's `NOT_FOUND`. Report:
+   `.local/phase5-student-verify.json`.
+2. **`app/scripts/verify-review.ts`** grew two checks (**20** now, was 18): the review page renders with
+   the C3 marker on every unapproved AI artifact, and the page states that approving is not publishing.
+   Both assert the **rendered HTML**, because a bundle can be correct while the page shows an unmarked
+   artifact -- the failure C3 forbids.
+3. **`pnpm test` still needs no network and no database** (`12` section 3.7), and still passes with no
+   provider key. Every claim that needs either lives in one of the two scripts.
+
+### 8.5 What a later phase must not assume
+
+1. **The brief viewer is not page-rasterised** (**D107**). It renders `source_chunks.text` under the
+   extractor's own headings and page ranges. It cannot reproduce the document's typography, and
+   `viewerUrl` does not exist in any payload. Do not add one without a register change.
+2. **`queries` has no `deleted_at`, and neither does `ai_policy_rules`.** A thread is closed by status;
+   a policy rule is withdrawn by publication status. Both omissions cost a live `500` in Phase 5; check
+   `information_schema.columns` before assuming a soft-delete column exists.
+3. **`completeChecklistItem` guards on `state <> 'completed'`, not `completed_at is null`,** and
+   assigns `completed_at`/`elapsed_seconds` through `coalesce`. The guard is D48's re-completion path and
+   the `coalesce` is D48's first-interval rule; changing either breaks the round trip.
+4. **The tab strip derives its active tab from `usePathname`.** A layout cannot read the request path in
+   the App Router, so do not thread an `active` prop through the pages: four call sites is four chances
+   to render the wrong tab as selected.
+5. **`/student` and `/tutor` are page roots as well as API roots.** `src/app/student/**` and
+   `src/app/tutor/**` are pages; `src/app/api/student/**` and `src/app/api/tutor/**` are the routes. The
+   middleware protects both prefixes, and the pages still authorise independently.
+
