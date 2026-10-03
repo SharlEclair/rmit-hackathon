@@ -6,7 +6,13 @@
 
 **Status convention.** `NOT STARTED` / `IN PROGRESS` / `DONE` / `AT RISK`. Update the status column the moment it changes.
 
-**Warning about this document.** At the time of writing, **no application code exists** (`app/` is absent) and the repository **is** under version control -- it carries 7 commits, HEAD `da00f71`, remote `origin https://github.com/SharlEclair/rmit-hackathon.git`. Public visibility of that remote is **not verified**: an anonymous fetch of the repository URL returns HTTP 404. Nothing in this file may claim otherwise. Where a field depends on something that does not exist yet, it is marked `TBD` rather than filled with an optimistic guess.
+**Warning about this document.** This file was first written during Phase 0, when `app/` did not exist and
+the repository carried 7 commits at `da00f71`. **Its opening warning has been superseded**: the application
+is now built through Phase 6, tagged `phase-06-complete`, with 48 API route files, 757 passing tests and
+four acceptance runs. Where a field still depends on something unverified -- the Devpost form itself, the
+public visibility check below, and per-member tool declarations -- it stays `TBD` or `AT RISK` rather than
+being filled with an optimistic guess. The rule is unchanged: nothing in this file may claim more than the
+repository shows.
 
 ---
 
@@ -136,7 +142,42 @@ This draft is truthful as of the state described in S4. Sections marked `[APP PH
 >
 > **1. Design and documentation (pre-implementation).** We used an agentic coding tool (DeepSeek Harness, DSH) to restructure our own prior product thinking into an implementation-ready documentation set: [`docs/00-INDEX.md`](00-INDEX.md) through [`docs/15-GLOSSARY.md`](15-GLOSSARY.md). The AI was given the frozen source documents and a normative working agreement, [`AGENTS.md`](../AGENTS.md), that constrains what it may write. The decisions register, [`docs/01-DECISIONS.md`](01-DECISIONS.md), is entirely derived from our own earlier design conversation; the AI organised and formalised it, and where our thinking was incomplete the AI recorded the gap as an open question with a working default rather than inventing an answer. We reviewed the result and it is what we are building against.
 >
-> **2. Application implementation (during the hackathon).** `[APP PHASE - fill in as we go]` Each commit that was substantially AI-drafted is described here, grouped by work packet, with the commit range as evidence. We are keeping this section current rather than reconstructing it at the end.
+> **2. Application implementation (during the hackathon).** All application code was written inside the
+> event window, and the repository history is the evidence: **60 commits, every one dated 2026-10-04**,
+> from `a52be10` to the Phase 6 exit. The work was done with an agentic coding tool (DeepSeek Harness,
+> DSH) working against the frozen contract from item 1. What made that work auditable rather than
+> trust-based is the working agreement, which requires each session to do four things we can point at:
+>
+> - **Write a handoff before it writes code.** Every phase began by recording its intended scope, the
+>   documents it read and its commit range in `docs/handoff/06-SESSION-LOG.md`, before the first commit.
+>   A session that died mid-task still left its intent on disk.
+> - **Record every interpretation as a numbered decision.** `docs/01-DECISIONS.md` carries **D1-D109**,
+>   each with its alternative and why the alternative failed. Where the AI resolved an ambiguity in a
+>   spec, that resolution is a register row rather than a silent choice.
+> - **Record every trap it fell into.** `docs/handoff/03-INVARIANTS.md` carries **T1-T41**: things that
+>   looked right, failed, and would fail again for the next person. These are the least flattering
+>   documents in the repository and we consider them the most useful.
+> - **Prove claims with commands, not adjectives.** The completion checklist in `AGENTS.md` S4.3
+>   requires the executed command and its observed output. Type-check, lint, unit suite, production
+>   build, schema-drift check and four end-to-end acceptance runs; a phase is not complete until all of
+>   them pass, and the exit document quotes the results.
+>
+> **What humans changed.** Every phase boundary was reviewed before its commit: the AI's proposed
+> interpretation was checked against the frozen spec, the test it wrote for its own claim was checked
+> for vacuity, and several were rejected or rewritten. Concrete examples of AI work that a human
+> corrected, all in the history rather than reconstructed:
+>
+> - A test asserting a field that did not exist on the type it named -- a **vacuous** assertion that
+>   could never fail, caught by reading it rather than by running it.
+> - An SSE encoding test whose *expectation* was wrong while the code was already correct; the fix
+>   strengthened the assertion rather than weakening the code.
+> - A moderation vocabulary (`WITHDRAWN`) invented at a call site and rejected by the database, where
+>   the schema was right and the code was wrong; and a second, related fault where one boolean
+>   conflated two independent timestamp stamps.
+> - A commit that claimed two documents were corrected when they were not. That is a defect in its own
+>   right, and it was reported and fixed rather than left.
+>
+> **3. AI inside the product (runtime).** Assignment Assistant uses a large language model at runtime for five things: reading uploaded assignment documents and proposing a structure for tutor review; classifying student requests against the assignment's AI usage policy; answering permitted student questions from approved content; extracting uploaded attachments; and flagging discussion posts for tutor review. All model calls go through a single provider adapter (`src/lib/llm/` is the only module permitted to import a vendor SDK), and the provider is configuration rather than a hard dependency: the product runs end to end with a fully offline deterministic provider, which is how the acceptance runs are verified and how we demonstrate it if the network is unreliable. The discussion moderator and the analytics builder are deliberately **not** model calls: the analytics aggregation is deterministic SQL (D67), which is stated in the product's own documentation because a metric that drifted with a model version would be worse than no metric.
 >
 > **3. AI inside the product (runtime).** Assignment Assistant uses a large language model at runtime for four things: reading uploaded assignment documents and proposing a structure for tutor review; classifying student requests against the assignment's AI usage policy; answering permitted student questions from approved content; and flagging discussion posts for tutor review. All model calls go through a single provider adapter, and the provider is configuration rather than a hard dependency: the product can run end to end with a fully offline deterministic provider, which is how we demonstrate it when the network is unreliable.
 >
@@ -160,20 +201,29 @@ This draft is truthful as of the state described in S4. Sections marked `[APP PH
 
 Filled in during the build. This is what makes S5.1 item 2 specific rather than a blanket statement.
 
-| Work packet | AI-assisted? | What the AI produced | What a human changed | Commit range |
+**Reading this table.** "AI-assisted?" is `Yes` for every packet: the agentic tool wrote substantially all
+of the code, and claiming otherwise would be false. The column that carries the information is the two
+beside it -- what a human checked, and what the AI got wrong. Every commit below is inside the event
+window; the full history is `git log --reverse` and each range is verifiable with `git log <a>..<b>`.
+
+| Work packet | AI-assisted? | What the AI produced | What a human changed or caught | Commit range |
 |---|---|---|---|---|
-| WP-01 | `TBD` | | | |
-| WP-02 | `TBD` | | | |
-| WP-03 | `TBD` | | | |
-| WP-04 | `TBD` | | | |
-| WP-05 | `TBD` | | | |
-| WP-06 | `TBD` | | | |
-| WP-07 | `TBD` | | | |
-| WP-08 | `TBD` | | | |
-| WP-09 | `TBD` | | | |
-| WP-10 | `TBD` | | | |
-| WP-11 | `TBD` | | | |
-| WP-12 | `TBD` | | | |
+| WP-01 -- repo, toolchain, walking skeleton | Yes | The Next.js skeleton, typed config reader, SQL migration runner, health route | Adopted the documented stack instead of the tool's defaults; the migration runner had to be forward-only and file-named, which the AI's first shape was not | `9c84ef8`..`0ba949f` |
+| WP-02 -- data model, migrations, demo fixture | Yes | 33-table schema as committed SQL, the Drizzle mirror, the drift guard, the deterministic seed | The drift guard is the check that makes the two schema copies safe; the seed's extraction was deliberately kept on Phase 1's chunker rather than re-pointed at the pipeline (trap **T29**) | `f5360a5`, `3a47eaf` |
+| WP-03 -- auth and role scoping | Yes | Stateless signed session, role guards, three auth routes | Role is read from the `users` row per request rather than trusted from the token claim | `e16cfa5` |
+| WP-04 -- upload, storage, extraction, ingestion | Yes | Storage drivers, verbatim extraction, the Assignment Analyst, the ingestion job | The live Analyst run needed a **much** higher output ceiling than the AI first chose; the failure presented as a schema error rather than a truncation, and diagnosing it produced trap **T32** | `d77958c`, `8e62fa7` |
+| WP-05 -- the guardrail (policy layer) | Yes | The verdict/rule contract, L0-L5, the approved-policy overlay, a 53-case golden set | This is the constraint the product exists to demonstrate, so the human review was heaviest here: the golden set includes deliberately reworded laundering attempts, and a heuristic that refused a rule code the guardrail itself accepts was caught at a phase boundary (trap **T31**) | `d9008e8`, `7f4dd5a`, `bf12a3e` |
+| WP-06 -- tutor review and the approval boundary | Yes | The approval state machine, the revision token, gate rule G1, six tutor routes | The AI's write-time policy guard was **stricter than the validator it was protecting** -- a second, wrong definition of validity -- caught by the acceptance run rather than by a test | `a509dbd`, `1077faa` |
+| WP-07 -- student workspace | Yes | The query layer, the workspace bootstrap, brief/policy/checklist routes and transitions, the student UI | Two live `500`s from a copied `deleted_at` predicate on tables that have no such column (trap **T33**); and the D48 round trip was broken in **two** statements, so fixing either alone left an item that could never be finished again (trap **T34**) | `0c69d63`, `7083ac3`, `73044c7`, `a121e5e` |
+| WP-08 -- the Assistant | Yes | The turn pipeline, four routes, the SSE stream, the refusal panel | The stream's event order is the contract, and a test asserted an encoding property with the wrong expectation; the code was already safe and the *test* was fixed, then strengthened by pinning the whole frame array | `51bbea7`, `be7e9c8`, `e510831` |
+| WP-09 -- design system | Yes | The token layer, ten owned UI primitives, 13 static design gates | The token-parity gate was **vacuous** until comments were stripped before resolving declarations -- a doc comment naming a token satisfied it. Stripping comments made the gate real (`9fb22b4`) | `ebf5b46`, `9fb22b4`, `31f8f83`, `c56e9ec` |
+| WP-10 -- discussions, queries, FAQ, moderation | Yes | The anonymity contract, 20 routes, the moderator schema and pass, the FAQ lifecycle | The moderator's schema had no legal home under two conflicting standing agreements, which was raised as a blocker **before** any code was written and resolved as a register decision; the first live flag write was impossible because two normative documents described one column with disjoint value sets (trap **T41**) | `c7787aa`, `22a7e77`, `d5bf87f`, `978694c`, `7fdd1d8`, `de626d5`, `50d01d7` |
+| WP-11 -- analytics | Yes | `milestone_metrics`/`assignment_metrics`, the two-stage mean, the difficulty rule | The AI implemented M4 from the spec's **illustrative sample query**, which computes a flat average; the normative formula is a mean of per-student means, and the two disagree by 316 seconds on the discriminating fixture (trap **T38**). A second floor -- the median's, higher than the contributor floor -- was simply omitted and found only by the live run (trap **T39**, **I-51**) | `743ceaa` |
+| WP-12 -- smoke test, freeze, submission | Not started | -- | -- | -- |
+
+Two more corrections belong here because they were not features: a commit whose message described work it
+did not contain was split into honest commits, and a duplicate route left on disk by a PowerShell wildcard
+quirk needed three commits to clear (trap **T40**).
 
 ### 5.3 Per-member disclosure
 
