@@ -317,27 +317,32 @@ export class LlmError extends Error {
 
 `resolveProvider()` reads `LLM_PROVIDER` and returns the matching `LlmProvider`. Everything above it in the stack depends only on this interface (and on `JsonSchema`), never on a vendor type.
 
-### 5.3 Default provider: DeepSeek
+### 5.3 Default provider: Gemini (D61)
+
+**D61 makes `gemini` the project default and D62 fixes the model.** D40's reasoning still holds (one model, one key, one failure mode); its DeepSeek specifics remain accurate below as the *alternative* adapter.
 
 | Fact | Value |
 |---|---|
-| Provider id | `deepseek` |
-| Default model id | `deepseek-flash` (DeepSeek-V4.1-Flash) |
-| Other accepted model id | `deepseek-v4-pro` - a valid value for `LLM_MODEL_REASONING`, not the default |
-| Base URL | `https://api.deepseek.com`, OpenAI-compatible surface |
-| Context window | 1,000,000 tokens |
-| Structured output | JSON output supported |
-| Tool calls | Supported |
-| Vision | Supported, so the same model covers image-bearing student uploads |
-| Prompt caching | Supported. Cache-hit input tokens are billed far below cache-miss input tokens. |
+| Provider id | `gemini` (default, D61) |
+| Default model id | `gemini-3.8-flash` (D62) |
+| SDK | `@google/genai` - the only vendor SDK imported anywhere, and only inside `src/lib/llm/` (C8) |
+| Input types | Text, Image, Video, Audio, PDF |
+| Output type | Text |
+| Context window | 1,048,576 input tokens; 65,536 output tokens |
+| Structured output | Supported - use it for every schema-bound capability (D16) |
+| Function calling | Supported |
+| Thinking levels | `low` \| `medium` \| `high`. **`minimal` is not supported by this model and returns an error** - there is no "off" value. |
+| Prompt caching | Supported. Keep the static policy block first so the prefix is cache-stable (5.5). |
 
 Consequences the build must honour:
 
-- **One model covers all five capabilities.** `LLM_MODEL_REASONING` and `LLM_MODEL_MULTIMODAL` both resolve to `deepseek-flash` when `LLM_MODEL_MULTIMODAL` is empty.
-- **Attachment resolution uses the same rule.** With the shipped modalities (PNG/JPEG, PDF, plain text - O11), image and PDF extraction resolves `modelId` from `LLM_MODEL_MULTIMODAL` if non-empty, else `LLM_MODEL_REASONING`. The env default is empty, so extraction and generation both run on `deepseek-flash`; a non-empty `LLM_MODEL_MULTIMODAL` is an override for cost or capability reasons, not a requirement. Audio and video never reach this resolution because the picker refuses them.
-- **The two known-good ids are `deepseek-flash` and `deepseek-v4-pro`.** Configure one of them in `LLM_MODEL_REASONING`. There is no automatic fallback between them: the adapter never silently switches model ids, because a silent switch changes the prompt-cache prefix behaviour, the cost profile, and the behaviour under test. If the configured id fails, that is a loud startup failure (5.4), not a fallback.
+- **One model covers all five capabilities.** `gemini-3.8-flash` is natively multimodal, so `LLM_MODEL_REASONING` and `LLM_MODEL_MULTIMODAL` both resolve to it when `LLM_MODEL_MULTIMODAL` is empty. No second model is needed for image- or PDF-bearing uploads.
+- **Attachment resolution uses the same rule as any other provider.** With the shipped modalities (PNG/JPEG, PDF, plain text - O11), image and PDF extraction resolves `modelId` from `LLM_MODEL_MULTIMODAL` if non-empty, else `LLM_MODEL_REASONING`. Audio and video never reach this resolution because the picker refuses them.
+- **Thinking level is per capability, not global** (D62), because thinking is billed and adds latency: guardrail `low`, assistant `medium`, analyst `high`, moderator `low`, insight `low`. The env contract carries these as `LLM_THINKING_*`. Note that `minimal` is not a valid value for this model, so `low` is the floor rather than an off switch - which is consistent with the guardrail being deterministic-first (D7) rather than model-dependent.
+- **The single known-good id is `gemini-3.8-flash`.** Configure it in `LLM_MODEL_REASONING`. There is no automatic fallback to another provider or model: the adapter never silently switches ids, because a silent switch changes the prompt-cache prefix behaviour, the cost profile, and the behaviour under test. If the configured id fails, that is a loud startup failure (5.4), not a fallback.
 - **Model ids are never invented or composed.** The id string comes from `LLM_MODEL_REASONING` (or `LLM_MODEL_MULTIMODAL` when set) and is passed through unchanged. Do not append date suffixes, aliases, or `-latest`.
 - **A 1M window is not a licence to send everything.** Retrieval still selects the smallest sufficient set of T1-T3 source chunks (section 6). Context is a cost and an accuracy risk, not a feature.
+- **The `deepseek` adapter remains.** It is the documented alternative (see D40) and must keep working, because D39 makes the provider a configuration decision. It is no longer the default.
 
 ### 5.4 Startup validation: fail loudly, never at the first student message
 
@@ -345,22 +350,23 @@ An unknown or unavailable model id returns HTTP 400 from the provider. If that i
 
 Procedure, run once per process before the server accepts a request:
 
-1. Read `LLM_PROVIDER`. Missing or not one of `deepseek` | `gemini` | `mock` -> `CONFIG_INVALID`, abort.
-2. For `deepseek` and `gemini`, require the matching key (`DEEPSEEK_API_KEY`, `GEMINI_API_KEY`) to be non-empty -> else `CONFIG_INVALID`, abort.
+1. Read `LLM_PROVIDER`. Missing or not one of `gemini` | `deepseek` | `mock` -> `CONFIG_INVALID`, abort. `gemini` is the default (D61).
+2. For `gemini` and `deepseek`, require the matching key (`GEMINI_API_KEY`, `DEEPSEEK_API_KEY`) to be non-empty -> else `CONFIG_INVALID`, abort.
 3. Resolve `modelId` from `LLM_MODEL_MULTIMODAL` if non-empty, else `LLM_MODEL_REASONING`.
-4. Issue one minimal probe completion with that `modelId`: one short input token, `max_tokens: 1`, no tools.
-5. Map the outcome:
+4. For `gemini`, also validate the five `LLM_THINKING_*` values against `low` | `medium` | `high`. `minimal` is not supported by `gemini-3.8-flash` and returns an error at call time, so it is rejected here rather than discovered mid-demo (D62).
+5. Issue one minimal probe completion with that `modelId`: one short input token, `max_tokens: 1`, no tools.
+6. Map the outcome:
 
 | Provider signal | Code | Retry | Startup behaviour |
 |---|---|---|---|
 | HTTP 200 | - | - | Continue. Log provider, model id, latency. |
-| HTTP 400 (invalid/unknown model id) | `MODEL_UNKNOWN` | No | **Abort.** Print the configured id and the provider message. |
+| HTTP 400 (invalid/unknown model id, or invalid thinking level) | `MODEL_UNKNOWN` | No | **Abort.** Print the configured id and the provider message. |
 | HTTP 401 / 403 | `AUTH_FAILED` | No | **Abort.** Never print the key. |
 | HTTP 429 | `RATE_LIMITED` | Once, 1s jittered | Abort if the retry also fails. |
 | HTTP 5xx | `PROVIDER_UNAVAILABLE` | Once, 1s jittered | Abort if the retry also fails. |
 | Timeout (> 10s) | `TIMEOUT` | No | **Abort.** |
 
-6. `LLM_PROVIDER=mock` skips the network probe entirely. The mock provider's `validateConfiguration()` returns `ok: true` for the `mock` model id and for `deepseek-flash`, so the demo path and the test path share one code path.
+7. `LLM_PROVIDER=mock` skips the network probe entirely. The mock provider's `validateConfiguration()` returns `ok: true` for the `mock` model id and for the known-good ids of every implemented adapter, so the demo path and the test path share one code path.
 
 **Abort means abort.** The process exits non-zero (exit code 78, `EX_CONFIG`) with a one-line, secret-free message on stderr. There is no degraded mode in which the assistant answers without a validated model, because a degraded assistant is an unguarded assistant. Any test or dev-server wrapper that would swallow this exit code is a defect.
 
@@ -708,12 +714,17 @@ This table matches `.env.example` exactly, variable for variable. Copy `.env.exa
 | `DATABASE_URL` | `postgresql://user:password@localhost:5432/assignment_assistant` | Always | Yes | `src/lib/db/` | Postgres connection string for tables and FTS. |
 | `AUTH_SECRET` | `replace-me-with-32-bytes-of-randomness` | Always | Yes | `src/lib/auth/` | Session signing secret (`openssl rand -base64 32`). |
 | `ANON_ID_SECRET` | `replace-me-with-32-bytes-of-randomness` | Always | Yes | `src/lib/auth/`, discussion feature | HMAC key for per-(student, assignment) pseudonyms. Distinct from `AUTH_SECRET`. Because the pseudonym number is persisted, changing it does **not** re-label existing posts: labels of existing identity rows do not change, and only identities created after the rotation get different numbers. Treat it as permanent for the life of an assignment (**D55**, `06` S4.2). |
-| `LLM_PROVIDER` | `mock` | Always | No | `src/lib/llm/index.ts` | One of `deepseek` \| `gemini` \| `mock`. Selected at runtime, never hard-coded. |
-| `LLM_MODEL_REASONING` | `deepseek-flash` | Always | No | `src/lib/llm/` | Default model id for every capability. Valid DeepSeek ids are `deepseek-flash` and `deepseek-v4-pro`; an unknown id is an HTTP 400 caught at startup validation. |
-| `LLM_MODEL_MULTIMODAL` | `` (empty) | Never; optional | No | `src/lib/llm/` | Optional separate model for image and PDF attachments (O11). Empty means reuse `LLM_MODEL_REASONING`, which is correct for `deepseek-flash`. Never consulted for audio or video, which the picker refuses before the adapter. |
+| `LLM_PROVIDER` | `gemini` | Always | No | `src/lib/llm/index.ts` | One of `gemini` \| `deepseek` \| `mock`. `gemini` is the default (D61). Selected at runtime, never hard-coded. |
+| `LLM_MODEL_REASONING` | `gemini-3.8-flash` | Always | No | `src/lib/llm/` | Default model id for every capability (D62). One model serves all five capabilities and is natively multimodal. Valid ids per adapter: Gemini `gemini-3.8-flash`; DeepSeek `deepseek-flash`, `deepseek-v4-pro`. An unknown id is caught at startup validation (5.4). |
+| `LLM_MODEL_MULTIMODAL` | `` (empty) | Never; optional | No | `src/lib/llm/` | Optional separate model for image and PDF attachments (O11). Empty means reuse `LLM_MODEL_REASONING`, which is correct for `gemini-3.8-flash` because it accepts image and PDF input natively. Never consulted for audio or video, which the picker refuses before the adapter. |
+| `LLM_THINKING_GUARDRAIL` | `low` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for the policy guard: `low` \| `medium` \| `high`. Lowest setting because the guardrail runs on every student turn and is deterministic-first (D7, D62). |
+| `LLM_THINKING_ASSISTANT` | `medium` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for the student assistant's grounded answers. |
+| `LLM_THINKING_ANALYST` | `high` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for assignment ingestion. Highest setting because it runs once per document and the extraction quality is what everything downstream depends on. |
+| `LLM_THINKING_MODERATOR` | `low` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for discussion moderation. Advisory only (D28), so speed matters more than depth. |
+| `LLM_THINKING_INSIGHT` | `low` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for the analytics topic-grouping pass, which runs per refresh rather than per request. |
 | `DEEPSEEK_API_KEY` | `` (empty) | `LLM_PROVIDER=deepseek` | Yes | `src/lib/llm/deepseek.ts` | DeepSeek credential. Never logged, never returned. |
 | `GEMINI_API_KEY` | `` (empty) | `LLM_PROVIDER=gemini` | Yes | `src/lib/llm/gemini.ts` | Gemini credential. Never logged, never returned. |
-| `LLM_BASE_URL` | `` (empty) | Never; optional | No | `src/lib/llm/` | Override provider base URL (proxy, self-hosted gateway). Empty means the provider default (`https://api.deepseek.com`). |
+| `LLM_BASE_URL` | `` (empty) | Never; optional | No | `src/lib/llm/` | Override provider base URL (proxy, self-hosted gateway). Empty means the provider default. |
 | `LLM_MAX_CALLS_PER_SESSION` | `12` | Always | No | `src/lib/llm/` | Hard ceiling on model calls per session; exceeding it fails loudly (5.6). |
 | `STORAGE_DRIVER` | `local` | Always | No | `src/lib/storage/` | `local` \| `s3`. |
 | `STORAGE_LOCAL_DIR` | `./.storage` | `STORAGE_DRIVER=local` | No | `src/lib/storage/local.ts` | Root directory for stored objects. Gitignored. |

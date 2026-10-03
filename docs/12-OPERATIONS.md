@@ -55,9 +55,14 @@ Rotating `ANON_ID_SECRET` mid-assignment does not change the label of any post t
 
 | Variable | Required | Template default | Notes |
 |---|---|---|---|
-| `LLM_PROVIDER` | **Yes** | `mock` | One of `deepseek`, `gemini`, `mock`. |
-| `LLM_MODEL_REASONING` | **Yes** | `deepseek-flash` | The default model for every AI capability. A 1M-context model with JSON output, tool calls and vision, so one model covers ingestion, guardrail classification, assistant responses, moderation, and image-bearing uploads. Do not invent model ids; an unknown id is an HTTP 400 at runtime. |
-| `LLM_MODEL_MULTIMODAL` | No | *(empty)* | Optional separate model for uploads carrying images or PDFs -- the shipped attachment set (**O11**). Empty means reuse `LLM_MODEL_REASONING`, which is correct for `deepseek-flash`. Never consulted for audio or video, which the picker refuses before the adapter. |
+| `LLM_PROVIDER` | **Yes** | `gemini` | One of `gemini`, `deepseek`, `mock`. `gemini` is the project default (**D61**). |
+| `LLM_MODEL_REASONING` | **Yes** | `gemini-3.8-flash` | The default model for every AI capability (**D62**). One model covers ingestion, guardrail classification, assistant responses, moderation, and image- and PDF-bearing uploads: it accepts text, image, video, audio and PDF input with a 1,048,576-token input limit, and supports structured outputs and thinking levels. Do not invent model ids; an unknown id fails at startup validation. |
+| `LLM_MODEL_MULTIMODAL` | No | *(empty)* | Optional separate model for uploads carrying images or PDFs -- the shipped attachment set (**O11**). Empty means reuse `LLM_MODEL_REASONING`, which is correct for `gemini-3.8-flash` because it is natively multimodal. Never consulted for audio or video, which the picker refuses before the adapter. |
+| `LLM_THINKING_GUARDRAIL` | Only when `LLM_PROVIDER=gemini` | `low` | Thinking level for the policy guard: `low`, `medium` or `high`. `minimal` is not supported by `gemini-3.8-flash` and returns an error. |
+| `LLM_THINKING_ASSISTANT` | Only when `LLM_PROVIDER=gemini` | `medium` | Thinking level for grounded assistant answers. |
+| `LLM_THINKING_ANALYST` | Only when `LLM_PROVIDER=gemini` | `high` | Thinking level for assignment ingestion; highest because quality there bounds everything downstream. |
+| `LLM_THINKING_MODERATOR` | Only when `LLM_PROVIDER=gemini` | `low` | Thinking level for discussion moderation (advisory only, **D28**). |
+| `LLM_THINKING_INSIGHT` | Only when `LLM_PROVIDER=gemini` | `low` | Thinking level for the analytics topic-grouping pass, which runs per refresh. |
 | `DEEPSEEK_API_KEY` | Only when `LLM_PROVIDER=deepseek` | *(empty)* | Set only the key matching the selected provider. |
 | `GEMINI_API_KEY` | Only when `LLM_PROVIDER=gemini` | *(empty)* | Set only the key matching the selected provider. |
 | `LLM_BASE_URL` | No | *(empty)* | Overrides the provider base URL for proxies or self-hosted gateways. |
@@ -338,7 +343,7 @@ NODE_ENV="production"
 APP_BASE_URL="http://localhost:3000"
 ```
 
-With this configuration the demo has exactly one external dependency: Postgres. If the model provider is available on the day, switch to `deepseek` for the live-ingestion beat **only after** a full run-through has passed, and keep the `mock` configuration in a second terminal ready to swap in.
+With this configuration the demo has exactly one external dependency: Postgres. If the model provider is available on the day, switch to `gemini` (the default provider, **D61**) for the live-ingestion beat **only after** a full run-through has passed, and keep the `mock` configuration in a second terminal ready to swap in.
 
 ### 7.2 Pre-demo checklist
 
