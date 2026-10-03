@@ -701,7 +701,10 @@ interface StudentWorkspaceResponse {
       id: string; kind: 'brief' | 'rubric' | 'ai_policy' | 'marking_guide' | 'supplementary';
       title: string;             // derived from the filename, the document itself is verbatim
       mimeType: string; pageCount: number | null;
-      viewerUrl: string;         // same-origin, session-scoped, no storage key exposed
+      // NO viewerUrl. Corrected by D107: no route in section 5.4 serves source bytes, and the
+      // `local` driver's `signedUrl` throws `SIGNED_URL_UNSUPPORTED` rather than inventing a path
+      // (I-06, T12). Section 5.5.4's manifest plus the stored verbatim extraction is what the
+      // viewer renders, so a URL field would name a route that does not exist.
     }>;
   };
   structure: AssignmentMapResponse | null;  // null when the Map is not published
@@ -790,6 +793,7 @@ interface ChecklistResponse {
       startedAt: string | null;
       completedAt: string | null;
       elapsedSeconds: number | null;    // labelled "elapsed time" in the UI (D33)
+      reopenCount: number;              // added by D108: 07 section 4.6 rule 6 and D48 require it
     }>;
   }>;
   totals: { completed: number; total: number; resolutionRate: number };
@@ -801,6 +805,7 @@ interface ChecklistProgressResponse {
   startedAt: string | null;
   completedAt: string | null;
   elapsedSeconds: number | null;
+  reopenCount: number;                       // added by D108
   totals: { completed: number; total: number; resolutionRate: number };
 }
 ```

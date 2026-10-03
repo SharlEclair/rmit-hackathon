@@ -985,7 +985,7 @@ Not preferences. Each is a defect with a reason.
 
 ## 15. Register impact
 
-Status: **three of the four items below have been applied by the Lead; one remains an open proposal.** Applied items are recorded in `01-DECISIONS.md` and the affected docs were amended in the same change. Phase 5 added the fifth register row below (**D106**, the font degradation path) when the token layer landed; that row is applied here and is not yet mirrored into `01-DECISIONS.md`.
+Status: **three of the four items below have been applied by the Lead; one remains an open proposal.** Applied items are recorded in `01-DECISIONS.md` and the affected docs were amended in the same change. Phase 5 added the fifth register row below (**D106**, the font degradation path) when the token layer landed; **it is now mirrored into `01-DECISIONS.md` as D106**, which is that register's home, and this section remains the design-system record of the same decision.
 
 **`07` section 2.3 amendments**
 
