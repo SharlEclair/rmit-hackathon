@@ -38,8 +38,17 @@ export interface NewQuery {
   /** The anchor used for question-volume aggregation (`06` section 7.4.1, D49). */
   readonly milestoneId: string | null;
   readonly requirementNodeId: string | null;
-  /** The thread title. A tutor-directed question, so never assistant content. */
-  readonly subject: string;
+  /**
+   * The thread title. A tutor-directed question, so never assistant content.
+   *
+   * **Nullable, because `queries.subject` is** (`06` section 5.5.12 types it `string | null`, and
+   * `07` section 5.1's composer treats it as the optional short label). Phase 1 typed it `string` because
+   * the seed always writes one; Phase 6's student composer does not, and the write below casts
+   * conditionally for the same reason `insertFaqEntryIfAbsent` does -- a bare `${null}::text` is fine but
+   * the sibling uuid columns are not, and keeping the two writers the same shape is what stops the next
+   * one repeating the fault.
+   */
+  readonly subject: string | null;
   readonly createdAt: Date;
   /** The HMAC key, used only to derive the `query_created` event's `subject_ref`. */
   readonly anonIdSecret: string;
@@ -115,8 +124,8 @@ export async function createQuery(ex: Executor, query: NewQuery): Promise<boolea
       ${query.id}::uuid,
       ${query.assignmentId}::uuid,
       ${query.studentId}::uuid,
-      ${query.milestoneId}::uuid,
-      ${query.requirementNodeId}::uuid,
+      ${query.milestoneId === null ? null : query.milestoneId}::uuid,
+      ${query.requirementNodeId === null ? null : query.requirementNodeId}::uuid,
       ${query.subject},
       'open',
       0,
