@@ -1,0 +1,106 @@
+{
+  "note": "Pinned classifier output per MODEL case (05 S11.2's `MODEL` layer). `temperature: 0` against these fixtures is what keeps the model-enhanced path deterministic in CI without a provider (05 S11.4). promptVersion and modelId are overwritten by classifier.ts with the code's own values.",
+  "outputs": {
+    "G09": {
+      "verdict": "REFUSE",
+      "rules": ["P8"],
+      "reasonCode": "DESIGN_DECISION_REQUESTED",
+      "deterministic": false,
+      "confidence": "high",
+      "scope": null,
+      "clarifyingQuestion": null,
+      "policyRef": null,
+      "refusalTemplateId": "T-REFUSE",
+      "promptVersion": "guardrail-v1",
+      "modelId": null
+    },
+    "G16": {
+      "verdict": "REFUSE",
+      "rules": ["P8"],
+      "reasonCode": "DESIGN_DECISION_REQUESTED",
+      "deterministic": false,
+      "confidence": "high",
+      "scope": null,
+      "clarifyingQuestion": null,
+      "policyRef": null,
+      "refusalTemplateId": "T-REFUSE",
+      "promptVersion": "guardrail-v1",
+      "modelId": null
+    },
+    "G22": {
+      "verdict": "ALLOW_WITH_SCOPE",
+      "rules": ["A5", "POL_SCOPE"],
+      "reasonCode": "POLICY_APPROVED",
+      "deterministic": false,
+      "confidence": "high",
+      "scope": "SCOPE_TERM",
+      "clarifyingQuestion": null,
+      "policyRef": { "policyId": "pol_asg_demo_v1", "version": 1 },
+      "refusalTemplateId": "T-SCOPE",
+      "promptVersion": "guardrail-v1",
+      "modelId": null
+    },
+    "G48": {
+      "verdict": "REFUSE",
+      "rules": ["P8", "DE13"],
+      "reasonCode": "DESIGN_DECISION_REQUESTED",
+      "deterministic": false,
+      "confidence": "high",
+      "scope": null,
+      "clarifyingQuestion": null,
+      "policyRef": null,
+      "refusalTemplateId": "T-REFUSE",
+      "promptVersion": "guardrail-v1",
+      "modelId": null
+    }
+  },
+  "invalidOutputs": {
+    "unknownVerdict": {
+      "verdict": "PERMIT",
+      "rules": ["A4"],
+      "reasonCode": "POLICY_APPROVED",
+      "deterministic": false,
+      "scope": null,
+      "refusalTemplateId": null,
+      "promptVersion": "guardrail-v1"
+    },
+    "unknownRuleId": {
+      "verdict": "REFUSE",
+      "rules": ["P99"],
+      "reasonCode": "SOMETHING",
+      "deterministic": false,
+      "scope": null,
+      "refusalTemplateId": "T-REFUSE",
+      "promptVersion": "guardrail-v1"
+    },
+    "allowWithoutScope": {
+      "verdict": "ALLOW_WITH_SCOPE",
+      "rules": ["A4"],
+      "reasonCode": "POLICY_APPROVED",
+      "deterministic": false,
+      "scope": null,
+      "refusalTemplateId": null,
+      "promptVersion": "guardrail-v1"
+    },
+    "refuseWithoutTemplate": {
+      "verdict": "REFUSE",
+      "rules": ["P8"],
+      "reasonCode": "DESIGN_DECISION_REQUESTED",
+      "deterministic": false,
+      "scope": null,
+      "refusalTemplateId": null,
+      "promptVersion": "guardrail-v1"
+    }
+  },
+  "downgradeOutput": {
+    "verdict": "ALLOW",
+    "rules": ["A5"],
+    "reasonCode": "POLICY_APPROVED",
+    "deterministic": false,
+    "confidence": "medium",
+    "scope": null,
+    "refusalTemplateId": null,
+    "promptVersion": "guardrail-v1",
+    "modelId": null
+  }
+}

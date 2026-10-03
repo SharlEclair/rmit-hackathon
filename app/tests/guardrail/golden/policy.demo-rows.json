@@ -1,0 +1,96 @@
+{
+  "note": "The nine PUBLISHED ai_policy_rules rows of the seeded demo assignment, read back from Postgres in Session 03 (select rule_code, effect, applies_to, rule_text, display_order from ai_policy_rules order by display_order). Kept as a fixture so the row-to-capability mapping of src/lib/guardrail/policy-source.ts is tested without a database, per 12 S3.7.",
+  "assignmentId": "asg_demo_1042",
+  "rows": [
+    {
+      "ruleId": "apr_seed_01",
+      "ruleCode": "no_answer_generation",
+      "effect": "PROHIBIT",
+      "appliesTo": "all",
+      "publicationStatus": "PUBLISHED",
+      "displayOrder": 1,
+      "sourceChunkId": "chunk_policy_p1",
+      "ruleText": "3.1 -- The one absolute prohibition. Generative AI must never produce the answer to this assessment."
+    },
+    {
+      "ruleId": "apr_seed_02",
+      "ruleCode": "no_ai_evaluation_of_work",
+      "effect": "PROHIBIT",
+      "appliesTo": "assistant",
+      "publicationStatus": "PUBLISHED",
+      "displayOrder": 2,
+      "sourceChunkId": "chunk_policy_p1",
+      "ruleText": "3.2 -- Do not have AI evaluate your work. Do not ask an AI tool to mark, grade, score, review or critique any draft of your report."
+    },
+    {
+      "ruleId": "apr_seed_03",
+      "ruleCode": "no_ai_authored_artefacts",
+      "effect": "PROHIBIT",
+      "appliesTo": "all",
+      "publicationStatus": "PUBLISHED",
+      "displayOrder": 3,
+      "sourceChunkId": "chunk_policy_p1",
+      "ruleText": "3.3 -- Do not have AI produce or repair artefacts for submission."
+    },
+    {
+      "ruleId": "apr_seed_04",
+      "ruleCode": "no_third_party_disclosure",
+      "effect": "PROHIBIT",
+      "appliesTo": "uploads",
+      "publicationStatus": "PUBLISHED",
+      "displayOrder": 4,
+      "sourceChunkId": "chunk_policy_p1",
+      "ruleText": "3.5 -- Do not disclose another person's work to an AI tool."
+    },
+    {
+      "ruleId": "apr_seed_05",
+      "ruleCode": "explain_general_concepts",
+      "effect": "ALLOW",
+      "appliesTo": "assistant",
+      "publicationStatus": "PUBLISHED",
+      "displayOrder": 5,
+      "sourceChunkId": "chunk_policy_p1",
+      "ruleText": "4.1 -- Explaining general concepts. You may ask an AI tool to explain a concept, a method, a term, or a piece of course theory, in general terms."
+    },
+    {
+      "ruleId": "apr_seed_06",
+      "ruleCode": "explain_assessment_documents",
+      "effect": "ALLOW",
+      "appliesTo": "assistant",
+      "publicationStatus": "PUBLISHED",
+      "displayOrder": 6,
+      "sourceChunkId": "chunk_policy_p1",
+      "ruleText": "4.2 -- Understanding the assessment documents. You may ask an AI tool to explain a sentence in this brief, or to say what a rubric criterion is asking for."
+    },
+    {
+      "ruleId": "apr_seed_07",
+      "ruleCode": "mechanical_editing_only",
+      "effect": "ALLOW",
+      "appliesTo": "uploads",
+      "publicationStatus": "PUBLISHED",
+      "displayOrder": 7,
+      "sourceChunkId": "chunk_policy_p1",
+      "ruleText": "4.4 -- Mechanical editing of your own writing. You may ask an AI tool to correct spelling, grammar, and punctuation in text you have written."
+    },
+    {
+      "ruleId": "apr_seed_08",
+      "ruleCode": "quote_requirements_verbatim",
+      "effect": "ALLOW",
+      "appliesTo": "assistant",
+      "publicationStatus": "PUBLISHED",
+      "displayOrder": 8,
+      "sourceChunkId": "chunk_policy_p1",
+      "ruleText": "6.1 -- The assistant may retrieve and quote the assignment brief and the rubric verbatim, with the page they came from."
+    },
+    {
+      "ruleId": "apr_seed_09",
+      "ruleCode": "route_uncertain_requests_to_tutor",
+      "effect": "ESCALATE_TO_TUTOR",
+      "appliesTo": "assistant",
+      "publicationStatus": "PUBLISHED",
+      "displayOrder": 9,
+      "sourceChunkId": null,
+      "ruleText": "Ask your tutor through the course discussion board or privately, and say what you want to do with the tool."
+    }
+  ]
+}

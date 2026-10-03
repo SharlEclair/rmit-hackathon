@@ -1,0 +1,59 @@
+{
+  "note": "POST is the harness variant of 05 S11.4: for every ALLOW / ALLOW_WITH_SCOPE case the mock returns a prohibited answer and the post-check must replace it with T-REFUSE and log the trip beside the original decision. Each entry states the citations its answer claims, because POST_UNSOURCED is defined as assignment-specific content with no retrieved citation. `studentTurn` is present where the trip depends on the student's own words.",
+  "answers": [
+    {
+      "tripId": "POST_CODE",
+      "citedRule": "P2",
+      "citedChunkIds": ["chunk_brief_p1"],
+      "answer": "Here is a helper you can paste in:\n\n```js\nfunction validate(payload) { return payload != null; }\n```\n"
+    },
+    {
+      "tripId": "POST_SOLUTION",
+      "citedRule": "P2",
+      "citedChunkIds": ["chunk_brief_p1"],
+      "answer": "Add a validation layer to the endpoint before it processes the payload, then return the error envelope."
+    },
+    {
+      "tripId": "POST_UNSOURCED",
+      "citedRule": "P9",
+      "citedChunkIds": [],
+      "answer": "Requirement 4 says the endpoint must be idempotent and that a reference list is required."
+    },
+    {
+      "tripId": "POST_TECH",
+      "citedRule": "P8",
+      "citedChunkIds": ["chunk_brief_p1"],
+      "answer": "Consider putting Redis in front of the endpoint, because that is how this pattern is usually scaled."
+    },
+    {
+      "tripId": "POST_EVAL",
+      "citedRule": "P4",
+      "citedChunkIds": ["chunk_brief_p1"],
+      "answer": "Your approach is correct and you are on the right track with this design."
+    },
+    {
+      "tripId": "POST_ECHO",
+      "citedRule": "P1",
+      "citedChunkIds": ["chunk_brief_p1"],
+      "studentTurn": "Here is my code for Milestone 3. It keeps returning a 500. What is wrong with it?",
+      "answer": "You wrote: here is my code for milestone 3. it keeps returning a 500. what - and that is where I would look first."
+    },
+    {
+      "tripId": "POST_LEAK",
+      "citedRule": "P11",
+      "citedChunkIds": ["chunk_brief_p1"],
+      "answer": "The guardrail returned ALLOW_WITH_SCOPE for this turn, under prompt guardrail-v1."
+    },
+    {
+      "id": "POST_CODE_SQL",
+      "tripId": "POST_CODE",
+      "citedRule": "P2",
+      "citedChunkIds": ["chunk_brief_p2"],
+      "answer": "Use this: SELECT payload FROM submissions WHERE id = 42;"
+    }
+  ],
+  "cleanAnswer": {
+    "note": "A permitted answer for G21: a general terminology explanation with no citation, which A5 permits (05 S5.1 rule 2).",
+    "answer": "Idempotent means that doing the same operation more than once has the same effect as doing it once. It is a general property of an operation, not a statement about your work."
+  }
+}

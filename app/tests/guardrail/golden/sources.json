@@ -1,0 +1,46 @@
+{
+  "chunks": [
+    {
+      "chunkId": "chunk_brief_p1",
+      "documentId": "doc_brief",
+      "tier": "T1",
+      "pageFrom": 1,
+      "text": "Assessment brief. This assessment has four deliverables. The deliverables are listed below. Deliverable 1 is a stakeholder analysis. Deliverable 2 is a design rationale explaining your own decisions. Deliverable 3 is a working API endpoint. Deliverable 4 is a written reflection. Requirement 1: identify the stakeholders named in the case pack. Requirement 2: explain the trade-offs you considered. Requirement 3: justify your design choices in your own reasoning. Requirement 4: the API endpoint must validate its input and return a JSON error envelope when validation fails. Requirement 5: document how you tested the endpoint. Where a requirement is unclear, ask your tutor rather than a tool."
+    },
+    {
+      "chunkId": "chunk_brief_p2",
+      "documentId": "doc_brief",
+      "tier": "T1",
+      "pageFrom": 2,
+      "text": "Requirement 4 in detail. The API endpoint exposes one route. It accepts a JSON body, validates the fields listed in Table 1, and returns a JSON error envelope with a machine-readable code when validation fails. A successful response returns the same body with a generated identifier. The endpoint is part of Deliverable 3 and is assessed on the validation behaviour you designed, not on framework choice. Table 1 lists the required fields: identifier, payload, submittedAt."
+    },
+    {
+      "chunkId": "chunk_brief_p3",
+      "documentId": "doc_brief",
+      "tier": "T1",
+      "pageFrom": 3,
+      "text": "Submission constraints. The report must not exceed 2500 words. The word count excludes the reference list and appendices. You must cite at least eight peer-reviewed references. The deadline is 5pm on the Friday of week 12. The submission format is a single PDF uploaded to Canvas. Late submission incurs the standard faculty penalty. The brief and the rubric are the requirement; any explanation of them is not."
+    },
+    {
+      "chunkId": "chunk_rubric_p1",
+      "documentId": "doc_rubric",
+      "tier": "T1",
+      "pageFrom": 1,
+      "text": "Rubric. Criterion 1: identification of stakeholders, worth 20 per cent. Criterion 2: quality of the trade-off analysis, worth 20 per cent. Criterion 3: critical analysis, worth 30 per cent. This criterion rewards how well you justify your own decisions and how you weigh competing considerations. It does not assess how closely your conclusion matches any particular answer. Criterion 4: the deliverable endpoint, worth 20 per cent. Criterion 5: referencing and presentation, worth 10 per cent."
+    },
+    {
+      "chunkId": "chunk_rubric_p2",
+      "documentId": "doc_rubric",
+      "tier": "T1",
+      "pageFrom": 2,
+      "text": "Criterion 4 in detail. The deliverable endpoint is assessed on validation behaviour, on the error envelope shape described in the brief, and on the evidence that you designed the validation yourself. Marks are awarded for the reasoning recorded in the design rationale, not for the volume of code. No minimum line count applies."
+    },
+    {
+      "chunkId": "chunk_structure_t3",
+      "documentId": "doc_structure",
+      "tier": "T3",
+      "pageFrom": 1,
+      "text": "Approved milestones. Milestone 1 - Understanding the brief and the assessment requirements. Milestone 2 - Reading the case pack and locating the evidence. Milestone 3 - API Implementation. Milestone 4 - Design rationale for Part B. Milestone 5 - Risks, ethics, referencing and final submission. Milestone 3 covers the testing requirement, the endpoint deliverables, and the error envelope. Milestone 5 covers the submission format and the reference list."
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+{
+  "policyId": "pol_asg_demo_v1",
+  "assignmentId": "asg_demo_1042",
+  "version": 1,
+  "publicationStatus": "PUBLISHED",
+  "permitted": [
+    "explain_terminology",
+    "interpret_rubric",
+    "navigate_structure",
+    "quote_source_verbatim",
+    "locate_source",
+    "explain_ai_policy",
+    "self_check_prompts",
+    "summarise_own_progress",
+    "explain_constraints"
+  ],
+  "prohibited": [
+    "generate_answers",
+    "generate_code",
+    "debug_student_code",
+    "evaluate_student_work",
+    "edit_student_work",
+    "choose_implementation",
+    "paraphrase_requirements",
+    "predict_grade",
+    "complete_deliverable"
+  ],
+  "modality": {
+    "image": "locate_source_only",
+    "audio": "transcribe_then_guard",
+    "video": "transcribe_then_guard",
+    "pdf": "locate_source_only"
+  },
+  "notesForStudents": "This assignment permits AI help with understanding the brief and the rubric. It does not permit AI to produce, repair, debug or judge your work.",
+  "extractedFromChunkIds": ["chunk_brief_p1", "chunk_brief_p3", "chunk_policy_p1"],
+  "ruleRefs": [
+    {
+      "ruleId": "apr_demo_allow_01",
+      "ruleCode": "explain_general_concepts",
+      "effect": "ALLOW",
+      "ruleText": "You may ask an AI tool to explain a concept, a method or a term in general terms.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_allow_02",
+      "ruleCode": "explain_assessment_documents",
+      "effect": "ALLOW",
+      "ruleText": "You may ask an AI tool to explain a sentence in this brief or what a rubric criterion is asking for.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_allow_03",
+      "ruleCode": "quote_requirements_verbatim",
+      "effect": "ALLOW",
+      "ruleText": "You may ask an AI tool to retrieve and quote the brief and the rubric verbatim, with the page they came from.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_allow_04",
+      "ruleCode": "navigate_structure",
+      "effect": "ALLOW",
+      "ruleText": "You may ask an AI tool which milestone or checklist item covers a requirement.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_allow_05",
+      "ruleCode": "self_check_questions",
+      "effect": "ALLOW",
+      "ruleText": "You may ask an AI tool for questions you can ask yourself before you continue.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_allow_06",
+      "ruleCode": "summarise_progress",
+      "effect": "ALLOW",
+      "ruleText": "You may ask an AI tool to summarise your own recorded progress on this assignment.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_allow_07",
+      "ruleCode": "explain_constraints",
+      "effect": "ALLOW",
+      "ruleText": "You may ask an AI tool to explain the constraints this assessment states.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_allow_08",
+      "ruleCode": "explain_ai_policy",
+      "effect": "ALLOW",
+      "ruleText": "You may ask what this AI Usage Policy allows and which rule applies to a request.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_allow_09",
+      "ruleCode": "point_to_requirement",
+      "effect": "ALLOW",
+      "ruleText": "You may ask to be pointed to where the brief explains a requirement.",
+      "sourceChunkId": "chunk_brief_p1"
+    },
+    {
+      "ruleId": "apr_demo_prohibit_01",
+      "ruleCode": "no_answer_generation",
+      "effect": "PROHIBIT",
+      "ruleText": "Generative AI must never produce the answer to this assessment, in whole or in part.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_prohibit_02",
+      "ruleCode": "no_ai_authored_artefacts",
+      "effect": "PROHIBIT",
+      "ruleText": "Do not ask an AI tool to generate, complete or fix any artefact that appears in the submitted report.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_prohibit_03",
+      "ruleCode": "no_ai_debugging",
+      "effect": "PROHIBIT",
+      "ruleText": "Do not ask an AI tool to debug or repair your implementation or to diagnose an error from your run.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_prohibit_04",
+      "ruleCode": "no_ai_evaluation_of_work",
+      "effect": "PROHIBIT",
+      "ruleText": "Do not have AI evaluate your work, including asking whether an argument is good enough.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_prohibit_05",
+      "ruleCode": "no_code_editing",
+      "effect": "PROHIBIT",
+      "ruleText": "Do not ask an AI tool to rewrite or improve the wording of your own writing.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_prohibit_06",
+      "ruleCode": "no_implementation_choice",
+      "effect": "PROHIBIT",
+      "ruleText": "Do not ask an AI tool to choose the technology, structure or pattern for the assessed work.",
+      "sourceChunkId": "chunk_policy_p1"
+    },
+    {
+      "ruleId": "apr_demo_prohibit_07",
+      "ruleCode": "no_requirement_paraphrase",
+      "effect": "PROHIBIT",
+      "ruleText": "The brief and the rubric are the requirement and must not be restated in the AI tool's own words.",
+      "sourceChunkId": "chunk_brief_p1"
+    },
+    {
+      "ruleId": "apr_demo_prohibit_08",
+      "ruleCode": "no_grade_prediction",
+      "effect": "PROHIBIT",
+      "ruleText": "Do not ask an AI tool to predict or estimate a mark, grade or rubric band.",
+      "sourceChunkId": "chunk_rubric_p1"
+    },
+    {
+      "ruleId": "apr_demo_prohibit_09",
+      "ruleCode": "no_deliverable_completion",
+      "effect": "PROHIBIT",
+      "ruleText": "Do not ask an AI tool to complete any part of a listed deliverable.",
+      "sourceChunkId": "chunk_brief_p1"
+    }
+  ],
+  "approvedBy": "user_tutor_01",
+  "approvedAt": "2026-09-27T09:00:00.000Z"
+}

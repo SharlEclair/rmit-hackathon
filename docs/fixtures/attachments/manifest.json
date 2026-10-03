@@ -1,0 +1,66 @@
+{
+  "generatedBy": "app/scripts/make-guardrail-fixtures.mjs",
+  "note": "Recorded UP classifications for the WP-08 upload fixtures. The harness reads each real file, verifies its sha256 against this manifest, and asserts the code. The classifications are recorded, not produced by a live vision model; see 05-ISSUES.md I-30.",
+  "attachments": [
+    {
+      "fileName": "code-failing.png",
+      "mimeType": "image/png",
+      "byteLength": 1077,
+      "sha256": "30e14d376b1a9f7d44d13acff422c8187cc6e4bf681abc40d62e5c3d415b044f",
+      "classification": "UP1",
+      "confidence": 0.94,
+      "text": null,
+      "describes": "schematic of a failing code screenshot"
+    },
+    {
+      "fileName": "brief-page-3.png",
+      "mimeType": "image/png",
+      "byteLength": 2220,
+      "sha256": "7d7ff1dc503e344cfde8d406e4084b02a9254981dacdcb3f3255eebf8d032b59",
+      "classification": "UP2",
+      "confidence": 0.91,
+      "text": "The report must not exceed 2500 words. The word count excludes the reference list. Requirement 4 covers the API endpoint.",
+      "describes": "schematic of page 3 of the brief"
+    },
+    {
+      "fileName": "shared-solution.pdf",
+      "mimeType": "application/pdf",
+      "byteLength": 990,
+      "sha256": "5bd36508be8f057e646eea922e77fd852bdd87964caf2cf678d4835233bcf66b",
+      "classification": "UP3",
+      "confidence": 0.89,
+      "text": "Classmate solution -- do not share. Synthetic fixture, not real student work.\n\nPart B design rationale: I chose a queue because the brief mentions load.\nThe endpoint validates three fields and returns a JSON error envelope.\nTest evidence: the happy path returns 201 with a generated identifier.\nThe analysis argues that stakeholder priority follows decision impact.",
+      "describes": "a classmate's completed solution as a text-layer PDF"
+    },
+    {
+      "fileName": "blurred-notes.png",
+      "mimeType": "image/png",
+      "byteLength": 67684,
+      "sha256": "8dddd4aaee981bca98233bf327feed341d4b1c73c7d9b482d850286620286dba",
+      "classification": "UP4",
+      "confidence": 0.22,
+      "text": null,
+      "describes": "an unreadable, low-contrast image"
+    },
+    {
+      "fileName": "lecture.mp3",
+      "mimeType": "audio/mpeg",
+      "byteLength": 3362,
+      "sha256": "e93fd7959fd63e6ebf8d9ce28ac5786e73b9d47a9a1ee4007dd1acf33920f837",
+      "classification": "UP5",
+      "confidence": 1,
+      "text": null,
+      "describes": "placeholder MP3 container; audio is out of MVP scope (O11)"
+    },
+    {
+      "fileName": "screen-capture.mp4",
+      "mimeType": "video/mp4",
+      "byteLength": 1076,
+      "sha256": "8b5d5a768b8dd4034d8a41549259acfa9d8d7d16304d5edc6514f4d3d77cf013",
+      "classification": "UP5",
+      "confidence": 1,
+      "text": null,
+      "describes": "placeholder MP4 container; video is out of MVP scope (O11)"
+    }
+  ]
+}
