@@ -65,6 +65,11 @@ export default [
       'coverage/**',
       'next-env.d.ts',
       'pnpm-lock.yaml',
+      // The gitignored scratch directory. Diagnostics and one-off probes live here, and they are operator
+      // tools rather than deliverables: they legitimately print, and they are not shipped. Linting them
+      // meant a `.ts` probe could fail the build for a reason that has nothing to do with the product --
+      // which happened once, to two measurement scripts written during the Phase 7 rehearsal (`I-53`).
+      '.local/**',
     ],
   },
 

@@ -216,30 +216,33 @@ reason" applies here too.
 > **THE TYPED QUESTION WAS CHANGED AT THE PHASE 7 REHEARSAL, AND THIS BEAT IS NOW `AT RISK`.**
 >
 > The scripted question was `What does the rubric actually reward in Part B?`. **That question does not
-> produce an answer.** Measured live, twice, on a fresh session each time:
+> produce an answer** -- measured twice on fresh sessions, it returns `ESCALATE_TO_TUTOR` with
+> `["RET_NO_MATCH","ESC4"]`, the documented response to a retrieval miss.
 >
-> ```text
-> "What does the rubric actually reward in Part B?"  -> ESCALATE_TO_TUTOR, rules ["RET_NO_MATCH","ESC4"]
->                                                       "We could not find this in your assignment documents."
-> "What does the rubric reward?"                     -> REFUSE, rules ["DE12"]  (post-check: steps = assessed work)
-> "What is the word count?"                          -> ALLOW, 31 token frames, 4 citations
-> ```
+> **The permitted path itself works, and that is the useful half of the finding.** Across 13 diverse
+> questions, **9 answered** with `ALLOW`/`POLICY_APPROVED` and 2-10 citations each. The failures fall into
+> two clean classes:
 >
-> **The content is there.** The rubric source holds 17 chunks and 21 chunks mention rubric, weight, per cent
-> or "Part B", so this is a **retrieval-matching** limitation rather than a missing document: the query does
-> not match the chunks that carry the answer, and `RET_NO_MATCH` escalates to the tutor by design
-> (`reasons.ts`: *"We could not find this in your assignment documents"*). The honest description is that
-> retrieval answers concretely-phrased questions well and abstract ones poorly, and the demo's original ask
-> was abstract.
+> | Class | Examples | Result |
+> |---|---|---|
+> | **Works** -- definitional and procedural | `"What is a design rationale?"`, `"What does APA 7 mean?"`, `"What do I do first?"`, `"How do I submit my assignment?"`, `"Show me the section headings in the brief."`, `"Can you help me find the exact wording in the brief?"` | `ALLOW`, 10-34 token frames, 2-10 citations |
+> | **Fails** -- "where/what at *this* assignment" facts | `"What is the deadline?"`, `"Where do I upload my report?"`, `"Can you suggest questions I can ask myself?"` | `ESCALATE_TO_TUTOR` `SOURCES_SILENT_ON_ASSIGNMENT_FACT` |
 >
-> **Two consequences, and neither is hidden.** The question below is changed to one verified to answer with
-> citations, and the fallback is no longer optional: the pre-seeded transcript is the primary path if the
-> live turn does not render. **Record this before the rehearsal**, because a presenter who types the old
-> question on stage will get a tutor escalation where the script promises a cited answer.
+> **The content is present** -- the rubric holds 17 chunks, 21 mentioning rubric, weight, per cent or "Part
+> B" -- so this is a **retrieval-matching** limitation, not a missing document.
+>
+> **Two cautions recorded rather than hidden.** First, an earlier revision of this note named
+> `"What is the word count?"` as a verified answer; a five-run measurement showed it refused
+> `DERIVED_EFFORT_REFUSED` on the `DE12` post-check **5 out of 5**, so the single success that produced that
+> claim was the fluke. **One successful call is not evidence a path works.** Second, the beat must be
+> rehearsed **on a fresh session or under `LLM_PROVIDER=mock`**: the Assistant's budget is
+> **12 calls per session** (`LLM_MAX_CALLS_PER_SESSION`), and once spent every turn returns `429` with **no
+> SSE frames at all** -- indistinguishable from a broken server (**I-54**). Change the question below only
+> to another from the working row above, never back to the original.
 >
 > Changing the *product* was rejected at the freeze: retrieval thresholds are Phase 2 code, the freeze says
-> docs and slides only, and a threshold tuned to make one demo question work is exactly the kind of change
-> that breaks three others. Recorded as **I-53**.
+> docs and slides only, and a threshold tuned to make one demo question work is exactly the change that
+> breaks others.
 
 **Screen.** Same Assistant panel, so the refusal is still visible above the new turn. That adjacency is the point: do not clear the transcript. The driver types the second scripted question.
 
@@ -250,7 +253,7 @@ reason" applies here too.
 **Typed** (changed -- see the note above; the original abstract phrasing escalates to a tutor):
 
 ```text
-What is the word count?
+How do I submit my assignment?
 ```
 
 **The answer quotes the brief and cites the page.** Point at the citation.

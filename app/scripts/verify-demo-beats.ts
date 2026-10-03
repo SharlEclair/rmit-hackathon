@@ -168,13 +168,12 @@ async function main(): Promise<void> {
   );
 
   // --- Beat 6: a permitted question, with citations ----------------------------------------------
-  // **This uses the question the script now types, not the one it originally typed.** The original
-  // `"What does the rubric actually reward in Part B?"` returns `RET_NO_MATCH` + `ESC4` -- a tutor
-  // escalation, not an answer -- which is recorded as **I-53**. A beat verifier that kept asking the old
-  // question would report a failure the script no longer contains, and one that asked only the new question
-  // would hide how fragile the beat is, so the limit is asserted separately below.
+  // **The question is one from I-53's measured "works" class.** The original scripted question returns
+  // `ESCALATE_TO_TUTOR` `SOURCES_SILENT_ON_ASSIGNMENT_FACT` -- a retrieval miss, not an answer -- and an
+  // earlier revision of this script used `"What is the word count?"`, which a five-run measurement showed
+  // refused `DERIVED_EFFORT_REFUSED` on the `DE12` post-check 5/5. One successful call was not evidence.
   const permitted = await sse('POST', `/api/student/assignments/${A}/assistant/messages`, student, {
-    body: 'What is the word count?',
+    body: 'How do I submit my assignment?',
   });
   const permittedTokens = permitted.events.filter((e) => e === 'token').length;
   const citations = permitted.payloads.find((p) => 'citations' in p)?.citations as unknown[] | undefined;
@@ -186,8 +185,9 @@ async function main(): Promise<void> {
   );
 
   // The **other** half of I-53: the beat's fragility is a fact about the product, so it is asserted rather
-  // than left in a document. This records that the scripted question is refused deterministically, which is
-  // the guardrail working -- and it means the presenter must not substitute a question at the last minute.
+  // than left in a document. The original scripted question must NOT answer, and the check fails if a later
+  // change makes the guardrail permissive enough to answer it -- that would be a guardrail regression, not
+  // a demo improvement.
   const fragile = await sse('POST', `/api/student/assignments/${A}/assistant/messages`, student, {
     body: 'What does the rubric actually reward in Part B?',
   });
