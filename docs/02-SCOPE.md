@@ -174,7 +174,7 @@ Each entry states the reason so a later "quick win" does not quietly reintroduce
 
 | Out of scope | Reason |
 |---|---|
-| Editing `app/` before WP-01 | There is no application code yet, and it must all be written inside the hackathon window (`AGENTS.md` S7). |
+| Editing `app/` before WP-01 | There is no application code yet, and it must all be written inside the hackathon window (`AGENTS.md` S7). **Superseded:** all application code now exists and every commit is dated `2026-10-04`, so the window requirement is satisfied and evidenced by the commit dates rather than by the absence of code. Live state: [`handoff/01-STATE.md`](handoff/01-STATE.md) section 3. |
 | Presenting `archive/canvas-scraper/` as submission-time code | It was built during the design phase and is prior work. It may be *cited* as research evidence; it must not be presented as hackathon output. |
 | Modifying, reformatting or moving the frozen originals | `AGENTS.md` S3, `CONTRIBUTING.md` S1.5. Corrections go into `01-DECISIONS.md`. |
 | Importing `archive/canvas-scraper/` from `app/` | **D44.** Keeps a working tool working and keeps the submission honest about what was built during the event. |

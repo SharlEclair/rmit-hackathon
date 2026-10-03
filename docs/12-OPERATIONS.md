@@ -6,6 +6,18 @@
 
 **Status.** No application code exists yet. Every command below becomes live with WP-01 ([`11-BUILD-PLAN.md`](11-BUILD-PLAN.md)), with one exception: the native local Postgres in S3.3 **has** been executed and verified on this machine, and its evidence is recorded there. Nothing else here claims to have been executed.
 
+> **Superseded at the Phase 7 freeze.** Every command below is now live and has been executed: migrations
+> (13 applied), the seed, the drift check, the four acceptance runs, `pnpm demo:smoke` (11/12) and
+> `pnpm demo:beats` (11/11). The repository is **public** -- verified by an anonymous GitHub API fetch,
+> which closes the visibility to-do in S3.2 and shows that the HTTP 404 recorded there was the
+> private-repository response. Live state: [`handoff/01-STATE.md`](handoff/01-STATE.md) section 3.
+>
+> **One operational note that is new rather than superseded:** `LLM_MAX_CALLS_PER_SESSION` is **12**, counted
+> per `assistant_session` in `llm_call_counters`. A rehearsal that tries several Assistant questions on one
+> session exhausts it, after which every turn returns **`429` with no SSE frames at all** -- which reads as
+> a broken server. Neither the seed nor `demo/reset.ps1` clears those counters, so a rehearsal plan needs a
+> step for it. Recorded as **I-54**.
+
 **Binding constraints.** C7 (secrets are never committed, logged, or returned in an API response) and C8 (every LLM call goes through the provider adapter). Both are in [`AGENTS.md`](../AGENTS.md) S2 and neither is negotiable for convenience.
 
 ---

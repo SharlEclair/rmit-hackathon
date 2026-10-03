@@ -2,6 +2,26 @@
 
 **Project:** Assignment Assistant -- CSIT RE:Uni Hackathon 2026 (theme: *Innovating Education*)
 **Status of this doc set:** implementation-ready. No application code has been written yet; that is deliberate.
+
+> **Superseded at the Phase 7 freeze.** The line above was true when the doc set was written and is kept as
+> history. **The application is built**: Phases 1-6 are complete and tagged, `app/` holds a Next.js App
+> Router implementation with **48 API route files** and **757 tests in 48 files**, four HTTP acceptance runs
+> (`verify-student` 18/18, `verify-review` 20/20, `verify-analytics` 13/13, `verify-discussion` 20/20) and
+> `pnpm demo:beats` at 11/11. The live per-area state is
+> [`handoff/01-STATE.md`](handoff/01-STATE.md) section 3 -- rewritten every session, and the only place a
+> reader should look for what exists.
+>
+> **Where that status is restated, and why pointers rather than edits.** Several spec documents open with a
+> variant of "no application code exists" -- `02-SCOPE.md`, `04-TECH-ARCHITECTURE.md`, `11-BUILD-PLAN.md`,
+> `12-OPERATIONS.md` and `16-VERIFICATION-REPORT.md`. Each is a **historical statement about the doc set at
+> the time of writing, not a claim about the repository**, and each carries a superseding note rather than
+> being silently rewritten -- because why they read as they do is itself informative: the specification
+> preceded the build, and the build was held to it.
+>
+> **The rule this file carries forward** (trap **T42**): a claim about the repository, written into a file
+> the repository contains, is stale on commit. Totals are therefore not quoted in `docs/**`; the command
+> that counts is given instead, and the durable form of the event-window claim is
+> `git log --format=%ad --date=short | sort -u`, which returns one date however many commits follow.
 **Normative contract:** [`../AGENTS.md`](../AGENTS.md). If this doc set and `AGENTS.md` disagree, `AGENTS.md` wins.
 
 ---

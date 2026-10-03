@@ -76,12 +76,19 @@ This is the deliberate design of the product, not a limitation of it. The AI is 
 
 ## Repository status
 
-**Documentation phase -- no application code yet.** The docs below are the implementation contract; the build follows.
+**Built, frozen, and submitted as a hackathon entry.** The application exists under `app/` -- a Next.js App Router implementation of the committed MVP, written inside the event window and tagged through Phases 1-6. `pnpm demo:smoke` checks the demo machine; four acceptance runs check the product end to end.
+
+**Where to look for what exists.** [`docs/handoff/01-STATE.md`](docs/handoff/01-STATE.md) is rewritten every session and is the authoritative answer. It records the build, the verified commands and their output, and -- in its section 4 -- what is deliberately **not** built.
+
+**Three things a reader should know before trusting any number here.** Totals are deliberately not quoted in this repository (trap **T42**: a count written into a file the repository contains is stale on commit); the event-window claim is `git log --format=%ad --date=short | sort -u`, which returns one date however many commits follow; and `docs/11-BUILD-PLAN.md`, `docs/12-OPERATIONS.md` and `docs/04-TECH-ARCHITECTURE.md` each open with a "no application code exists" line that is **historical** and carries a superseding note.
+
+The docs below are the implementation contract the build was held to. Where the build diverged, the divergence is a numbered row in [`docs/01-DECISIONS.md`](docs/01-DECISIONS.md) rather than an edit to the specification.
 
 | Path | What it is |
 |---|---|
 | `AGENTS.md` | **Normative working agreement for AI coding agents.** Read first. |
 | `CONTRIBUTING.md` | Team working agreement: commits, branches, definition of done. |
+| `docs/handoff/01-STATE.md` | **What actually exists right now**, rewritten every session. |
 | `docs/00-INDEX.md` | Map of the whole doc set, and the reading order per role. |
 | `docs/01-DECISIONS.md` | Decided / recommended / open, with rationale. The canonical answer to "what did we settle?" |
 | `docs/02-SCOPE.md` | Committed MVP cut -- what is in, what is mocked, what is out. |
@@ -107,7 +114,7 @@ This is the deliberate design of the product, not a limitation of it. The AI is 
 
 ## Getting started
 
-> At the time of writing, `app/` does not exist. The commands below become live with the first build packet (`docs/11-BUILD-PLAN.md`, WP-01).
+> These commands are live. `LLM_PROVIDER=mock` runs the whole product offline with no API key at all -- that is how the four acceptance runs and `pnpm demo:smoke` are verified, and it is a supported mode rather than a stub (**D90**).
 
 ```bash
 # 1. Configuration

@@ -6,6 +6,14 @@
 
 **Status.** No application code exists. Everything below is a specification the first build task implements.
 
+> **Superseded at the Phase 7 freeze.** The line above is the state at the time of writing. **The
+> specification below was implemented** in Phases 2-6: `src/lib/llm/` is the only module importing a vendor
+> SDK (C8, enforced by `scripts/check-c8.mjs`), `src/lib/guardrail/` is the pure policy layer, and the
+> adapter, the storage drivers, the extractor and the route surface all exist as described. Live state:
+> [`handoff/01-STATE.md`](handoff/01-STATE.md) section 3. Where the build diverged from this specification,
+> the divergence is recorded in [`01-DECISIONS.md`](01-DECISIONS.md) rather than absorbed here -- **D106**
+> (font binaries), **D107** (`viewerUrl` removed) and **D109** (two moderation vocabularies) are three.
+
 ---
 
 ## 1. One-paragraph shape
