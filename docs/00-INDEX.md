@@ -42,6 +42,8 @@ Never start coding from a single doc. `01-DECISIONS.md` is the canonical answer 
 | 13 | [13-DEMO-STORY.md](13-DEMO-STORY.md) | The 5-minute demo script, beat by beat, with fallbacks. | Lead |
 | 14 | [14-HACKATHON-SUBMISSION.md](14-HACKATHON-SUBMISSION.md) | Devpost + presentation requirements, AI-use disclosure, submission checklist. | Lead |
 | 15 | [15-GLOSSARY.md](15-GLOSSARY.md) | Canonical vocabulary. One term, one meaning. | Lead |
+| 16 | [16-VERIFICATION-REPORT.md](16-VERIFICATION-REPORT.md) | Point-in-time adversarial audit of this doc set, plus the Lead's resolution addendum. Local-only; not committed. | Verifier |
+| 17 | [17-DESIGN-SYSTEM.md](17-DESIGN-SYSTEM.md) | Aesthetic direction, typography, token architecture, component governance, shadcn policy, quality gates. | Design |
 
 ---
 
