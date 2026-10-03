@@ -1,0 +1,12 @@
+{
+  "269594": {
+    "name": "Unresolved answerer A",
+    "role": "unknown",
+    "note": "Posts answers to student questions but does not appear in the teacher/TA user lists for this course. Confirm the real role and change it here. The personal name is deliberately not recorded in version control."
+  },
+  "438489": {
+    "name": "Unresolved answerer B",
+    "role": "unknown",
+    "note": "Posts follow-up questions in threads. Role not derivable from the API for a student caller."
+  }
+}

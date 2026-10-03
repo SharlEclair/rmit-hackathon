@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+out/
+.pytest_cache/
+
+# Never commit credentials
+cookies.txt
+*_cookies.txt
+*.token
+.env

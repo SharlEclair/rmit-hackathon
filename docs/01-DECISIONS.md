@@ -1,0 +1,154 @@
+# 01 — Decisions Register
+
+**Purpose.** The canonical answer to *"what did we actually settle?"* Every other doc defers to this one. When code and this file disagree, this file is right until it is amended.
+
+**Maintenance.** Add a row rather than editing an existing one; supersede, never delete. Every decision gets a stable `D<n>` id, a status, a rationale, and the doc that owns its detail.
+
+| Status | Meaning |
+|---|---|
+| **DECIDED** | Fixed. Changing it is a scope change, not a preference. |
+| **RECOMMENDED** | Strong direction with a clear default. May be revised by whoever implements it, with a note. |
+| **OPEN** | Not settled. The listed default is what the build plan assumes; if it turns out wrong, amend here first. |
+
+**Derivation.** Rows marked *(handoff §N)* come from the frozen original — [`docs/assignment_assistant_project_handoff.md`](assignment_assistant_project_handoff.md) — and are reproduced here in implementation-ready form. Rows marked *(impl)* are decisions this doc set added to make the product buildable.
+
+---
+
+## A. Product decisions
+
+| ID | Decision | Status | Rationale | Detail |
+|---|---|---|---|---|
+| D1 | The **assignment is the central object**, not a chat window. All functionality is contextualised around one assignment. | DECIDED *(handoff §2.1)* | A generic chatbot has no authoritative knowledge of the brief, rubric, tutor interpretation, or AI policy. Centring the assignment is the product. | `03`, `07` |
+| D2 | Product positioning: an **AI-native assignment workspace**, never "ChatGPT for assignments". | DECIDED *(handoff §64)* | The differentiator is constraint and structure, not raw model capability. Positioning it as a wrapper forfeits the advantage. | `09` |
+| D3 | Two equal halves: student workspace and tutor intelligence. Neither is a secondary feature. | DECIDED *(handoff §3)* | The product loop only closes if tutor insight feeds back into student support. | `03`, `08` |
+| D4 | The AI assistant is an **assignment coach: guide, clarify, contextualise, enforce boundaries** — never solve, implement, debug, or evaluate. | DECIDED *(handoff §2.2, §51)* | The student must remain the agent doing the academic work. This is the product's ethical core. | `05` |
+| D5 | No course/module teaching content is ingested. Scope is the assignment plus approved assignment-related material only. | DECIDED *(handoff §5)* | Keeps the system an assignment workspace rather than a general tutor, and keeps retrieval tractable. | `02`, `04` |
+
+---
+
+## B. AI and guardrail decisions
+
+| ID | Decision | Status | Rationale | Detail |
+|---|---|---|---|---|
+| D6 | The Assistant must never generate answers, generate or modify code, debug, evaluate correctness, or tell a student what to change — **including indirectly**. | DECIDED *(handoff §2.2)* | The single largest product risk is accidentally doing the assignment. | `05` |
+| D7 | The guardrail is an **independent layer**, not a clause in the assistant's system prompt. | DECIDED *(handoff §46 capability 2)* | A prompt-only guardrail is unverifiable and untestable. An independent layer can be unit-tested without a model call. | `05`, `04` |
+| D8 | Behaviour under uncertainty is **conservative refusal**. Ambiguous requests default to refusal with a safe alternative offered. | DECIDED *(handoff §3)* | False refusals cost a student a rephrase. False assists compromise academic integrity. The asymmetry is stark. | `05` |
+| D9 | Each assignment has its **own extracted-and-approved AI usage policy**, enforced per assignment. | DECIDED *(handoff §3)* | The same question is permitted in one unit and prohibited in another. Policy must be data, not a global constant. | `05`, `06` |
+| D10 | Student uploads (text, image, audio, video, PDF) **never** become a route around the guard. Same rules, all modalities. | DECIDED *(handoff §6)* | "Solve the problem in this image" and "debug this code" are the same violation in different clothing. | `05` |
+| D11 | **Derived-effort refusal**: rewording, hypothetical framing, "don't give me the answer, just check my approach", and step-by-step decomposition into a solution are all prohibited. | DECIDED *(handoff §3)* | These are the actual attack shapes students will try in a demo — and in real use. | `05` §4 |
+| D12 | Five AI capabilities kept logically separate: **Assignment Analyst, Policy Guard, Student Assistant, Discussion Moderator, Insight Engine**. | DECIDED *(handoff §46)* | Different trust levels, different inputs, different failure modes. Separate capability boundaries make each testable. | `04` §4 |
+| D13 | The multi-agent structure is an **internal implementation detail**, never a user-facing concept. | DECIDED *(handoff §74)* | Students should experience one coach, not an agent swarm. | `07` |
+| D14 | There is a **truth hierarchy**; lower tiers can never override higher tiers, and the Assistant cites the highest tier when answering. | DECIDED *(handoff §60, §69)* | Prevents a student discussion post from silently outranking the official brief. | `06` §2, `05` §5 |
+| D15 | Every guardrail decision is **logged with the rule cited and the prompt version**, and is reproducible without the model where possible. | RECOMMENDED *(impl)* | A guardrail you cannot audit is a guardrail you cannot defend in a Q&A or a viva. | `05` §8 |
+| D16 | LLM output is consumed as **schema-validated structured data**. A failed validation is a refusal, not a retry loop. | RECOMMENDED *(impl)* | Prevents malformed model output from failing open — the worst possible failure direction. | `05` §7 |
+
+---
+
+## C. Source-of-truth and approval decisions
+
+| ID | Decision | Status | Rationale | Detail |
+|---|---|---|---|---|
+| D17 | Official assignment documents are **authoritative and shown verbatim** via a document viewer. Requirements are never paraphrased and presented as the requirement. | DECIDED *(handoff §9)* | A model-summarised requirement is a fabricated requirement. This is the sharpest line in the product. | `06` §2, `07` §4 |
+| D18 | The **Assignment Map** is an AI-generated navigation layer, clearly labelled non-authoritative and visually distinct from the official brief. | DECIDED *(handoff §9, §10)* | Navigation value without authority inflation. | `07` §4.3 |
+| D19 | **Assignment Map and checklist are separate features.** Map answers "how is this structured?"; checklist answers "where am I?". | DECIDED *(handoff §12)* | Collapsing them produces a to-do list that reads like a solution plan. | `07` §4.3, §4.6 |
+| D20 | Milestones contain **actionable checklist items**, but checklist content must stay at the level of *"understand / identify / verify"* — never *"implement X this way"*. | DECIDED *(handoff §11, §41, §61.1)* | The checklist is the most likely place for a solution plan to sneak in under a progress-tracking label. | `05` §6.3 |
+| D21 | Workflow is always **AI generates → tutor reviews/edits → tutor approves → student-facing**. Nothing AI-generated is student-visible before approval. | DECIDED *(handoff §8, §56)* | Hallucinations must not silently become course policy. | `06` §3, `11` |
+| D22 | Lifecycle is explicit: `AI_GENERATED → NEEDS_REVIEW → EDITED → APPROVED → PUBLISHED`, with AI provenance retained through every transition. | RECOMMENDED *(impl)* | Makes the approval boundary a state machine rather than a convention, so it can be enforced in one place. | `06` §3 |
+| D23 | Ambiguity/contradiction detection **detects and tells the tutor where** — the system does not author the clarification on the tutor's behalf. | DECIDED *(handoff §14)* | Detection is a defensible model task. Authoring official clarification is the tutor's professional judgement. | `03` §5 |
+
+---
+
+## D. Communication decisions
+
+| ID | Decision | Status | Rationale | Detail |
+|---|---|---|---|---|
+| D24 | **Query = private student→tutor thread.** **Publish = the tutor promotes an answer to the official shared FAQ.** Only a tutor can publish. | DECIDED *(handoff §22)* | Separates the sensitive, one-student case from the cohort-wide knowledge case. | `06`, `07` §5 |
+| D25 | Students may post **anonymously**; display is a stable pseudonym of the form `Anonymous Student #482`. | DECIDED *(handoff §24)* | Reduces the social cost of asking, which is the product's stated motivation. | `07` §6 |
+| D26 | Tutors **cannot** see the identity behind an anonymous post. Not in the UI, not via an API, not via a sort order. | DECIDED *(handoff §25)* | If the guarantee is not absolute it is worthless, and the feature loses its purpose. | `06` §4, `07` §6 |
+| D27 | Pseudonyms are **per (student, assignment)** HMACs, keyed by `ANON_ID_SECRET`. | RECOMMENDED *(impl)* | Gives continuity within an assignment without cross-assignment linkability. A global counter would leak ordering; a global pseudonym would enable correlation between units. | `06` §4 |
+| D28 | Students can post, reply, edit and delete their own posts. Tutors moderate. AI moderation flags; it does not delete. | DECIDED *(handoff §26)* | AI moderation is advisory. Irreversible enforcement is a human decision. | `05` §9, `07` §6 |
+| D29 | Student answers can be tutor **approved / rejected / replied to**; an approved answer may be promoted to the FAQ. | DECIDED *(handoff §27)* | Rewards peer help without granting students authority over official content. | `03` §6 |
+| D30 | Student flagging of posts is **in scope but simple**: one flag per user per post, feeding the moderator queue. | RECOMMENDED *(impl)* | Cheap to build, and the moderation section is otherwise tutor-input-starved during a demo. | `07` §6.5 |
+
+---
+
+## E. Privacy and analytics decisions
+
+| ID | Decision | Status | Rationale | Detail |
+|---|---|---|---|---|
+| D31 | Tutor analytics are **aggregate only**. No per-student identification, no individual activity history, no "show me who is behind". | DECIDED *(handoff §28, §48)* | For aggregate insight to be trusted, it must not be a surveillance system wearing a dashboard. | `08` §2 |
+| D32 | **k-anonymity floor**: any aggregate bucket with fewer than 5 contributing students is suppressed and reported as "insufficient data". | RECOMMENDED *(impl)* | Small buckets de-anonymise by arithmetic. With a 37-student cohort this is a live risk, not a theoretical one. | `08` §3 |
+| D33 | Time tracking is **simple elapsed time** between checklist start and completion. Idle time counts. | DECIDED *(handoff §29)* | Distinguishing active from idle is a research project. Simplicity is the correct MVP call, and the UI must label it "elapsed time", not "time worked". | `08` §4 |
+| D34 | **Difficulty detection combines time and question volume** rather than showing either alone. | DECIDED *(handoff §31, §50.5)* | "47 minutes average" is data. "Highest time *and* highest question volume" is a decision-support signal. | `08` §5 |
+| D35 | Analytics **surface evidence and stop there**; the system does not prescribe the tutor's intervention. | DECIDED *(handoff §31)* | The tutor owns the pedagogical call. | `08` §5.3 |
+
+---
+
+## F. Technical decisions *(implementation decisions, added by this doc set)*
+
+| ID | Decision | Status | Rationale | Detail |
+|---|---|---|---|---|
+| D36 | **Next.js (App Router) + TypeScript `strict` + Tailwind**, one deployable for UI and API. | DECIDED *(impl)* | One language, one build, one deploy on a 48-hour clock. Server components and route handlers cover both halves of the app without a second service. | `04` §2 |
+| D37 | **Postgres** with a typed query layer and in-repo migrations. | DECIDED *(impl)* | The data model is genuinely relational (requirements↔rubric↔milestones↔questions↔analytics). Postgres also gives full-text search and, if needed, `pgvector` in the same instance — so retrieval does not require a second datastore. | `04` §2, `06` |
+| D38 | **No separate vector database.** Retrieval starts as Postgres full-text/`tsvector` over chunked sources; embeddings are an optional upgrade behind the same interface. | DECIDED *(impl)* | Assignment documents are small (tens of pages). FTS over a few hundred chunks is sufficient, faster to build, and one less service to keep alive during a demo. | `04` §6 |
+| D39 | **Provider-agnostic LLM adapter.** All model calls go through `src/lib/llm/`; no vendor SDK is imported anywhere else. | DECIDED *(handoff §46, §61.6; impl)* | The provider was never finalised, and the architecture must not depend on that decision. | `04` §4 |
+| D40 | Default provider is **DeepSeek `deepseek-flash`** (DeepSeek-V4.1-Flash): 1M context, tool calling, JSON output, and **vision**, so the same model covers both reasoning and multimodal student uploads. `gemini` is a supported alternative adapter; `mock` is required and fully offline. | RECOMMENDED *(impl)* | Live API docs confirm `deepseek-flash` supports vision and structured output at low cost, which removes the need for a second model to handle images. One provider, one key, one failure mode. The `mock` provider keeps the whole product loop walkable with no key at all — essential when demo networks are hostile. | `04` §5.3, `12` |
+| D41 | Storing to a **local filesystem driver by default**, with an S3-compatible driver behind the same interface. | RECOMMENDED *(impl)* | Local keeps development and the demo independent of a bucket and credentials. The interface means the switch is configuration, not a refactor. | `04` §6 |
+| D42 | Auth is **email + password with an httpOnly session cookie and a role claim** (`tutor` \| `student`). No SSO, no Canvas OAuth, no email verification. | DECIDED *(impl)* | The product's difficulty is the AI policy layer, not identity. A Canvas OAuth detour would consume the timeline and add a dependency that can fail during judging. | `04` §9, `12` |
+| D43 | The **original PDF is displayed with a page-mapped viewer**, and Assignment Map nodes deep-link to a page. | RECOMMENDED *(handoff §10, §50.3; impl)* | "Click a requirement, land on the exact page of the brief" is the strongest cheap visual proof that the original document is authoritative. Page mapping is stored at ingestion. | `07` §4.2 |
+| D44 | `app/` is a self-contained project at the repository root; `archive/canvas-scraper/` is **retired prior work** that stays independent and is never imported by the app. | DECIDED *(impl)* | Keeps a working tool working, and keeps the hackathon submission clean about what was built during the event. Retiring it under `archive/` makes clear it is neither required nor used by the app. | `12` §1 |
+| D46 | Demo fixture material — the text-layer brief PDF, the rubric, the AI-use policy document, and the cohort seed — lives in **`docs/fixtures/`**, committed to the repository. | RECOMMENDED *(impl)* | The ingestion demo needs a real document with a real text layer, and the cohort seed must be reproducible on any machine. Keeping fixtures in `docs/` (not `app/`) makes them reviewable as demo inputs and keeps them inside the hackathon's public-repository requirement. | `11` WP-02, WP-04 |
+| D47 | **No approved AI Usage Policy means the Assistant is unavailable.** The guardrail returns `REFUSE` with reason code `POL_ABSENT`; it does not fall back to a permissive platform default. | DECIDED *(impl)* | Resolves a conflict between `06` §7.2.11 (conservative platform default) and D9 (`05` §3.3.4). D9 is the stronger constraint: the handoff requires the tray policy to be tutor-approved before students use the Assistant at all, so there is no legitimate state in which a student reaches the Assistant with no approved policy. Failing closed in the impossible case is free; failing open is a constraint violation. `05` is normative for guardrail behaviour. | `05` §3.3.4, `06` §7.2.11 |
+| D48 | **Checklist elapsed time is the first start-to-complete interval.** Re-opening a completed item increments `reopen_count` and does **not** add to `elapsed_seconds`. | DECIDED *(impl)* | Resolves a conflict between `06` §8.3 item 8 (latest completion overwrites) and `08` §4.2 (first interval stands). Overwriting lets a re-open days later report a multi-day "elapsed time" and would poison the D34 difficulty signal. `08` is normative because D33 owns the metric definition. | `08` §4.2, `06` §8.3 |
+| D49 | **Question volume for difficulty detection counts tutor-directed questions only** (private Queries plus flagged discussion posts). Assistant turns are **not** question volume and are reported separately as metric M6. | DECIDED *(impl)* | Resolves a gap in D34. Assistant turns measure confusion-with-the-model, not confusion-with-the-assignment; folding them in would let a single student's chatty session manufacture a false cohort difficulty signal. | `08` §5 |
+| D50 | **Private Queries are always attributed.** A student may be anonymous in Discussions, never in a private Query. | DECIDED *(impl)* | Resolves an ambiguity in handoff §21. D24 makes a Query a private student-to-tutor channel, and D25 attaches anonymity to *posts* in shared discussion. An anonymous private Query would give the tutor a question they cannot follow up on and cannot weigh against the student's circumstances, while weakening the accountability that makes the private channel safe for both sides. A student who wants anonymity uses Discussions. | `06` §7.4, `07` §5 |
+| D51 | **`06-DATA-MODEL.md` §5 (API contracts) is the single source of truth for route paths.** Any path sketch in another doc is illustrative and must be reconciled to it before implementation. | DECIDED *(impl)* | Resolves a divergence between `11-BUILD-PLAN.md`'s flatter path sketches and the endpoint contract. Two authoritative path vocabularies is a guaranteed implementation defect; the contract doc wins because it also owns the request/response shapes and error envelope. The index currently defines **64** routes (see D58). | `06` §5, `11` |
+| D52 | **The k-anonymity floor applies to the Assignment Health headline figures too**, not only to per-milestone rows. When the contributing count is below 5, the headline reports `insufficient data` rather than a number. | DECIDED *(impl)* | Resolves a gap in D32. A headline "students active: 3 / 4" identifies the population by arithmetic as surely as a per-student row does, and it is the most visible figure on the page. | `08` §3, `07` §8 |
+| D53 | **The approval transition `NEEDS_REVIEW → APPROVED` is permitted** without an intervening `EDITED` transition. `EDITED` is recorded when and only when the tutor actually modifies content. | DECIDED *(impl)* | Resolves a gap in D22, which read as though editing were mandatory. Forcing an artificial edit to satisfy a state machine would corrupt the provenance record — the one thing the lifecycle exists to preserve. | `06` §3 |
+| D54 | **Discussion flags are recorded against the reporter's anonymised identity**, not their `user_id`. One flag per (student, assignment) anonymous identity per post. | DECIDED *(impl)* | Resolves a gap in D30. Storing the reporter as a user id would create exactly the user↔post join that C4 and D26 forbid; a flag table is still a tutor-facing surface and must not become the back door. Distinct pseudonyms per assignment also prevent a student being tracked across units by their reporting history. | `06` §7.5, `07` §6.5 |
+| D45 | **No Canvas or LMS integration of any kind, in the MVP or after it.** No Canvas API call, no Canvas SSO, no live LMS sync, no sync stub. The retired scraper informs the design only and may seed demo data from a committed fixture. | DECIDED *(impl)* | A live authenticated third-party session is a demo-day single point of failure with no scoring benefit. This is an exclusion on its own merits; see **D59** for why the frozen handoff's historical prioritisation tiers do not defer it. | `02` §2.3, §4.1 |
+| D55 | **`ANON_ID_SECRET` rotation does not re-label existing anonymous posts.** The pseudonym number is persisted per (student, assignment), so rotation affects only identities created after it. The secret is still treated as permanent for the life of an assignment. | DECIDED *(impl)* | Resolves a conflict found by verification (report V2): `04`, `08` and `12` said rotation re-labels every post, while `.env.example` and `06` §4.2 said it does not. The persisted reading is the only implementable one, because `anon_identities` stores `display_number` and is looked up by `(student_id, assignment_id)`. It is also the reading that preserves the C4/D26 guarantee: if a rotation silently renumbered a cohort mid-assignment, "Anonymous Student #482" would stop meaning one person and the anonymity contract would become untrustworthy. | `06` §4.2, `12` §2.2, `.env.example` |
+| D56 | **The tutor-facing metric is `Resolution rate`.** The Assignment Health headline reads "Average resolution rate" (mean of per-student resolution rates) and the per-milestone column reads "Resolution rate" (cohort ratio). The unqualified word "completion" is not used in UI copy. | DECIDED *(impl)* | Resolves a conflict found by verification (report V6). The glossary names *resolution rate* as canonical and lists unqualified "completion" as do-not-use, and `08`'s own catalogue already calls the metrics `M1 assignment resolution rate` and `M3 milestone resolution rate`. Naming one metric two ways inside the same doc is precisely the drift the glossary exists to prevent. | `08` §6, §8; `07` §8; `15` |
+| D57 | **Tutor source formats are exactly O5's set: PDF, DOCX, PPTX, PNG/JPEG, plus plain text and Markdown.** DOCX/PPTX are accepted and extracted, not rejected at upload. The rehearsed demo uses a text-layer PDF only, and a scanned PDF with no text layer is flagged for tutor attention rather than guessed at. | DECIDED *(impl)* | Resolves a conflict found by verification (report V3): `10`, `11` and `12` rejected DOCX/PPTX while citing O5, which accepts them, and `02` (scope) plus `04` (ingestion spec) already agreed with O5. Fixing it in the accepting direction costs an extraction path `04` §6 already specifies; fixing it the other way would require amending a register row. Plain text and Markdown are added to O5's tutor list here because the extraction path is the same as for PDF text and their omission was an oversight, not a decision. | `04` §6, `02` §2.4, `11` WP-04 |
+| D58 | **The endpoint index in `06` §5.4 defines 64 routes, not 68.** Any doc citing a count says 64, or cites the section without a number. | DECIDED *(impl)* | Found by verification (report V10): D51's rationale cited 68 while the index contains 64 (6 auth/courses + 16 tutor ingestion/approval + 13 tutor queries/discussions/analytics + 29 student/health). A wrong count in a register row is worse than no count, because it reads as verified. | `01` D51, `06` §5.4 |
+| D59 | **Canvas/LMS integration is excluded from the product, not deferred.** It is not on the roadmap, not a future phase, and not a Tier 3 item awaiting time. It must not be scaffolded, stubbed, or left as a TODO hook (see `AGENTS.md` §4.1 rule 3). Nothing in this repository may cite it as planned future work. | DECIDED *(impl)* | The frozen handoff's `Tier 3 — Future` list is **historical prioritisation input** capturing what was weighed during design; it is **not** a roadmap commitment for this project, and a docs reader who treats it as one will conclude a live LMS integration is a plausible next step. It is not. The distinction matters because "deferred" invites scaffolding, interface seams, and TODO hooks that the product does not want and the demo does not need — and because the exclusion has a positive rationale, not merely a time constraint: the product's positioning is that the assignment workspace is a layer the student and tutor use *alongside* the LMS, so integration would blur the boundary the product is built on. This supersedes **D45 in framing** only; D45 remains in force as the technical exclusion and is not deleted. | `02` §2.3, §4.1; `03`; `14`; `AGENTS.md` §4.1 |
+| D60 | **Ingestion runs as a Postgres-backed job row**, polled by the ingestion state screen. The route handler enqueues and returns; it does not run the pipeline to completion inline. | DECIDED *(impl)* | Raises `04` §13 item 1 to a decision, because that item required a register entry before implementation. Stage S6 makes several model calls that can exceed a request timeout, so an inline handler would be a reliable way to fail on the largest documents. The job row needs no new service (satisfying D36's single deployable), survives a page reload, and gives the ingestion state screen a real row to poll rather than a client-side timer pretending to be progress. | `04` §13, `06` §7.2 |
+
+---
+
+## G. Open questions and their working defaults
+
+Each of these is a real gap. The build plan assumes the default. If implementation shows the default is wrong, **amend this table first**, then the affected doc.
+
+| ID | Open question | Working default the build assumes | Owner doc |
+|---|---|---|---|
+| O1 | Exact checklist wording/semantics — where does "milestone" stop and "task" start? | 3–6 milestones per assignment; 3–6 items each; item verbs restricted to understand/identify/plan/verify/review/note. No imperative that names an implementation action. | `05` §6.3 |
+| O11 | **Which student upload modalities ship in the MVP?** | **Images (PNG/JPEG), PDF, and plain text — IN. Audio and video — OUT.** The original scope cut proposed dropping student uploads entirely, but that was reverted: the expensive part of multimodal upload is transcode-and-process for audio and video, not the picker itself, and `deepseek-flash` handles images and PDFs natively (D40). Dropping audio and video removes the whole cost centre while keeping the capability students actually reach for. Constraint C6 is unchanged and binds every modality: an upload is input to *understanding*, never a request to perform work (see `05` §6.4). Audio and video are refused at the picker with a clear message, not silently. | `02` §2.2 S6a, §4.1; `07` §4.7.2 rule 5; `05` §6.4 |
+| O12 | **Is there a per-assignment AI Usage Policy editor?** | **IN, and non-negotiable.** It is absent from the handoff's Tier 1 list, but D9 cannot be demonstrated without it: the policy must be per-assignment *editable data*, and it is the input the demo's refusal beat depends on. Scope may not grow elsewhere to compensate. | `02` §2.1 T6 |
+| O2 | Exact proactive assistant behaviour on entering a milestone | Exactly one proactive message per milestone, from approved content only, capped at 3 bullets, dismissible, never repeated. | `07` §4.7 |
+| O3 | Exact discussion moderation workflow | AI flags with a severity and a reason code; high-severity content is hidden pending tutor review; tutors approve/reject/remove. Students cannot see flag counts. | `05` §9 |
+| O4 | Tutor permission model | Flat: any tutor on the course can edit milestones, publish FAQs, and approve answers. A single `owner` flag exists in the schema but is not enforced in the UI. | `06` §3.5 |
+| O5 | Exact supported file formats | Tutor: PDF, DOCX, PPTX, PNG/JPEG, plus plain text and Markdown. Student: PNG/JPEG, PDF, plain text (**O11** — audio and video are not accepted; they are refused at the picker). Anything else is rejected at upload with a clear message, not silently. | `04` §6 |
+| O6 | Exact MVP scope | Committed in `02-SCOPE.md`. No handoff Tier 1 item is dropped; one item is **added** (T6, the per-assignment AI Usage Policy editor, **O12**), and the Tier 2 items are placed in `02` §3 or in the MVP with reasons recorded. | `02` |
+| O7 | Product name | **Assignment Assistant** for the repository and demo. Branding is cosmetic and must not block work. | `14` |
+| O8 | Whether approved student answers auto-promote to FAQ | No. Promotion is always an explicit separate tutor action, so authority is never granted implicitly. | `03` §6 |
+| O9 | Whether the assistant may see a student's private tutor queries | Yes, read-only, and only that student's own — it is genuine context for "what have I already been told?". Never surfaced in analytics. | `05` §5.2 |
+| O10 | Whether discussions feed the assistant's retrieval set | Only **tutor-published FAQ entries**. Raw peer discussion is T4 and must never ground an authoritative answer. | `06` §2 |
+
+---
+
+## H. Explicitly rejected
+
+Recording these prevents a later optimisation from quietly reinventing them.
+
+| Rejected | Why |
+|---|---|
+| A general-purpose study chatbot | Scope creep into the one thing the product differentiates itself from (D2). |
+| Letting the assistant "just check" a student's work | Prohibited by D11 and directly contradicts C1. It is the most likely well-intentioned mistake. |
+| Per-student analytics with names attached | Breaks D31 and destroys the premise of anonymous discussion. |
+| AI-authored official clarifications | D23: detection only. The tutor owns the clarification. |
+| Tutor approval skippable for "internal testing" | D21 is the trust boundary. Test data flows through the same states as production data. |
+| A second vector database | D38. Unjustified operational cost for documents measured in tens of pages. |
+| Canvas/LMS integration in any form | **D45, D59.** Excluded by decision, not deferred. A live authenticated third-party session is a demo-day single point of failure with no scoring benefit, and the product's claim is that the assignment workspace sits *beside* the LMS rather than inside it. |
+| Paraphrasing the brief into the workspace as if it were the brief | D17 and constraint C2. |
+| Distinguishing "active" from "idle" time-on-task | D33. Unbounded research cost for a metric nobody asked for. |

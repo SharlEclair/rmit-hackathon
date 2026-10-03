@@ -1,0 +1,96 @@
+# Assignment Assistant — repository ignore rules
+#
+# Rule: no credential, no real personal data, and no transient developer or
+# tool output is ever committed. Constraint C7 (see AGENTS.md section 2) makes
+# the credential rules non-negotiable.
+
+# ---------------------------------------------------------------------------
+# Credentials and secrets — never commit, never force-add
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+cookies.txt
+*_cookies.txt
+*.token
+*.pem
+*.key
+.credentials.yaml
+
+# ---------------------------------------------------------------------------
+# Personal, session and tool-transient material — never commit
+# These belong in local untracked space only. See CONTRIBUTING.md.
+# ---------------------------------------------------------------------------
+*handoff*.md
+*handover*.md
+session-*.md
+*-session-*.md
+*.scratch.md
+*.local.md
+*-VERIFICATION-REPORT.md
+*-AUDIT*.md
+*-REVIEW*.md
+.agent/
+.agents/
+.dsh/
+*.agent.log
+*.session.json
+
+# Local-only working directories
+.local/
+.local-docs/
+private/
+notes/
+
+# ---------------------------------------------------------------------------
+# Real discussion data — contains identifiable third parties (never commit)
+# ---------------------------------------------------------------------------
+archive/canvas-scraper/out/
+harvested/
+fixtures/real/
+
+# ---------------------------------------------------------------------------
+# Node / Next.js
+# ---------------------------------------------------------------------------
+node_modules/
+.pnpm-store/
+.next/
+out/
+build/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+.turbo/
+.vercel/
+
+# ---------------------------------------------------------------------------
+# Runtime and local storage
+# ---------------------------------------------------------------------------
+.storage/
+*.sqlite
+*.sqlite3
+*.db
+
+# ---------------------------------------------------------------------------
+# Python (archive tooling)
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# ---------------------------------------------------------------------------
+# Logs, caches, OS and editor noise
+# ---------------------------------------------------------------------------
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.cache/
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/

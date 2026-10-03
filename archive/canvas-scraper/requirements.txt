@@ -1,0 +1,7 @@
+# Networking uses the Python standard library (urllib.request) on purpose:
+# that is the path verified against the live RMIT Canvas instance, and it
+# avoids the installed requests/urllib3 version-mismatch warning.
+#
+# Only HTML -> text conversion needs third-party packages.
+beautifulsoup4>=4.12
+lxml>=5.0
