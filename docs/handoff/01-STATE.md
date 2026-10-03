@@ -6,8 +6,11 @@ file is rewritten every session.** It records commands and observed output, neve
 **Tag:** `phase-03-complete` -- the Phase 3 exit commit, which adds `07-ARCHIVE/phase-03/`. The
 packet commits it contains are `d9008e8` (the frozen contract, reason codes and L0), `7f4dd5a`
 (L1-L5, the policy overlay and `decide()`) and `bf12a3e` (the 53-case golden set, the unit suites
-and the upload fixtures). **Not pushed** at the time of writing: `origin/main` is still at the
-Phase 1 push (`9dccd0f..49c10e1`), so a later session must push -- see section 8.
+and the upload fixtures). **Pushed:** `git push origin main` -> `61c2a04..1498e53  main -> main`,
+and `git push origin phase-03-complete` -> `* [new tag]`, so `git rev-list --left-right --count
+origin/main...HEAD` is `0  0`. (The push happened *after* this file was first written; this
+correction is commit `HEAD` and the only change after the tag. Phase 0 and Phase 1 have the same
+shape.)
 
 **Last session:** 03
 **Concurrent session detected:** yes. A second session implementing **Phase 2** (WP-04/WP-05:
@@ -159,7 +162,16 @@ quoting here, because each one is a claim a later phase depends on:
 
 ## 8. Before submission
 
-`origin/main` does **not** have Phase 3: the last push was Phase 1's
-(`9dccd0f..49c10e1`). The Lead must push `main` and the `phase-03-complete` tag, and must push the
-concurrent Phase 2 session's work once that session has written its own exit documents -- the two
-sessions' commits are interleaved in one branch.
+`origin/main` **has** Phase 3: `61c2a04..1498e53  main -> main` and the `phase-03-complete` tag were
+pushed, and `git rev-list --left-right --count origin/main...HEAD` is `0  0` at that moment. Two
+push obligations remain, and both belong to the Lead because two sessions share one branch:
+
+1. **The concurrent Phase 2 session's work is still uncommitted in the working tree.** It must commit
+   and push its own paths; Phase 3 committed none of them (verified: no file outside
+   `app/src/lib/guardrail/`, `app/tests/guardrail/`, `app/scripts/make-guardrail-fixtures.mjs`,
+   `docs/fixtures/` and `docs/` appears in any Phase 3 commit). One exception worth naming: the
+   shared `docs/handoff/06-SESSION-LOG.md` carries that session's Session 02 entry verbatim inside
+   Phase 3's exit commit, because the file is append-only and shared. Nothing of its text was
+   changed.
+2. **`pnpm lint` and `pnpm typecheck` must be re-run for the repository as a whole** once both
+   sessions stop, because neither was green while the other was writing (**I-34**).
