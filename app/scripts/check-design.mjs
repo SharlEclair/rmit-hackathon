@@ -48,6 +48,13 @@
  * cases are not symmetric with a gate that resolves declarations out of comments -- that
  * one becomes vacuous, this one becomes louder.
  *
+ * HEX and L1 also read `src/` only, never `tests/` or `scripts/`. `17` S6.1 rule 2 governs
+ * a COMPONENT that needs a value; a test that pins the contract must write the expected
+ * hex, and `app/tests/design/token-parity.test.ts` does exactly that on purpose. Widening
+ * the scope would fail the gate's own refusal tests and so force the gate to be weakened,
+ * which is the one repair that must never happen. The hex matcher also requires 6 or 8
+ * digits, or a letter, so a pseudonym such as `Anonymous Student #482` is not a colour.
+ *
  * CSS is stripped of block comments only. CSS has no `//` comment form, and
  * `src/styles/texture.css` carries a grain data URI containing `http://www.w3.org/2000/svg`:
  * a line-comment strip would truncate that line and could hide whatever follows it.
