@@ -396,9 +396,31 @@ Answer briefly and honestly. Each answer below is one or two sentences, and each
 
 The hackathon requires an explanation of **how and why** generative AI was used, in the Devpost submission **and** in the presentation (`hackathon info/info.md`). Beat 8 closes with it. The full written version is in [`14-HACKATHON-SUBMISSION.md`](14-HACKATHON-SUBMISSION.md) S5.
 
-The spoken version, twenty seconds, four sentences:
+**These two sentences must not disagree, and an earlier version of this one did.** It said the AI "wrote the
+design documentation and the build plan", which directly contradicts S5.1's *"What we did not use AI for"*:
+the product decisions, the priority order and the scope cuts are the team's own and predate the hackathon.
+The written version is the normative one -- it is what a judge reads -- so this is written to say exactly
+what S5.1 says and nothing more. If either changes, change the other in the same commit.
 
-> Generative AI was used in three ways. It wrote the design documentation and the build plan you have just watched us execute, under a working agreement that constrains what it is allowed to do. It runs inside the product, but only behind a guardrail we wrote, which refuses by default and can be tested without a model call. And it did not write the application on its own: every artifact it produced was reviewed, and the commit history shows what happened when. The full disclosure is in the repository, including what was AI-assisted and what was not.
+The spoken version, twenty seconds, five sentences:
+
+> Generative AI was used in three places. It organised our own pre-hackathon design thinking into the
+> documentation set you have seen, under a working agreement that constrains what it is allowed to write --
+> the product decisions, the scope cuts and the refusal-as-feature stance are ours and predate the event. It
+> wrote the application during the event; every commit in the repository is dated today, and it carries a
+> hundred-and-nine numbered decisions and forty-one recorded traps, so the AI's work is checkable against a
+> written contract rather than taken on trust. It runs inside the product, but only behind a guardrail we
+> wrote, which refuses by default and can be tested without a model call. And every phase ended with an
+> executed command rather than a claim: type-check, lint, the unit suite, a production build and four
+> end-to-end acceptance runs. The full disclosure, including what was AI-assisted and what was not, is in the
+> repository.
+
+**The two numbers are deliberate and checkable on stage.** "109 decisions, 41 traps" are facts a judge can
+verify in the repository, and they are the strongest available answer to "did you build this today?" -- which
+S12 scenario 13 anticipates. **Neither number is the commit count**, and that is deliberate: this file is
+itself committed, so any commit-count claim written here is stale the moment it lands. The verifiable
+version of that claim is the date property, which is durable: `git log --format=%ad --date=short | sort -u`
+returns a single date, `2026-10-04`. Read the numbers off the repository if asked rather than from memory.
 
 ---
 
