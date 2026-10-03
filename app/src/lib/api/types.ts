@@ -83,3 +83,299 @@ export interface AssignmentSourceResponse {
   extractionError: string | null;
   createdAt: string;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Phase 4 (WP-06): the tutor review contract of `06` section 5.5.8.
+//
+// Defined here, in one place, when the routes that return them were built -- which is the rule
+// recorded against handoff I-03 and repeated for I-41. The five payload types below are the
+// concrete form of I-41's complaint: `06` section 5.5.8's `payload` union names six payloads and
+// defines only `RequirementNodePayload`. (`RubricSectionPayload` is the fifth missing one; I-41
+// named the other four, and it is the same gap.)
+//
+// **No payload carries a column a tutor may not change.** `revision`, the status, the stamps,
+// `origin`, `provenance` and `grounding_chunk_ids` are response-level fields, not payload fields, so
+// a PATCH body cannot express them. That is structural rather than a validation rule: a field not in
+// the type cannot be set by a client that respects the contract, and `IMMUTABLE_FIELD` (409) catches
+// the one that does not.
+// ---------------------------------------------------------------------------------------------
+
+/** `06` section 3.1. `text` + CHECK in the schema, never a Postgres enum. */
+export type PublicationStatusApi =
+  | 'AI_GENERATED'
+  | 'NEEDS_REVIEW'
+  | 'EDITED'
+  | 'APPROVED'
+  | 'PUBLISHED'
+  | 'REJECTED';
+
+/** `assignments.status` (`06` section 7.2.1). Distinct from every `publicationStatus` (section 3.6). */
+export type AssignmentStatusApi = 'draft' | 'ingesting' | 'in_review' | 'published' | 'archived';
+
+/**
+ * `06` section 5.4's `AssignmentResponse`, returned by the assignment routes.
+ *
+ * One of the response types `06` references and never defined (handoff **I-03**), so it is defined
+ * here when the first route that returns it was built -- Phase 4's publish route. `status` is the
+ * **assignment's** status, never an artifact's: `06` section 3.6 makes the two different fields and
+ * forbids a bare `status` from being ambiguous.
+ */
+export interface AssignmentResponse {
+  id: string;
+  title: string;
+  status: AssignmentStatusApi;
+  dueAt: string | null;
+  currentStructureId: string | null;
+}
+
+/** `06` section 2.2. Computed at read time from the artifact kind and its status; never stored. */
+export type TruthTierApi = 'T1' | 'T2' | 'T3' | 'T4' | 'T5';
+
+/** `06` section 5.5.8's `ValidationWarning.code`, verbatim. */
+export type ValidationWarningCode =
+  | 'VERBATIM_MISMATCH'
+  | 'WEIGHT_NOT_FOUND'
+  | 'CHECKLIST_VERB_MISMATCH'
+  | 'CHECKLIST_IMPERATIVE'
+  | 'UNGROUNDED_ARTIFACT'
+  | 'OVERLAPPING_REQUIREMENT';
+
+export interface ValidationWarning {
+  code: ValidationWarningCode;
+  message: string;
+  sourceRef?: { sourceId: string; pageFrom: number; pageTo: number };
+}
+
+export interface RequirementNodePayload {
+  title: string;
+  /** Immutable; a change is a new node (`06` section 7.2.5, I-2). */
+  verbatimText: string;
+  mapSummary: string | null;
+  sourceChunkId: string;
+  sourcePage: number | null;
+  sourceSectionLabel: string | null;
+  displayOrder: number;
+}
+
+export interface RubricSectionPayload {
+  sectionLabel: string;
+  /** Immutable verbatim text (`06` section 7.2.6). */
+  criteriaText: string;
+  weightPercent: number | null;
+  pageFrom: number | null;
+  pageTo: number | null;
+  mapInterpretation: string | null;
+  displayOrder: number;
+}
+
+export interface MilestonePayload {
+  title: string;
+  summary: string | null;
+  displayOrder: number;
+}
+
+export interface ChecklistItemPayload {
+  title: string;
+  /**
+   * Derived from the title on every save rather than trusted from the client (`06` section 7.2.10
+   * rule 2, `checkChecklistItem`). The field is present because the review card displays it; sending
+   * a different value changes nothing.
+   */
+  planningLevel: 'understand' | 'identify' | 'plan' | 'verify' | 'review' | 'note';
+  description: string | null;
+  displayOrder: number;
+}
+
+export interface FaqEntryPayload {
+  question: string;
+  answer: string;
+  milestoneId: string | null;
+  displayOrder: number;
+}
+
+export interface AiPolicyRulePayload {
+  ruleCode: string;
+  ruleText: string;
+  effect: 'PROHIBIT' | 'ALLOW' | 'ESCALATE_TO_TUTOR' | 'CLARIFY';
+  appliesTo: 'assistant' | 'uploads' | 'discussion' | 'all';
+  displayOrder: number;
+}
+
+/**
+ * `assignment_structures` (`06` section 7.2.4).
+ *
+ * The **seventh** payload the union was missing, found in Phase 4: `ReviewArtifactResponse.kind`
+ * includes `structure` and the union had no member for it, so the type could not be satisfied without
+ * inventing a shape. Same class as I-41, recorded with it. There is no editable field: the structure's
+ * `version` and `is_current` are the pipeline's, so a PATCH on this kind is `IMMUTABLE_FIELD`.
+ */
+export interface StructurePayload {
+  version: number;
+  isCurrent: boolean;
+}
+
+/** The `payload` union of `06` section 5.5.8. Discriminated by `ReviewArtifactResponse.kind`. */
+export type ReviewArtifactPayload =
+  | StructurePayload
+  | RequirementNodePayload
+  | RubricSectionPayload
+  | MilestonePayload
+  | ChecklistItemPayload
+  | FaqEntryPayload
+  | AiPolicyRulePayload;
+
+export type ReviewArtifactKind =
+  | 'structure'
+  | 'requirement_node'
+  | 'rubric_section'
+  | 'milestone'
+  | 'checklist_item'
+  | 'faq_entry'
+  | 'ai_policy_rule';
+
+export interface ReviewArtifactResponse {
+  id: string;
+  kind: ReviewArtifactKind;
+  publicationStatus: PublicationStatusApi;
+  /** Computed at read time (`06` section 2.2); there is no tier column. */
+  truthTier: TruthTierApi;
+  origin: 'ai' | 'tutor';
+  provenance: {
+    modelId: string | null;
+    promptVersion: string | null;
+    generatedAt: string;
+    groundingChunkIds: string[];
+  };
+  /** Optimistic-concurrency token (`06` section 5.5.8; added by migration `0012`; D98). */
+  revision: number;
+  payload: ReviewArtifactPayload;
+  validation: { ok: boolean; warnings: ValidationWarning[] };
+}
+
+/** `06` section 5.5.8's `publishBlockers` union, complete per D71. */
+export type PublishBlocker =
+  | 'NO_POLICY_RULE_APPROVED'
+  | 'NO_MILESTONE'
+  | 'MILESTONE_WITHOUT_REQUIREMENT'
+  | 'PENDING_VALIDATION_WARNINGS';
+
+export interface ReviewBundleResponse {
+  assignment: {
+    id: string;
+    title: string;
+    status: 'draft' | 'ingesting' | 'in_review' | 'published' | 'archived';
+    dueAt: string | null;
+    currentStructureId: string | null;
+  };
+  /** `null` means no run has ever been requested (`06` section 5.5.8; handoff I-39). */
+  ingestion: IngestionStatusResponse | null;
+  sources: AssignmentSourceResponse[];
+  counts: Record<PublicationStatusApi, number>;
+  artifacts: ReviewArtifactResponse[];
+  ambiguityFindings: AmbiguityFindingResponse[];
+  gates: {
+    canIngest: boolean;
+    canApprove: boolean;
+    canPublish: boolean;
+    publishBlockers: PublishBlocker[];
+  };
+}
+
+/** `06` section 7.2.12. Never student-visible, at any status (D23). */
+export interface AmbiguityFindingResponse {
+  id: string;
+  kind: 'ambiguity' | 'contradiction';
+  severity: 'low' | 'medium' | 'high';
+  title: string;
+  description: string;
+  locatedPage: number | null;
+  locatedSectionLabel: string | null;
+  excerptA: string;
+  excerptB: string | null;
+  status: 'open' | 'acknowledged' | 'resolved_by_clarification' | 'dismissed';
+  resolutionFaqEntryId: string | null;
+}
+
+/**
+ * `PATCH /api/tutor/structure-artifacts/{artifactId}` (`06` section 5.5.8).
+ *
+ * `expectedRevision` is required and is not advisory: a mismatch is `STALE_REVISION` (409) and the
+ * row is not written (T-19).
+ */
+export interface StructureArtifactPatchRequest {
+  expectedRevision: number;
+  payload: Partial<ReviewArtifactPayload>;
+  action: 'save' | 'approve' | 'reject';
+  /**
+   * Required to approve an artifact that carries warnings. `VERBATIM_MISMATCH` is **not**
+   * acknowledgable (`06` section 5.5.8): it must be fixed, or the node rejected.
+   */
+  acknowledgeWarnings?: ValidationWarningCode[];
+}
+
+/** `POST /api/tutor/assignments/{assignmentId}/artifacts` (`06` section 5.4). */
+export interface CreateArtifactRequest {
+  kind: 'milestone' | 'checklist_item' | 'faq_entry' | 'ai_policy_rule';
+  /** The structure the artifact belongs to. Must be the assignment's current structure. */
+  structureId: string;
+  /** For a `checklist_item`, the milestone it sits under. Ignored for the other kinds. */
+  milestoneId?: string;
+  payload: Partial<ReviewArtifactPayload>;
+}
+
+/** `POST .../approve` and the counts the review screen shows (`06` section 5.5.8's `counts`). */
+export interface ReviewCountsResponse {
+  counts: Record<PublicationStatusApi, number>;
+  /** How many artifacts the call moved, and how many it skipped because none was needed. */
+  approved: number;
+  skipped: number;
+}
+
+/**
+ * `GET /api/student/assignments/{assignmentId}/structure` (`06` section 5.5.5, reproduced exactly).
+ *
+ * Phase 4 ships this one student route because WP-06's verification gate asserts the gate rule G1
+ * direction through it: a student request for an unpublished assignment is `404`, and the same
+ * request after publish is `200`. Phase 5 (WP-07) owns the rest of the student workspace.
+ */
+export interface AssignmentMapNodeResponse {
+  id: string;
+  kind: 'requirement' | 'rubric_section' | 'milestone' | 'checklist_item';
+  title: string;
+  /** T5, interpretation. */
+  mapSummary: string | null;
+  /** T1, requirements and rubric sections only. */
+  verbatimText: string | null;
+  truthTier: 'T1' | 'T3' | 'T5';
+  sourceRef: {
+    sourceId: string;
+    pageFrom: number;
+    pageTo: number;
+    sectionLabel: string | null;
+  } | null;
+  /** Students only; Phase 4's structure read omits it because progress is the checklist's (WP-07). */
+  progress?: { state: 'not_started' | 'in_progress' | 'completed' };
+}
+
+export interface AssignmentMapEdgeResponse {
+  from: string;
+  to: string;
+  kind:
+    | 'requirement_rubric'
+    | 'requirement_milestone'
+    | 'milestone_checklist_item'
+    | 'rubric_milestone';
+}
+
+export interface AssignmentMapResponse {
+  assignmentId: string;
+  structureId: string;
+  generatedAt: string;
+  /** Fixed string; the UI must render it (`06` section 5.5.5, `07` section 2.5). */
+  label: 'AI-generated interpretation';
+  /** Fixed copy from `07` section 2.5. */
+  disclaimer: string;
+  nodes: AssignmentMapNodeResponse[];
+  /** An edge is present only when both endpoint nodes are `PUBLISHED` (`06` section 5.5.5). */
+  edges: AssignmentMapEdgeResponse[];
+}

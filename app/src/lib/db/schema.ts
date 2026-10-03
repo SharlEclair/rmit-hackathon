@@ -199,6 +199,8 @@ export const assignmentStructures = pgTable('assignment_structures', {
   approvedByUserId: uuid('approved_by_user_id'),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
+  /** Optimistic-concurrency token (`06` section 5.5.8; migration `0012`; D98). Starts at 1. */
+  revision: integer('revision').notNull().default(1),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -226,6 +228,8 @@ export const requirementNodes = pgTable('requirement_nodes', {
   approvedByUserId: uuid('approved_by_user_id'),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
+  /** Optimistic-concurrency token (`06` section 5.5.8; migration `0012`; D98). Starts at 1. */
+  revision: integer('revision').notNull().default(1),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -250,6 +254,8 @@ export const rubricSections = pgTable('rubric_sections', {
   approvedByUserId: uuid('approved_by_user_id'),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
+  /** Optimistic-concurrency token (`06` section 5.5.8; migration `0012`; D98). Starts at 1. */
+  revision: integer('revision').notNull().default(1),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -297,6 +303,8 @@ export const milestones = pgTable('milestones', {
   approvedByUserId: uuid('approved_by_user_id'),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
+  /** Optimistic-concurrency token (`06` section 5.5.8; migration `0012`; D98). Starts at 1. */
+  revision: integer('revision').notNull().default(1),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -319,6 +327,8 @@ export const checklistItems = pgTable('checklist_items', {
   approvedByUserId: uuid('approved_by_user_id'),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
+  /** Optimistic-concurrency token (`06` section 5.5.8; migration `0012`; D98). Starts at 1. */
+  revision: integer('revision').notNull().default(1),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -344,6 +354,8 @@ export const aiPolicyRules = pgTable('ai_policy_rules', {
   approvedByUserId: uuid('approved_by_user_id'),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
+  /** Optimistic-concurrency token (`06` section 5.5.8; migration `0012`; D98). Starts at 1. */
+  revision: integer('revision').notNull().default(1),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -590,6 +602,8 @@ export const faqEntries = pgTable('faq_entries', {
   approvedByUserId: uuid('approved_by_user_id'),
   approvedAt: timestamp('approved_at', { withTimezone: true }),
   publishedAt: timestamp('published_at', { withTimezone: true }),
+  /** Optimistic-concurrency token (`06` section 5.5.8; migration `0012`; D98). Starts at 1. */
+  revision: integer('revision').notNull().default(1),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

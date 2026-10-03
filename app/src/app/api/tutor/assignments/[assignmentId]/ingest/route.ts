@@ -17,7 +17,7 @@ import { findEnrolmentRole } from '@/lib/db/queries/courses';
 import {
   findLatestJob,
   insertQueuedJob,
-  type IngestionJobRow,
+  toIngestionStatusResponse,
 } from '@/lib/db/queries/ingestions';
 import { withTransaction } from '@/lib/db/transaction';
 import { getStorageDriver } from '@/lib/storage';
@@ -151,20 +151,5 @@ async function authorise(
   return { assignmentId, session: { userId: session.userId } };
 }
 
-/** `06` section 5.5.8's shape, built from the row. `startedAt` falls back to the creation time. */
-function toResponse(job: IngestionJobRow): IngestionStatusResponse {
-  return {
-    jobId: job.id,
-    assignmentId: job.assignmentId,
-    status: job.status,
-    stage: job.stage,
-    completedStages: job.completedStages,
-    totalStages: job.totalStages,
-    startedAt: job.startedAt ?? new Date().toISOString(),
-    finishedAt: job.finishedAt,
-    error:
-      job.errorCode === null
-        ? null
-        : { code: job.errorCode, message: job.errorMessage ?? 'The analysis run failed.' },
-  };
-}
+/** `06` section 5.5.8's shape, built from the row by the module that owns the row. */
+const toResponse = toIngestionStatusResponse;

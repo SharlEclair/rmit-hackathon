@@ -28,6 +28,7 @@
  */
 
 import { PLANNING_LEVELS } from '@/lib/llm/schema';
+import type { ValidationWarningCode } from '@/lib/api/types';
 
 /** `06` section 7.2.10 rule 2: the six allowed opening verbs. The schema's enum is the source. */
 export const PLANNING_VERBS = PLANNING_LEVELS;
@@ -50,14 +51,14 @@ export const IMPLEMENTATION_VERBS = [
   'solve',
 ] as const;
 
-/** The warning codes of `06` section 5.5.8's `ValidationWarning`. */
-export type ValidationWarningCode =
-  | 'VERBATIM_MISMATCH'
-  | 'WEIGHT_NOT_FOUND'
-  | 'CHECKLIST_VERB_MISMATCH'
-  | 'CHECKLIST_IMPERATIVE'
-  | 'UNGROUNDED_ARTIFACT'
-  | 'OVERLAPPING_REQUIREMENT';
+/**
+ * The warning codes of `06` section 5.5.8's `ValidationWarning`.
+ *
+ * Defined once, in `src/lib/api/types.ts`, because `06` section 5.5.8's `ValidationWarning.code` and
+ * these warnings are the same six strings: Phase 4's review route recomputes them with the functions
+ * below and returns them in that shape. Re-exported here so existing importers keep working.
+ */
+export type { ValidationWarningCode };
 
 export interface IngestWarning {
   readonly code: ValidationWarningCode;

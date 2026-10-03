@@ -1544,6 +1544,7 @@ Purpose: one ingestion output version; the container every AI artifact hangs fro
 | `approved_by_user_id` | uuid | null; FK `users (id)`; `CHECK (publication_status not in ('APPROVED','PUBLISHED') or approved_by_user_id is not null)` |
 | `approved_at` | timestamptz | null; same CHECK shape as above |
 | `published_at` | timestamptz | null; `CHECK (publication_status <> 'PUBLISHED' or published_at is not null)` |
+| `revision` | integer | not null default 1; `CHECK (revision >= 1)`; the optimistic-concurrency token of section 5.5.8 (**D98**). Every revision-aware write increments it in the same statement as its `where revision = <expected>` guard, so a lost update is refused (`STALE_REVISION`) rather than applied |
 
 Invariants: `UNIQUE (id, assignment_id)` exists so child tables can hold a composite FK (6.4). Exactly one current structure per assignment (section 3.3).
 
@@ -1569,6 +1570,7 @@ Purpose: an Assignment Map node of kind Requirement; the verbatim anchor that al
 | `grounding_chunk_ids` | uuid[] | not null default `'{}'` |
 | `approved_by_user_id` | uuid | null; FK `users (id)` |
 | `approved_at`, `published_at` | timestamptz | null; CHECKs per 7.2.4 |
+| `revision` | integer | not null default 1; `CHECK (revision >= 1)`; optimistic-concurrency token, as in 7.2.4 (**D98**) |
 
 #### 7.2.6 `rubric_sections`
 
@@ -1585,7 +1587,7 @@ Purpose: one official marking criterion with its weighting; T1 text plus an opti
 | `page_from`, `page_to` | integer | null; same CHECK shape as `source_chunks` |
 | `map_interpretation` | text | null; length <= 600; T5, Map surface only |
 | `display_order` | integer | not null; `UNIQUE (structure_id, display_order)` |
-| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at` | - | as in 7.2.5 |
+| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at`, `revision` | - | as in 7.2.5 |
 
 #### 7.2.7 `requirement_rubric_links`
 
@@ -1624,7 +1626,7 @@ Purpose: a larger conceptual stage of work (glossary: Milestone). Class: identit
 | `title` | text | not null; length <= 160 |
 | `summary` | text | null; length <= 600 |
 | `display_order` | integer | not null; `CHECK (display_order >= 0)`; `UNIQUE (structure_id, display_order) WHERE deleted_at IS NULL` |
-| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at` | - | as in 7.2.5 |
+| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at`, `revision` | - | as in 7.2.5 |
 | `deleted_at` | timestamptz | null |
 
 Volume guidance (O1): 3 to 6 milestones per assignment. The validator warns above 6.
@@ -1642,7 +1644,7 @@ Purpose: a granular, self-checkable progress item under a Milestone (glossary: C
 | `planning_level` | text | not null; `CHECK (planning_level in ('understand','identify','plan','verify','review','note'))` (O1) |
 | `description` | text | null; length <= 600 |
 | `display_order` | integer | not null; `UNIQUE (milestone_id, display_order) WHERE deleted_at IS NULL` |
-| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at` | - | as in 7.2.5 |
+| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at`, `revision` | - | as in 7.2.5 |
 | `deleted_at` | timestamptz | null |
 
 Invariants (D20, O1):
@@ -1665,7 +1667,7 @@ Purpose: one rule of the assignment-specific AI Usage Policy (D9). Class: identi
 | `applies_to` | text | not null; `CHECK (applies_to in ('assistant','uploads','discussion','all'))` |
 | `source_chunk_id` | uuid | null; FK `source_chunks (id)`; the clause the rule was extracted from |
 | `display_order` | integer | not null |
-| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at` | - | as in 7.2.5 |
+| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at`, `revision` | - | as in 7.2.5 |
 
 Invariants: publish requires at least one `APPROVED` rule (section 3.2 transition 7). The guardrail reads only `PUBLISHED` rules; with none published it returns `REFUSE` with reason code `POL_ABSENT` and the Assistant is unavailable (D47). There is no permissive platform default. This should be unreachable in practice, because a student only sees a published assignment and publish requires an approved rule.
 
@@ -1875,7 +1877,7 @@ Purpose: a tutor-published answer forming the assignment's official shared knowl
 | `source_discussion_post_id` | uuid | null; FK `discussion_posts (id)` |
 | `published_by_user_id` | uuid | null; FK `users (id)`; `CHECK (publication_status <> 'PUBLISHED' or published_by_user_id is not null)` |
 | `display_order` | integer | not null default 0 |
-| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at` | - | as in 7.2.5 |
+| `publication_status`, `origin`, `provenance`, `grounding_chunk_ids`, `approved_by_user_id`, `approved_at`, `published_at`, `revision` | - | as in 7.2.5 |
 | `deleted_at` | timestamptz | null |
 
 Invariants: only a tutor can create or publish an entry (D24). `source_kind = 'peer_answer'` requires `source_discussion_post_id` and is only reachable through the explicit promotion action (D29, O8). There is no automatic promotion path in the API.

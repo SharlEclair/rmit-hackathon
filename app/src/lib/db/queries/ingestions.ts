@@ -16,6 +16,7 @@
  *    (`06` section 5.3). The caller supplies both; this module never formats an exception.
  */
 
+import type { IngestionStatusResponse } from '@/lib/api/types';
 import type { Executor } from './courses';
 
 /** `ingestion_jobs.status` (`06` section 7.7.1; the `06` section 5.5.8 response union). */
@@ -192,6 +193,32 @@ export async function hasActiveJob(ex: Executor, assignmentId: string): Promise<
      limit 1
   `;
   return rows.length > 0;
+}
+
+/**
+ * The job row as `06` section 5.5.8's `IngestionStatusResponse`.
+ *
+ * Exported from the module that owns `IngestionJobRow` so the two callers that return this shape --
+ * `POST|GET /api/tutor/assignments/{assignmentId}/ingest` and Phase 4's review bundle (`ingestion`
+ * is `IngestionStatusResponse | null`, and `null` means no run was ever requested) -- cannot drift.
+ * `startedAt` cannot be null in the response, so a queued job reports its creation time; the row's
+ * own `started_at` stays null until the run actually starts (`ck_ingestion_jobs_running_started`).
+ */
+export function toIngestionStatusResponse(job: IngestionJobRow): IngestionStatusResponse {
+  return {
+    jobId: job.id,
+    assignmentId: job.assignmentId,
+    status: job.status,
+    stage: job.stage,
+    completedStages: job.completedStages,
+    totalStages: job.totalStages,
+    startedAt: job.startedAt ?? new Date().toISOString(),
+    finishedAt: job.finishedAt,
+    error:
+      job.errorCode === null
+        ? null
+        : { code: job.errorCode, message: job.errorMessage ?? 'The analysis run failed.' },
+  };
 }
 
 function isoOrNull(value: Date | string | null): string | null {

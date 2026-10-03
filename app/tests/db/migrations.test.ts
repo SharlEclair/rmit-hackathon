@@ -277,8 +277,38 @@ describe('trap T19 -- three mechanisms that cannot be written the obvious way', 
     }
   });
 
-  it('carries no expectedRevision / revision column anywhere (I-16 stays open)', () => {
-    expect(ddl()).not.toMatch(/\brevision\b/i);
+  it('carries the revision column on exactly the seven lifecycle-bearing tables (I-16, D98)', () => {
+    // Phase 1 asserted the opposite ("no revision column anywhere, I-16 stays open"), which was
+    // correct then and is now the stale side: 06 section 5.5.8 already types
+    // `ReviewArtifactResponse.revision` and `StructureArtifactPatchRequest.expectedRevision`, and
+    // test T-19 depends on the column existing. Phase 4 added it in migration 0012 and updated
+    // 06 section 7.2 in the same change, which is the first of I-16's two options.
+    const altered = [...ddl().matchAll(/alter table (\w+)\s+add column revision/gi)].map(
+      (match) => match[1],
+    );
+    expect(new Set(altered)).toEqual(
+      new Set([
+        'assignment_structures',
+        'requirement_nodes',
+        'rubric_sections',
+        'milestones',
+        'checklist_items',
+        'ai_policy_rules',
+        'faq_entries',
+      ]),
+    );
+    // Every other table has no lifecycle column, so it has no revision (06 section 3.1).
+    expect(ddl()).not.toMatch(
+      /alter table (users|assignments|assignment_sources|student_checklist_progress|audit_logs)\s+add column revision/i,
+    );
+    // The guard the whole mechanism rests on: `revision` is a positive integer that starts at 1, and
+    // the CHECK makes a zero or negative revision impossible rather than merely unlikely.
+    const declarations = [...ddl().matchAll(/add column revision ([\s\S]*?);/gi)];
+    expect(declarations.length).toBe(7);
+    for (const [, body] of declarations) {
+      expect(body).toMatch(/integer not null default 1/);
+      expect(body).toMatch(/check \(revision >= 1\)/);
+    }
   });
 
   it('never creates a column named proposed_clarification (D23, C2)', () => {

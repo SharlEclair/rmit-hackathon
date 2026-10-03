@@ -687,3 +687,60 @@ command under a full-access file sandbox produced `52 passed (52)`. Recorded in 
   were run; the per-item checkboxes were not all re-walked one by one. The two items that are
   genuinely not satisfied are named above (coverage; live classification), and the status note added
   to `11` WP-08 says so.
+
+---
+
+## Session 04 - Phase 4 (review, approval, state machine, gate rule G1) - 2026-10-04
+
+**Phase:** 4   **Status:** in progress (this entry is written before the first commit, per
+`00-README.md` step 6; the delivered/evidence sections are completed at the phase exit)
+**Spec docs read:** `AGENTS.md`, `00-INDEX`, `handoff/00-README`, `handoff/01`-`06`, `18` S5/S5.1,
+`11` WP-06 (and S6.2's file-ownership table), `01-DECISIONS.md` (full), `06`
+S2/S3.1-S3.7/S5.4/S5.5.7/S5.5.8/S7.2/S8.3/S9.2/S10, `07` S2.2/S2.3/S2.5/S2.6/S7.3/S7.4, `17`
+S2/S3/S6/S12, `.env.example`
+
+### Intent for this session
+
+Implement Phase 4 as `18` section 5 defines it -- WP-06's review and approval boundary plus gate rule
+G1 -- and freeze **the direction of the student-visibility gate** together with the state machine:
+
+- **D22 / `06` S3.2**: the ten legal `publication_status` transitions in one module, and every other
+  transition refused with `INVALID_STATE_TRANSITION` (409).
+- **I2 / C3**: nothing AI-generated is student-visible before approval; the edit-after-publish
+  transition (8) must take an item out of student-visible reads immediately.
+- **T3 / `06` S3.4**: gate rule G1 is a **query-layer** predicate -- `PUBLISHED` **and**
+  `structure.is_current` **and** `assignments.status = 'published'` -- and an unpublished resource
+  named by a student is `404`, never an empty shell.
+- **I-16**: `expectedRevision` gets its storage. `06` S5.5.8's `ReviewArtifactResponse.revision` and
+  `StructureArtifactPatchRequest.expectedRevision` require a column that no table has, so Phase 4
+  adds it (migration `0012`) and records the `06` S7.2 change in the same commit (I-16's own two
+  options; this is the one the contract already assumes).
+- **I-41**: define `MilestonePayload`, `ChecklistItemPayload`, `FaqEntryPayload` and
+  `AiPolicyRulePayload` when the route that returns them is built.
+- **I-39**: the review bundle carries `ingestion: null` for "no run ever requested"; the `GET
+  .../ingest` route keeps returning 404.
+- **I-21 / D81**: one visibility rule, not two. The threshold is **`PUBLISHED`** (G1, D21, `06`
+  S3.1); WP-06's gate wording that treats `APPROVED` as the threshold is the stale side and is
+  corrected in `11` in this change.
+- **T22 / D83**: the policy editor may only offer rule codes that `CAPABILITIES_BY_RULE_CODE` maps,
+  and the review bundle surfaces an unmapped code as a `POL_INVALID` risk rather than letting it
+  disable the assignment's Assistant silently.
+
+Out of scope by construction: the student workspace routes other than the G1 structure read Phase 4
+needs to prove the gate (Phase 5); queries, discussions, moderation, FAQ publishing and analytics
+(Phase 6); the analytics event emission list (T7, Phase 5/6); and any new model call (Phase 4 makes
+none).
+
+### Re-verification on entry (`00-README.md` step 5)
+
+| Claim in `01-STATE.md` | Command and observed result | Verdict |
+|---|---|---|
+| HEAD is the Phase 2 exit commit, after `1498e53` | `git log --oneline -1` -> `36a3598 docs(handoff): name the Phase 2 commits and the push in 01-STATE` | **Diverges from the literal line, explained by the same file**: its own tag paragraph names `36a3598` as the post-tag correction commit. Sessions 02 and 03 recorded the same class of divergence |
+| `git status --porcelain` clean; four tags | empty; `phase-00-complete`, `phase-01-complete`, `phase-02-complete`, `phase-03-complete` | Confirmed |
+| Frozen files present | `Test-Path app/src/lib/llm/types.ts` -> `True`; `app/src/lib/guardrail/index.ts` -> `True`; `migrations/0011_ingestion_jobs.sql` -> `True`; `app/scripts/ingest-once.ts` -> `True` | Confirmed |
+| `pnpm typecheck` / `pnpm lint` / `pnpm test` | 0 errors; `C8 import/endpoint gate: ok`, exit 0; **22 files, 464 tests passed**, 4.23 s, no network, no provider key | Confirmed |
+| Migrations idempotent; no schema drift | `pnpm db:migrate` -> `no pending migrations (11 already applied)`; `verify-schema.ts` -> `schema drift: none (35 tables, 464 columns)` | Confirmed |
+| Seeded counts | 37 `role='student'` rows; 5 milestones `in ('APPROVED','PUBLISHED')` | Confirmed |
+| Shell / Node / pnpm | node `v24.15.0`, pnpm `12.4.2` | Confirmed |
+
+No stale claim was found that changes what this session may rely on.

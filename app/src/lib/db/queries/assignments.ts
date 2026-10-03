@@ -198,6 +198,12 @@ export interface AssignmentSourceSummary {
   readonly contentHash: string;
   readonly extractionStatus: 'pending' | 'extracting' | 'extracted' | 'failed';
   readonly extractionError: string | null;
+  /**
+   * The row's `created_at`, ISO. Added in Phase 4: `06` section 5.4's `AssignmentSourceResponse`
+   * requires it, the upload route could synthesise it for a row it had just written, and the review
+   * bundle cannot -- it reads rows that already exist.
+   */
+  readonly createdAt: string;
 }
 
 /** A T1 fragment with the source kind it came from, ordered for prompt assembly. */
@@ -229,10 +235,11 @@ export async function listSources(
       content_hash: string;
       extraction_status: string;
       extraction_error: string | null;
+      created_at: Date;
     }[]
   >`
     select id, kind, mime_type, storage_key, original_filename, byte_size, page_count,
-           content_hash, extraction_status, extraction_error
+           content_hash, extraction_status, extraction_error, created_at
       from assignment_sources
      where assignment_id = ${assignmentId}::uuid and deleted_at is null
      order by created_at asc
@@ -248,6 +255,7 @@ export async function listSources(
     contentHash: row.content_hash,
     extractionStatus: row.extraction_status as AssignmentSourceSummary['extractionStatus'],
     extractionError: row.extraction_error,
+    createdAt: row.created_at.toISOString(),
   }));
 }
 
