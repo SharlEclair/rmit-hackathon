@@ -274,6 +274,11 @@ this beat is the only place its output is on screen.
 
 ## 8. Beat 7 -- Ask safely, and share the answer (3:43-4:27)
 
+> **Measured stable at the Phase 7 rehearsal.** Five runs each: the tutor's discussion read returned `200`
+> with 9 threads and **no identifying field** every time, the Query list returned `grouping: "milestone"`
+> with 6 groups every time, and both shapes were identical across runs. Beat 7 needs no special handling --
+> unlike beat 6, whose question must be chosen from a measured list (**I-53**, **I-55**).
+
 **Screen.** Switch to the student's Discussions tab. A thread exists, posted as `Anonymous Student #482`. The driver posts a short reply. Then switch to the tutor tab, Discussions: the same thread, still `Anonymous Student #482`, with no name anywhere, and the driver clicks Publish.
 
 **Say** (44 seconds -- the narration below is trimmed to the two sentences the beat is worth; do not add to it, this is the beat that absorbs the image half of beat 5):
@@ -291,6 +296,11 @@ this beat is the only place its output is on screen.
 ---
 
 ## 9. Beat 8 -- Cohort insight and close (4:27-5:00)
+
+> **Measured stable at the Phase 7 rehearsal.** Five runs: analytics returned `200` with **ready=4,
+> insufficient=1, belowFloor=0** and no identity field on every run. The single `insufficient_data` row is
+> the below-floor milestone, which is the k-anonymity floor working rather than a gap -- and it is worth
+> pointing at on screen, because it is the floor made visible (**I-55**).
 
 **Screen.** Tutor tab, Assignment Health. Point at one row: a milestone with above-average elapsed time and above-average question volume, flagged as a potential difficulty area. Point at an `Insufficient data` cell. Then cut to the closing slide.
 
