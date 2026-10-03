@@ -875,6 +875,13 @@ Owner of D28 and O3. Applies to discussion threads and posts only.
 
 ### 9.2 Reason codes
 
+These fourteen codes are the **moderator's** vocabulary, and section 9.6 constrains
+`ModeratorOutput.reasonCode` to `^MOD_[A-Z_]+$` accordingly. They are **not** the same set as
+`moderation_flags.reason_code`'s student-facing categories in `06` section 5.5.14 -- that column admits
+both sets and its `source` column says which applies (D109). The distinction is deliberate: a student
+flagging a post picks a plain category, while a tutor reviewing the queue needs to tell targeted abuse from
+a threat from sexual content, and section 9.4 derives the automatic action from the code's severity.
+
 | Code | Applies to | Default severity |
 |---|---|---|
 | `MOD_HARASSMENT` | Targeted abuse or intimidation of a person | 4 |
