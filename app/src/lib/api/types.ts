@@ -689,3 +689,201 @@ export interface ProactiveMessageResponse {
   deliveredAt: string;
   dismissedAt: string | null;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Phase 6 (WP-10 and WP-11): queries, discussions, moderation, FAQ and analytics.
+//
+// The same rule as every block before this one: define each response type when the route that
+// returns it is built, in this one file (`06` S5.4/5.5, handoff I-03). This block also closes three
+// types `06` section 5.4 references and never defines -- `QueryMessageResponse`, `FaqEntryResponse`
+// and `FaqEntryListResponse` (I-03) -- and every field below is the doc's, name for name and
+// nullability for nullability.
+//
+// **The `author` shape is the anonymity contract, not a convenience.** `06` section 4.4's A-ID-5:
+// "No tutor response schema contains a field named `studentId`, `studentName`, `email`, `userId`,
+// `anonIdentityId`, or `subjectRef`. `author` objects carry only `isAnonymised` and `displayLabel`."
+// That is a type-level guarantee, and `tests/discussion/imports.test.ts` asserts it against these
+// declarations. A field added here for convenience is a C4 violation, not a convenience.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * `06` section 4.1 and A-ID-5. The **whole** field set of an author reference.
+ *
+ * `displayLabel` is computed at read time from the persisted `display_number` through the single
+ * approved view `discussion_author_display` (D55, trap **T14**), so it survives an `ANON_ID_SECRET`
+ * rotation and a client can never construct it.
+ */
+export interface DiscussionAuthor {
+  readonly isAnonymised: boolean;
+  readonly displayLabel: string;
+}
+
+/** `06` section 5.4's `ModerationFlagResponse.columns` (section 5.5.14). */
+export type ModerationTargetKindApi = 'discussion_post' | 'query_message';
+export type ModerationSourceApi = 'ai' | 'student';
+export type ModerationSeverityApi = 'low' | 'medium' | 'high';
+export type ModerationReasonCodeApi =
+  | 'HARASSMENT'
+  | 'INAPPROPRIATE_CONTENT'
+  | 'PERSONAL_INFORMATION'
+  | 'PROHIBITED_ASSISTANCE'
+  | 'SOLUTION_SHARING'
+  | 'OTHER';
+export type ModerationStatusApi = 'open' | 'upheld' | 'dismissed';
+
+/** `06` section 5.5.14. **The reporter is never named** (A-ID-5), and a student never sees a count (D30, O3). */
+export interface ModerationFlagResponse {
+  id: string;
+  targetKind: ModerationTargetKindApi;
+  targetId: string;
+  source: ModerationSourceApi;
+  severity: ModerationSeverityApi;
+  reasonCode: ModerationReasonCodeApi;
+  status: ModerationStatusApi;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+/** `06` section 5.5.12. */
+export type QueryStatusApi = 'open' | 'answered' | 'resolved' | 'closed';
+
+export interface QueryListResponse {
+  items: Array<{
+    id: string;
+    subject: string | null;
+    status: QueryStatusApi;
+    milestoneId: string | null;
+    createdAt: string;
+    lastMessageAt: string | null;
+    messageCount: number;
+    hasTutorReply: boolean;
+  }>;
+}
+
+/**
+ * `06` section 5.4 names `QueryMessageResponse` for `POST .../queries/{id}/messages` and
+ * `POST .../tutor/queries/{id}/reply` and section 5.5.12 defines `QueryThreadResponse` instead
+ * (I-03). It is the element of that thread's `messages[]`, plus the thread's own id so a created
+ * message is addressable without a second read.
+ */
+export interface QueryMessageResponse {
+  id: string;
+  queryId: string;
+  authorRole: 'student' | 'tutor';
+  /** A private Query is **always attributed** (D24, D50): a student may be anonymous in a Discussion, never here. */
+  authorDisplayName: string;
+  body: string;
+  createdAt: string;
+  /** Set when this reply became an official FAQ entry (D24, O8). */
+  publishedAsFaqEntryId: string | null;
+}
+
+export interface QueryThreadResponse {
+  id: string;
+  assignmentId: string;
+  subject: string | null;
+  milestoneId: string | null;
+  status: QueryStatusApi;
+  createdAt: string;
+  resolvedAt: string | null;
+  messages: Array<{
+    id: string;
+    authorRole: 'student' | 'tutor';
+    authorDisplayName: string;
+    body: string;
+    createdAt: string;
+    publishedAsFaqEntryId: string | null;
+  }>;
+}
+
+export interface TutorQueryGroupListResponse {
+  /** Topic clustering is out of scope in the MVP (`02` section 2.4), so this is the only value. */
+  grouping: 'milestone';
+  items: Array<{
+    groupKey: string;
+    /** The approved Milestone title (T3). */
+    label: string;
+    labelSource: 'milestone';
+    truthTier: 'T3';
+    queryCount: number;
+    openCount: number;
+    queries: QueryListResponse['items'];
+  }>;
+}
+
+/** `06` section 5.5.13. */
+export type DiscussionThreadStatusApi = 'open' | 'locked' | 'removed';
+export type DiscussionPostStatusApi = 'visible' | 'hidden_pending_review' | 'removed';
+/** `06` section 5.5.13 gives four values; `proposed` has no producer in the MVP (`03-PRD` goes none -> approved/rejected). */
+export type AcceptedAnswerStatusApi = 'none' | 'proposed' | 'approved' | 'rejected';
+
+export interface DiscussionPostResponse {
+  id: string;
+  parentPostId: string | null;
+  /**
+   * `null` for a post with `status = 'hidden_pending_review'` when the caller is a student other than
+   * the author (`06` section 5.5.13): the row shows `Hidden pending tutor review`.
+   */
+  body: string | null;
+  status: DiscussionPostStatusApi;
+  acceptedAnswerStatus: AcceptedAnswerStatusApi;
+  author: DiscussionAuthor;
+  createdAt: string;
+  editedAt: string | null;
+  /** Students only, resolved server-side. Never derived from a client-supplied id. */
+  isOwnPost: boolean;
+  /** Tutors only. */
+  editedByModerator: boolean;
+}
+
+export interface DiscussionThreadResponse {
+  id: string;
+  title: string;
+  milestoneId: string | null;
+  status: DiscussionThreadStatusApi;
+  postCount: number;
+  lastPostAt: string | null;
+  createdAt: string;
+  author: DiscussionAuthor;
+  /** Students only, resolved server-side. */
+  isOwnThread: boolean;
+  posts: DiscussionPostResponse[];
+}
+
+export interface StudentDiscussionResponse {
+  /** T2, published only. */
+  officialFaq: FaqEntryListResponse['items'];
+  threads: DiscussionThreadResponse[];
+}
+
+export interface TutorDiscussionResponse {
+  officialFaq: FaqEntryListResponse['items'];
+  threads: DiscussionThreadResponse[];
+  /** **No reporter identity** (`06` section 4.4). */
+  moderationQueue: ModerationFlagResponse[];
+}
+
+/** `06` section 5.4's `FaqEntryResponse` and `FaqEntryListResponse`, both referenced and never defined (I-03). */
+export type FaqSourceKindApi = 'ai_candidate' | 'query_reply' | 'peer_answer' | 'tutor_authored';
+
+export interface FaqEntryResponse {
+  id: string;
+  assignmentId: string;
+  milestoneId: string | null;
+  question: string;
+  answer: string;
+  sourceKind: FaqSourceKindApi;
+  /** T5 before publish, T2 once `PUBLISHED` (`06` section 7.4.4). */
+  publicationStatus: PublicationStatusApi;
+  /** `true` only when `publicationStatus = 'PUBLISHED'`: the one state a student may read. */
+  isPublished: boolean;
+  displayOrder: number;
+  createdAt: string;
+  publishedAt: string | null;
+  /** Optimistic-concurrency token for `PATCH /api/tutor/faq-entries/{id}` (`0012`, D98). */
+  revision: number;
+}
+
+export interface FaqEntryListResponse {
+  items: FaqEntryResponse[];
+}
