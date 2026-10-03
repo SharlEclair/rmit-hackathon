@@ -213,27 +213,59 @@ reason" applies here too.
 
 ## 7. Beat 6 -- A legitimate question (3:23-3:43)
 
+> **THE TYPED QUESTION WAS CHANGED AT THE PHASE 7 REHEARSAL, AND THIS BEAT IS NOW `AT RISK`.**
+>
+> The scripted question was `What does the rubric actually reward in Part B?`. **That question does not
+> produce an answer.** Measured live, twice, on a fresh session each time:
+>
+> ```text
+> "What does the rubric actually reward in Part B?"  -> ESCALATE_TO_TUTOR, rules ["RET_NO_MATCH","ESC4"]
+>                                                       "We could not find this in your assignment documents."
+> "What does the rubric reward?"                     -> REFUSE, rules ["DE12"]  (post-check: steps = assessed work)
+> "What is the word count?"                          -> ALLOW, 31 token frames, 4 citations
+> ```
+>
+> **The content is there.** The rubric source holds 17 chunks and 21 chunks mention rubric, weight, per cent
+> or "Part B", so this is a **retrieval-matching** limitation rather than a missing document: the query does
+> not match the chunks that carry the answer, and `RET_NO_MATCH` escalates to the tutor by design
+> (`reasons.ts`: *"We could not find this in your assignment documents"*). The honest description is that
+> retrieval answers concretely-phrased questions well and abstract ones poorly, and the demo's original ask
+> was abstract.
+>
+> **Two consequences, and neither is hidden.** The question below is changed to one verified to answer with
+> citations, and the fallback is no longer optional: the pre-seeded transcript is the primary path if the
+> live turn does not render. **Record this before the rehearsal**, because a presenter who types the old
+> question on stage will get a tutor escalation where the script promises a cited answer.
+>
+> Changing the *product* was rejected at the freeze: retrieval thresholds are Phase 2 code, the freeze says
+> docs and slides only, and a threshold tuned to make one demo question work is exactly the kind of change
+> that breaks three others. Recorded as **I-53**.
+
 **Screen.** Same Assistant panel, so the refusal is still visible above the new turn. That adjacency is the point: do not clear the transcript. The driver types the second scripted question.
 
 **Say, as the driver types:**
 
 > So is it useless? No. Same milestone, different question.
 
-**Typed:**
+**Typed** (changed -- see the note above; the original abstract phrasing escalates to a tutor):
 
 ```text
-What does the rubric actually reward in Part B?
+What is the word count?
 ```
 
-**The answer quotes the rubric and cites the page.** Point at the citation.
+**The answer quotes the brief and cites the page.** Point at the citation.
 
 **Say:**
 
-> It answers, and it cites the source. It answers from the highest-authority document available -- the rubric -- and it shows you where in the original that came from. Refuses the work, answers the assignment.
+> It answers, and it cites the source. It answers from the highest-authority document available and it shows
+> you where in the original that came from. Refuses the work, answers the assignment.
 
 **Audience should notice.** The contrast with the previous beat, on the same screen, a few seconds apart. Refusal and usefulness are not opposites here; that is the whole design.
 
-**Fallback.** If the answer does not render, open the pre-seeded Assistant transcript for this question and narrate over the citation. If it renders poorly or vaguely, do not defend the wording; move on. The refusal beat already landed.
+**Fallback, and it is no longer optional.** Open the pre-seeded Assistant transcript for this question and
+narrate over the citation. The citation is the point of the beat, not the live call. **Rehearse the fallback
+as the primary path at least once**, because retrieval is the least predictable component in the demo and
+this beat is the only place its output is on screen.
 
 ---
 
@@ -322,6 +354,7 @@ Every beat that can fail, what to do, and what to say. **Rehearse the fallbacks,
 | 1 | Venue wifi, model provider, or both | The demo runs with `LLM_PROVIDER=mock`: the whole loop works offline. The pre-seeded states mean ingestion need not be run at all. | "We are running the offline provider so the venue network cannot take the demo down. The loop is identical; only the model is substituted." |
 | 2 | The app will not start | Fall back to the recorded video for beats 2-7, and narrate live over it. Keep beats 1 and 8 live. | "I'll walk you through it on a recording from ten minutes ago rather than burn your time." |
 | 3 | The Assistant refuses for the *wrong* reason, or gives a soft answer | Do not re-ask on stage. Show the recorded refusal plus the guardrail decision log. | "Let me show you the same request against the recorded run, with its decision log." |
+| 3b | **Beat 6's permitted question refuses, escalates or fails schema (`I-53`)** | **This is the expected case, not an edge case.** Run beat 6 from the pre-seeded transcript and narrate over the citation. Do not retype the question on stage. | "Let me show you this one from the seeded run, so the citation is on screen." |
 | 4 | **The image half of beat 5 fails live** -- the picker, the upload, the scan, or the response | Say so, then fall back to the text refusal that has just landed. Either play the recorded image refusal (`demo/fallback/refusal-image.mp4`) or point at the guardrail log and read the two classifications off it. | "The attachment is not cooperating, so I will show you the recorded version." Then: "the second turn classifies as `UP1` -- the same rule as the text turn -- and both refused with no model call." **Never skip this silently**; the acknowledgement is scripted in S1. |
 | 5 | The Assistant answers a prohibited question (guardrail hole) | Stop the beat. Show the golden set instead. | "That is the bug this test suite exists to catch -- and it just earned a new case." Honesty scores better than a cover-up a judge can see through. |
 | 6 | Ingestion times out or returns nothing | Switch to the pre-seeded after-ingest state. | "This proposal was generated a moment ago; here it is." |
