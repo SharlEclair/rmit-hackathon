@@ -86,6 +86,7 @@ pnpm demo:smoke         scripted end-to-end check of the demo loop (created in W
 | `app/src/lib/db/client.ts` | Postgres connection |
 | `app/src/lib/db/migrations/0001_baseline.sql` | Empty-but-applied baseline so the migration runner is exercised |
 | `app/src/lib/db/migrate.ts` | Migration runner over `app/src/lib/db/migrations/*.sql` |
+| `app/compose.yaml` | Optional Postgres container for a machine with no native install. Maps host port **5433**, not 5432, so it cannot collide with the native service that `12` S3.3 adopts as the primary development database (D66). Path A only; not required when path C is in use |
 | `app/README.md` | How to run it; link to `docs/12-OPERATIONS.md` |
 
 **Dependencies.** None. This is the root of the graph.

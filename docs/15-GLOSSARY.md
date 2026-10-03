@@ -27,7 +27,7 @@
 | **Assignment Assistant** | The student-facing AI coach. One conversational session per (student, assignment). | The *Assignment Analyst* or the *Insight Engine* -- internal capabilities, never shown to users. | Chatbot, bot, GPT, AI tutor |
 | **Assignment Analyst** | The internal ingestion capability that reads uploaded tutor materials and proposes structure, milestones, checklist, FAQ candidates, AI policy, and ambiguity/contradiction findings. | The *Assignment Assistant*. | Parser, extractor, ingester |
 | **Discussion Moderator** | The internal capability that flags student discussion content. Advisory only -- it never deletes. | The *guardrail*. | Censor, filter |
-| **Insight Engine** | The internal capability that aggregates behaviour into cohort insight. | Analytics UI. | Analyzer, ML model |
+| **Insight Engine** | The internal capability that computes cohort insight from behaviour. Deterministic: it makes no model call in the MVP (**D67**). | Analytics UI. | Analyzer, ML model |
 | **Query** | A **private** student -> tutor thread. One student, one tutor (or tutor team). | A *Discussion* thread (public/anonymous). | Ticket, message, DM |
 | **Discussion thread** | A **shared**, cohort-visible thread. Posts may be anonymous or attributed. | A *Query*. | Forum post, comment section |
 | **Post** | One message in a discussion thread. | A *Query message*. | Comment, entry, reply (except as UI affordance) |

@@ -4,7 +4,7 @@
 
 **Scope.** Everything from `app/` outward: environment, database, storage, model provider, deploy, secrets, failure modes.
 
-**Status.** No application code exists yet. Every command below becomes live with WP-01 ([`11-BUILD-PLAN.md`](11-BUILD-PLAN.md)). Nothing here claims to have been executed.
+**Status.** No application code exists yet. Every command below becomes live with WP-01 ([`11-BUILD-PLAN.md`](11-BUILD-PLAN.md)), with one exception: the native local Postgres in S3.3 **has** been executed and verified on this machine, and its evidence is recorded there. Nothing else here claims to have been executed.
 
 **Binding constraints.** C7 (secrets are never committed, logged, or returned in an API response) and C8 (every LLM call goes through the provider adapter). Both are in [`AGENTS.md`](../AGENTS.md) S2 and neither is negotiable for convenience.
 
@@ -62,7 +62,6 @@ Rotating `ANON_ID_SECRET` mid-assignment does not change the label of any post t
 | `LLM_THINKING_ASSISTANT` | Only when `LLM_PROVIDER=gemini` | `medium` | Thinking level for grounded assistant answers. |
 | `LLM_THINKING_ANALYST` | Only when `LLM_PROVIDER=gemini` | `high` | Thinking level for assignment ingestion; highest because quality there bounds everything downstream. |
 | `LLM_THINKING_MODERATOR` | Only when `LLM_PROVIDER=gemini` | `low` | Thinking level for discussion moderation (advisory only, **D28**). |
-| `LLM_THINKING_INSIGHT` | Only when `LLM_PROVIDER=gemini` | `low` | Thinking level for the analytics topic-grouping pass, which runs per refresh. |
 | `DEEPSEEK_API_KEY` | Only when `LLM_PROVIDER=deepseek` | *(empty)* | Set only the key matching the selected provider. |
 | `GEMINI_API_KEY` | Only when `LLM_PROVIDER=gemini` | *(empty)* | Set only the key matching the selected provider. |
 | `LLM_BASE_URL` | No | *(empty)* | Overrides the provider base URL for proxies or self-hosted gateways. |
@@ -126,13 +125,15 @@ Verified installed on the development machine:
 | uv | installed |
 | git | installed |
 | Docker CLI + Compose | v5.1.4 -- **the daemon is not running by default** |
+| Postgres | 18.6, native Windows service `postgresql-x64-18`, listening on port 5432 (path C, S3.3) |
 
-Known **not** installed: Postgres server (nothing listening on `127.0.0.1:5432`), `psql`, `gh`, `vercel`, `wrangler`.
+Known **not** installed: `gh`, `vercel`, `wrangler`. Postgres **is** installed and already provisioned -- see path C (S3.3). `psql.exe` sits in `C:\Program Files\PostgreSQL\18\bin` and is on the user `PATH`; a process that was already running when `PATH` was edited (an open terminal, VS Code, an agent shell) will not see it until that process restarts.
 
-Two consequences that shape everything below:
+Three consequences that shape everything below:
 
-1. **There is no local Postgres on this machine today.** Use path A (containers) or path B (hosted). Do not write instructions that assume a local server.
-2. **`gh` and `vercel` do not exist.** Do not run `gh repo create` or `vercel deploy`. Use git remotes and the web UI (S3.2, S5).
+1. **A local Postgres exists and is the primary path.** Path C (S3.3) is provisioned and verified. Path A (containers, S3.4) and path B (hosted, S3.5) are retained as fallbacks.
+2. **Path A must not map host port 5432.** The native service owns that port, so the original `"5432:5432"` mapping fails with "port is already allocated". The compose file in S3.4 maps `"5433:5432"` instead, and using path A therefore also changes `DATABASE_URL`.
+3. **`gh` and `vercel` do not exist.** Do not run `gh repo create` or `vercel deploy`. Use git remotes and the web UI (S3.2, S5).
 
 ### 3.2 Repository bootstrap (WP-01, do this first)
 
@@ -157,9 +158,55 @@ git remote -v
 
 If any secret appears in `git status --porcelain`, stop and fix `.gitignore` before committing. Rotating a leaked credential is cheaper than cleaning history.
 
-### 3.3 Postgres, path A: containers (primary)
+### 3.3 Postgres, path C: native local install (primary -- already provisioned)
+
+This is the path in use on the development machine (**D66**). It has been executed and verified; the evidence is at the end of this section.
+
+The server came from the PostgreSQL 18 Windows installer and runs as the Windows service `postgresql-x64-18` on port 5432. **Stack Builder was skipped deliberately.** None of its add-ons are used: no PostGIS (there is no spatial data anywhere in the model), no pgBouncer (one local instance, one app process), no pgAgent (**D60** runs ingestion as an app-polled job row, not a database scheduler), no psqlODBC (the app reaches the database through the `postgres` driver via Drizzle, `04` S2.1). `pgvector` does not apply in the MVP at all: **D38** rejects embeddings and retrieval is `tsvector` full-text.
+
+The role and database match `.env.example` exactly, so no `DATABASE_URL` change is needed. Put the statements in a file and drive `psql -f`:
+
+```sql
+-- pg-setup.sql
+CREATE ROLE "user" LOGIN PASSWORD 'password';
+CREATE DATABASE assignment_assistant OWNER "user";
+```
 
 ```bash
+psql -U postgres -h localhost -p 5432 -v ON_ERROR_STOP=1 -f pg-setup.sql
+```
+
+**PowerShell caveat, which is the real trap on this machine.** Windows PowerShell 5.1 strips embedded double quotes when it builds the command line for a native executable, so `-c 'CREATE ROLE "user" ...'` reaches `psql` as `CREATE ROLE user ...` and fails with `syntax error at or near "user"`. `user` is a reserved word in SQL, so those quotes are not optional. Two ways around it:
+
+- Use `psql -f file.sql`. A `.sql` file is untouched by shell quoting. This is what was used here, and it is the recommended form.
+- Or avoid double-quoted identifiers inside `-c` entirely.
+
+The verification commands in [`11-BUILD-PLAN.md`](11-BUILD-PLAN.md) happen to be safe as written: they use only single-quoted SQL string literals inside the double-quoted shell argument, so no double-quoted identifier is ever passed through. Do not "improve" them by adding one.
+
+Verified on this machine:
+
+```text
+CREATE ROLE
+CREATE DATABASE
+PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit
+CREATE TABLE / INSERT 0 1 / DROP TABLE          # create-table probe in the public schema
+id: 7350a429-2c87-443d-8937-c7ff16ea124d        # gen_random_uuid(), no extension needed
+```
+
+Two consequences worth knowing:
+
+1. `gen_random_uuid()` works on the stock install, so the `pgcrypto` note in [`06-DATA-MODEL.md`](06-DATA-MODEL.md) does not trigger on this server. Keeping that branch in the first migration is still correct, because path A pins `postgres:16-alpine` and path B may be any hosted version; on path C it is simply a no-op.
+2. The probe confirms the `user` role can create tables in `public`. That is **not** automatic on Postgres 15+; it works here because the database owner owns that schema. Migrations run as `user`, so this is load-bearing.
+
+Two operational cautions:
+
+- The service binds `0.0.0.0:5432`, so it is reachable from the local network, not only from `localhost`. On a shared or untrusted network, set `listen_addresses = 'localhost'` in `postgresql.conf` or tighten `pg_hba.conf`.
+- The local superuser password is a weak, human-chosen value, and the `user` role password is the same literal that already appears in `.env.example`. Treat both as local development credentials only (C7): never reuse them for a deployed database, and never write the superuser password to a committed file.
+
+### 3.4 Postgres, path A: containers (fallback)
+
+```bash
+# Path A only. Path C (S3.3) is primary and needs no Docker at all.
 # Ensure Docker Desktop is running first; the daemon is not started by default.
 docker info >/dev/null 2>&1 || echo "Start Docker Desktop before continuing"
 
@@ -167,7 +214,7 @@ docker compose up -d postgres      # compose file added by WP-01
 docker compose ps                  # postgres must be healthy before migrating
 ```
 
-`app/compose.yaml` (added by WP-01) should define one service:
+`app/compose.yaml` (added by WP-01) defines one service. **The host port is 5433, not 5432**, because the native service from path C already owns 5432; the original `"5432:5432"` mapping fails with "port is already allocated":
 
 ```yaml
 services:
@@ -177,7 +224,7 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: assignment_assistant
-    ports: ["5432:5432"]
+    ports: ["5433:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d assignment_assistant"]
@@ -187,11 +234,13 @@ volumes:
   pgdata:
 ```
 
-Matching `.env` value: `DATABASE_URL="postgresql://user:password@localhost:5432/assignment_assistant"`.
+Matching `.env` value for this path: `DATABASE_URL="postgresql://user:password@localhost:5433/assignment_assistant"`. Note the port. The `.env.example` default stays on 5432 because that is path C's port.
 
-### 3.4 Postgres, path B: hosted free tier (zero-install fallback)
+The image is pinned to `postgres:16-alpine` while path C runs 18.6. Both satisfy **D37** and neither needs `pgcrypto`: `gen_random_uuid()` is built in from Postgres 13, and the schema names no other version-specific feature.
 
-Use this when Docker Desktop will not start, or when a teammate needs a database without installing anything. Supabase and Neon both issue a Postgres connection string on a free tier. Put it in `DATABASE_URL` and skip S3.3 entirely.
+### 3.5 Postgres, path B: hosted free tier (zero-install fallback)
+
+Use this when Docker Desktop will not start and path C is unavailable to whoever is running the app, or when a teammate needs a database without installing anything. Supabase and Neon both issue a Postgres connection string on a free tier. Put it in `DATABASE_URL` and skip path A (S3.4) entirely.
 
 Two things to know about hosted Postgres:
 
@@ -200,7 +249,7 @@ Two things to know about hosted Postgres:
 
 Never commit the connection string. It contains a password.
 
-### 3.5 Install, migrate, seed, run
+### 3.6 Install, migrate, seed, run
 
 ```bash
 cd app
@@ -219,7 +268,7 @@ Seeded demo accounts:
 
 These are demo fixtures in the seed script, not real accounts. They must never be reused for anything else, and the seed must not create them in a production database.
 
-### 3.6 Quality gates
+### 3.7 Quality gates
 
 ```bash
 cd app
@@ -358,7 +407,7 @@ With this configuration the demo has exactly one external dependency: Postgres. 
 
 ### 7.3 Graceful shutdown
 
-Stop `pnpm dev` or `pnpm start` and `docker compose down` (not `down -v`; that discards the seeded volume). The database schema and the fixture survive a container stop.
+Stop `pnpm dev` or `pnpm start`. If you used path A, also `docker compose down` (not `down -v`; that discards the seeded volume) -- the schema and the fixture survive a container stop. On path C the database is a Windows service, so it keeps running; stop it only deliberately (`Stop-Service postgresql-x64-18`), because the app cannot boot without it.
 
 ---
 
@@ -368,8 +417,8 @@ Ordered roughly by how likely each is to appear during the weekend or during jud
 
 | # | Symptom | Likely cause | Action |
 |---|---|---|---|
-| F1 | App boots, every screen 500s | `DATABASE_URL` unset or pointing at a stopped database | `docker compose ps`; if path B, check the provider dashboard. `/api/health` reports `db` state without crashing. |
-| F2 | `docker compose up` fails: endpoint not found | Docker Desktop is not running -- the daemon does not start by default on this machine | Start Docker Desktop, or switch to the hosted Postgres in S3.4. Do not spend more than 10 minutes on the daemon. |
+| F1 | App boots, every screen 500s | `DATABASE_URL` unset or pointing at a stopped database | `Get-Service postgresql-x64-18` on path C, or `docker compose ps` on path A; if path B, check the provider dashboard. `/api/health` reports `db` state without crashing. |
+| F2 | `docker compose up` fails: endpoint not found | Docker Desktop is not running -- the daemon does not start by default on this machine | This is precisely why path C (S3.3) is primary: it needs no daemon. Otherwise start Docker Desktop, or use the hosted Postgres in S3.5. Do not spend more than 10 minutes on the daemon. |
 | F3 | Model call times out, 401s, or 429s | Provider outage, expired or unset key, rate limit, venue network | Set `LLM_PROVIDER=mock` and restart. The whole loop is walkable offline. This is the single most likely demo-day failure and the mitigation is one environment variable. |
 | F4 | Ingestion returns a proposal but every milestone is empty | Structured output failed schema validation | This is a refusal by design (D16). Check the server log for the validation error and the prompt version. Do not add a retry loop. |
 | F5 | Ingestion loops or the bill spikes | A retry loop around a failing model call | `LLM_MAX_CALLS_PER_SESSION` should have failed loudly first. If it did not, that is a defect in WP-04; the cap is not optional. |
@@ -383,11 +432,12 @@ Ordered roughly by how likely each is to appear during the weekend or during jud
 | F13 | Port 3000 already in use | A stale `pnpm dev` | Kill the process, or run `pnpm dev --port 3001` and update `APP_BASE_URL` to match. |
 | F14 | An "Insufficient data" cell where a value is expected | The seeded cohort for that milestone is below 5 contributors | Working as designed (D32). Regenerate the fixture with a different seed constant if the demo needs a populated cell; do not hand-edit rows. |
 | F15 | `pnpm db:migrate` fails on a fresh database | A migration assumes a table a later migration creates | Migrations must apply in filename order from empty. Fix the ordering; never patch a live database by hand (D37). |
-| F16 | Seeding twice duplicates the fixture | The seed is not idempotent | It must be: re-running produces identical state (WP-02). Reset with `docker compose down -v` then `up -d` while developing, but fix the seed. |
+| F16 | Seeding twice duplicates the fixture | The seed is not idempotent | It must be: re-running produces identical state (WP-02). On path A reset with `docker compose down -v` then `up -d`; on path C use the `dropdb`/`createdb` sequence in S9. Either way, fix the seed. |
 | F17 | Elapsed time shows a negative or absurd value | Timestamps compared across timezones, or the start was never recorded | Store timestamps as `timestamptz`, compare in UTC, and label the metric "elapsed time" (D33). |
 | F18 | A secret appears in a log line or an error page | A debug log or an unhandled error echoing config | Remove it, confirm the value is not in the repository, and rotate if it was committed (C7, S6.2 rule 8). |
 | F19 | The venue has no usable wifi | Reality | It does not matter: `mock` plus local Postgres plus the recorded fallbacks. Rehearse this case before Sunday. |
 | F20 | A judge asks how a screen was produced and the answer is unclear | The provenance badge or the demo-data marker is missing | Fix the screen. Every AI artifact carries its status, and every synthetic-data screen says so ([`02-SCOPE.md`](02-SCOPE.md) S5). |
+| F21 | `docker compose up -d postgres` fails: "port is already allocated" | The native Postgres service from path C holds host port 5432 | Expected on this machine, not a defect. Use path C (S3.3). Otherwise keep the compose file's `"5433:5432"` mapping (S3.4) and point `DATABASE_URL` at port 5433. |
 
 ---
 
@@ -400,6 +450,20 @@ Three separate things, with three different costs:
 | Restore the **seeded demo state** | `pnpm db:seed` (after `demo/reset.sh`) | Idempotent re-seed. Fast. Use this before every rehearsal. |
 | Snapshot the **database** before a risky change | `docker compose exec postgres pg_dump -U user assignment_assistant > /tmp/demo.sql` | A file you can restore with `psql < /tmp/demo.sql`. Do this once on Saturday evening, before the last sprint. |
 | Full reset | `docker compose down -v && docker compose up -d && pnpm db:migrate && pnpm db:seed` | Destroys the volume. Takes minutes. Keep it as the escape hatch of last resort, and time it once so you know what it costs. |
+
+On path C (the primary path) the `docker compose` commands in that table do not apply. The equivalents, with `pg_dump.exe`, `dropdb.exe` and `createdb.exe` in `C:\Program Files\PostgreSQL\18\bin`:
+
+```bash
+# Snapshot, same purpose as the compose pg_dump above
+pg_dump -U user -h localhost -p 5432 assignment_assistant > demo.sql
+
+# Full reset: drop, recreate, migrate, seed
+dropdb -U user -h localhost -p 5432 assignment_assistant
+createdb -U user -h localhost -p 5432 -O user assignment_assistant
+pnpm db:migrate && pnpm db:seed
+```
+
+`dropdb` and `createdb` prompt for the role password, or read it from `PGPASSWORD`. Never put that value in a committed script. Do not use `pg_dump` output as the demo's source of truth: the idempotent seed is, and it costs nothing to re-run.
 
 On path B (hosted Postgres), `pg_dump` needs `psql`/`pg_dump` installed. If they are not available, do not improvise a dump at 2 AM: rely on the idempotent seed, which is what the demo path actually depends on.
 

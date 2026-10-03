@@ -410,12 +410,16 @@ Only **tutor-directed questions** (D49): private query thread titles and bodies,
      b. match against milestone vocabulary from approved items -> assign topic
      c. match against a curated topic lexicon (auth, testing, deployment,
         documentation, requirements, data model, tooling, submission) -> assign topic
-5. MODEL CLUSTERING (optional, Insight Engine; only for unassigned questions)
-     - k = min(8, max(2, ceil(unassigned / 5)))
-     - label = noun phrase, <= 4 words, no verb, no imperative
-     - schema-validated; a label failing validation is discarded, not repaired
-     - failure of the model call leaves step 4 results only; grouping degrades,
-       it never blocks the view
+5. NO MODEL STEP. Step 4 is the whole grouping pipeline. Analytics refreshes
+     make no adapter call, so there is no per-refresh model budget and no
+     `LLM_THINKING_INSIGHT` setting (D67). Questions that step 4 cannot place are
+     attributed to "Other" rather than clustered.
+     - This is a decision, not a gap: a per-refresh budget would need its own
+       counter and persistence model for no MVP or demo benefit, and grouping is
+       non-blocking either way.
+     - A future model-clustering step, if ever added, is a separate change that
+       must bring its own scoped budget with it. It must not be added by
+       re-enabling a dormant code path.
 6. ATTRIBUTE  each question may belong to at most 2 topics; otherwise "Other"
 7. APPLY FLOOR  a topic is shown only when >= 5 distinct students contributed
                 questions to it; "Other" obeys the same floor
@@ -439,8 +443,8 @@ Only **tutor-directed questions** (D49): private query thread titles and bodies,
 
 | Case | Behaviour |
 |---|---|
-| Fewer than 5 questions in the milestone | The topic block shows `insufficient data`; clustering does not run, saving a model call. |
-| Model call fails | Step 4 results are shown with the note that grouping is partial. The view does not error. |
+| Fewer than 5 questions in the milestone | The topic block shows `insufficient data`; grouping is not attempted. |
+| A question matches no lexicon or milestone term | It is attributed to "Other". Grouping never errors and never blocks the view, because it involves no external call (D67). |
 | All questions land in "Other" | Show "Other" with its count if the floor is met, plus "No dominant topics detected". |
 | One topic holds everything | Show it, with its count. A single dominant topic is a real signal. |
 

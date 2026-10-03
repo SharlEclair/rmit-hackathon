@@ -73,11 +73,11 @@ Rules for this table:
 
 ### 2.3 Runtime, local prerequisites, and the deployment constraint
 
-Verified on the authoring machine: Node v24.15.0, npm 11.12.1, pnpm available, Python 3.13.2, uv available, git available. Docker CLI and Docker Compose v5.1.4 are installed **but the Docker daemon is not running**, so a compose-provided Postgres is a "start Docker Desktop first" step. Postgres is not installed locally and nothing is listening on 127.0.0.1:5432. `psql`, `gh`, `vercel` and `wrangler` are not installed.
+Verified on the authoring machine: Node v24.15.0, npm 11.12.1, pnpm available, Python 3.13.2, uv available, git available. Docker CLI and Docker Compose v5.1.4 are installed **but the Docker daemon is not running**, so a compose-provided Postgres is a "start Docker Desktop first" step. Postgres 18.6 **is** installed locally as the Windows service `postgresql-x64-18`, listening on port 5432, with the role and database matching `.env.example` already provisioned and verified (`12` S3.3, **D66**). `psql.exe` is installed at `C:\Program Files\PostgreSQL\18\bin` and is on the user `PATH`. `gh`, `vercel` and `wrangler` are not installed.
 
 Consequences for the build:
 
-1. Local Postgres is a prerequisite step, not an assumption. Either start Docker Desktop and bring up the compose Postgres, or point `DATABASE_URL` at a hosted Postgres (Neon, Supabase). The first build task should treat this as a documented setup step, not a discovery.
+1. Local Postgres is available and already provisioned, so `DATABASE_URL` needs no change from the `.env.example` default. The native install is the primary path (**D66**), with containers and hosted Postgres retained as fallbacks (`12` S3.3 - S3.5). The first build task should treat this as a documented setup step, not a discovery.
 2. The app must not depend on `psql`. Migrations run through `pnpm db:migrate` (drizzle-kit); no shell tool is required.
 3. `gh`, `vercel` and `wrangler` are absent, so the deploy path must not require them. Use a container/VPS-style target or a Git-based deploy.
 
@@ -721,7 +721,6 @@ This table matches `.env.example` exactly, variable for variable. Copy `.env.exa
 | `LLM_THINKING_ASSISTANT` | `medium` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for the student assistant's grounded answers. |
 | `LLM_THINKING_ANALYST` | `high` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for assignment ingestion. Highest setting because it runs once per document and the extraction quality is what everything downstream depends on. |
 | `LLM_THINKING_MODERATOR` | `low` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for discussion moderation. Advisory only (D28), so speed matters more than depth. |
-| `LLM_THINKING_INSIGHT` | `low` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for the analytics topic-grouping pass, which runs per refresh rather than per request. |
 | `DEEPSEEK_API_KEY` | `` (empty) | `LLM_PROVIDER=deepseek` | Yes | `src/lib/llm/deepseek.ts` | DeepSeek credential. Never logged, never returned. |
 | `GEMINI_API_KEY` | `` (empty) | `LLM_PROVIDER=gemini` | Yes | `src/lib/llm/gemini.ts` | Gemini credential. Never logged, never returned. |
 | `LLM_BASE_URL` | `` (empty) | Never; optional | No | `src/lib/llm/` | Override provider base URL (proxy, self-hosted gateway). Empty means the provider default. |
@@ -767,5 +766,5 @@ Recorded rather than guessed, per AGENTS.md 4.1.4.
 1. **Where ingestion runs.** RESOLVED by **D60**: a Postgres-backed job row polled by the ingestion state screen. Stage S6 needs several model calls that can exceed a request timeout, and the job row needs no new service while surviving a page reload. The route handler only enqueues and returns.
 2. **Extraction for scanned PDFs.** Vision transcription is specified (S3) but its confidence handling is not. Working default: mark the document `needs_tutor_attention` and do not chunk it.
 3. **Whether the Assignment Map is stored as nodes, edges, or both.** `06-DATA-MODEL.md` section 7.2.4-7.2.6 owns the answer (`assignment_structures`, `requirement_nodes`, and the Map edge tables); this doc only requires that a node can deep-link to a page.
-4. **`insight_engine` model calls.** The topic-grouping pass (see `08-ANALYTICS-SPEC.md` section 7) may need an adapter call. If it does, its budget is counted per analytics refresh, not per student session; the exact accounting is unsettled.
+4. **`insight_engine` model calls.** RESOLVED by **D67**: analytics refresh makes no adapter call. Topic grouping is the deterministic pipeline in `08-ANALYTICS-SPEC.md` section 7 only, so there is no per-refresh budget, no counter, and no `LLM_THINKING_INSIGHT` setting. The `insight_engine` capability remains a named internal capability (D12) that computes cohort insight deterministically.
 5. **Cost ceiling per ingestion run.** `LLM_MAX_CALLS_PER_SESSION` is per session; an ingestion run has its own budget. Working default: 5 passes x 1 call, 2 retries total across the run.
