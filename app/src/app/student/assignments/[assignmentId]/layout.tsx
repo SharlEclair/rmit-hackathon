@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { AssistantPanel } from '@/components/assistant-panel';
 import { WorkspaceTabs } from '@/components/workspace-tabs';
 import { requireStudentPage, loadWorkspace } from '@/features/workspace/server-data';
 
@@ -53,6 +54,27 @@ export default async function AssignmentWorkspaceLayout(props: {
         />
 
         {props.children}
+
+        {/*
+          The Assistant, at the foot of every tab (`07` section 3.3 rule 3: "the Assistant floating
+          action button (FAB) sits bottom-right on all four student workspace tabs and nowhere else",
+          and section 4.7: "the Assistant is available on all four tabs"). It is mounted once in the
+          layout rather than per tab, so switching tabs cannot reset the transcript -- the panel owns
+          it, and a per-tab mount would discard it on every navigation.
+
+          The panel is a client component: it owns the `ReadableStream` reader and the composer. The
+          proactive notice is not fetched here, because its milestone focus is the student's current
+          item, which Phase 6's progress work will supply; until then the panel renders the transcript
+          and the composer, and `proactive: null` is an honest "no notice is due" (`06` section 5.5.9:
+          `null` means exactly that).
+        */}
+        <AssistantPanel
+          assignmentId={assignmentId}
+          policyAvailable={workspace.policy.available}
+          milestoneId={null}
+          milestoneTitle={null}
+          proactive={null}
+        />
       </div>
     </main>
   );

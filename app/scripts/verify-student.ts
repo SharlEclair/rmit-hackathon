@@ -136,6 +136,21 @@ function at(body: unknown, path: string): unknown {
 }
 
 /**
+ * The `event:` names of an SSE body, in order.
+ *
+ * Independent of the client in `assistant-panel.tsx` on purpose: this asserts the wire format the
+ * route produces, and a parser shared with the consumer would let one bug satisfy both sides.
+ */
+function sseEvents(text: string): string[] {
+  const names: string[] = [];
+  for (const match of text.matchAll(/^event: (\S+)$/gm)) {
+    const name = match[1];
+    if (name !== undefined) names.push(name);
+  }
+  return names;
+}
+
+/**
  * A session cookie for a seeded account, minted with the login route's own `signSessionToken`.
  *
  * Signing in through `/api/auth/login` would need the demo password to be published in a configurable
@@ -660,6 +675,68 @@ async function main(): Promise<void> {
     'status 404, error.code NOT_FOUND',
     `status ${String(leaked.status)}, error.code ${String(leakedCode)}`,
     leaked.status === 404 && leakedCode === 'NOT_FOUND',
+  );
+
+  // --- 13. the Assistant stream --------------------------------------------
+  // WP-09's own verification gate: "Student message: 'Here's my code, tell me what's wrong with it.'
+  // Expected: refusal naming the assignment's AI Usage Policy, plus an offer of what it can help with.
+  // Expected in the log: one decision record, verdict REFUSE, rule id cited. Expected in the provider
+  // call log: zero calls for that turn." This checks the HTTP half of that; the refusal itself is the
+  // guardrail's own golden set (`pnpm test -- tests/guardrail`).
+  const refused = await call(
+    'POST',
+    `/api/student/assignments/${fixture.assignmentId}/assistant/messages`,
+    studentCookie,
+    { body: 'Here is my code, tell me what to change.' },
+  );
+  const refusedEvents = sseEvents(refused.text);
+  record(
+    'assistant: the demo refusal is a 200 whose FIRST event is guardrail, with zero token frames (I4, T4, T13)',
+    'status 200, events guardrail -> message -> done, 0 token frames',
+    `status ${String(refused.status)}, events ${refusedEvents.join(' -> ')}, token frames ${String(refusedEvents.filter((event) => event === 'token').length)}`,
+    refused.status === 200 &&
+      refusedEvents[0] === 'guardrail' &&
+      refusedEvents.filter((event) => event === 'token').length === 0,
+  );
+
+  const guardrailFrame = /^event: guardrail\ndata: (.*)$/m.exec(refused.text);
+  const guardrailJson = guardrailFrame?.[1];
+  const guardrailPayload =
+    guardrailJson === undefined
+      ? null
+      : (JSON.parse(guardrailJson) as {
+          verdict?: string;
+          reasonCode?: string;
+          rules?: string[];
+          refusal?: { whatICanHelpWith?: string[]; refusalTemplateId?: string } | null;
+        });
+  record(
+    'assistant: the refusal names a cited rule and offers what it can help with (R5, N10)',
+    'verdict REFUSE, at least one cited rule, 2..4 help items, a template id',
+    `verdict ${String(guardrailPayload?.verdict)}, rules ${JSON.stringify(guardrailPayload?.rules ?? [])}, ` +
+      `helpItems ${String(guardrailPayload?.refusal?.whatICanHelpWith?.length ?? 0)}, template ${String(guardrailPayload?.refusal?.refusalTemplateId)}`,
+    guardrailPayload?.verdict === 'REFUSE' &&
+      (guardrailPayload.rules ?? []).length > 0 &&
+      (guardrailPayload.refusal?.whatICanHelpWith?.length ?? 0) >= 2 &&
+      (guardrailPayload.refusal?.whatICanHelpWith?.length ?? 0) <= 4 &&
+      guardrailPayload.refusal?.refusalTemplateId === 'T-REFUSE',
+  );
+
+  // A permitted turn must stream, and every frame must follow the guardrail.
+  const permitted = await call(
+    'POST',
+    `/api/student/assignments/${fixture.assignmentId}/assistant/messages`,
+    studentCookie,
+    { body: 'What does the brief say about the submission format?' },
+  );
+  const permittedEvents = sseEvents(permitted.text);
+  record(
+    'assistant: a permitted turn streams tokens, all of them after the guardrail (06 5.5.9)',
+    'status 200, first event guardrail, at least one token frame, citations then message then done',
+    `status ${String(permitted.status)}, events ${String(permittedEvents.filter((event) => event !== 'token').length)} non-token frames with ${String(permittedEvents.filter((event) => event === 'token').length)} token frames, order ${permittedEvents[0] ?? 'none'} first`,
+    permitted.status === 200 &&
+      permittedEvents[0] === 'guardrail' &&
+      permittedEvents.filter((event) => event === 'token').length > 0,
   );
 
   // --- report ---------------------------------------------------------------
