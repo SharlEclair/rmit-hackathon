@@ -145,8 +145,22 @@ export async function startChecklistItem(
  * The completion transition. Closes the interval and emits `checklist_item_completed` with the
  * duration Postgres computed, so the event and the row can never disagree.
  *
- * The `completed_at is null` guard is the first-completion rule of D48: a second completion after
- * a re-open does not overwrite the standing interval.
+ * **D48, and the two ways to get it wrong.** `06` section 7.3.2: "Re-opening a completed item sets
+ * `state = 'in_progress'` ... A later completion leaves `completed_at` and `elapsed_seconds` at their
+ * first values."
+ *
+ *   - The guard is `state <> 'completed'`, NOT `completed_at is null`. After a reopen the row is
+ *     `in_progress` with `completed_at` still set (that is what D48 requires), so a
+ *     `completed_at is null` guard would refuse the re-completion the reopened state exists to allow.
+ *     A first live run of `scripts/verify-student.ts` reported exactly that: the row stayed
+ *     `in_progress` with a reopen count, and the student could never finish the item again.
+ *   - `completed_at` and `elapsed_seconds` are assigned through `coalesce`, so the FIRST values stand.
+ *     Writing `completed_at = <now>` unconditionally would move the timestamp while
+ *     `ck_student_checklist_progress_elapsed_matches` keeps `elapsed_seconds` pinned to the first
+ *     interval, and the two would then disagree inside one row.
+ *
+ * A second completion with no reopen in between is still a no-op, because the guard then sees the row
+ * already `completed`.
  */
 export async function completeChecklistItem(
   ex: Executor,
@@ -155,14 +169,17 @@ export async function completeChecklistItem(
   const rows = await ex<{ elapsed_seconds: number }[]>`
     update student_checklist_progress
        set state = 'completed',
-           completed_at = ${params.completedAt.toISOString()}::timestamptz,
-           elapsed_seconds = round(
-             extract(epoch from (${params.completedAt.toISOString()}::timestamptz - started_at))
-           )::integer,
+           completed_at = coalesce(completed_at, ${params.completedAt.toISOString()}::timestamptz),
+           elapsed_seconds = coalesce(
+             elapsed_seconds,
+             round(
+               extract(epoch from (${params.completedAt.toISOString()}::timestamptz - started_at))
+             )::integer
+           ),
            last_state_changed_at = ${params.completedAt.toISOString()}::timestamptz
      where student_assignment_id = ${params.studentAssignmentId}::uuid
        and checklist_item_id = ${params.checklistItemId}::uuid
-       and completed_at is null
+       and state <> 'completed'
     returning elapsed_seconds
   `;
   const row = rows[0];

@@ -195,7 +195,6 @@ export async function listAssignmentCardsForStudent(
               where q.assignment_id = a.id
                 and q.student_id = ${userId}::uuid
                 and q.status = 'open'
-                and q.deleted_at is null
            ) as open_query_count
       from assignments a
      where a.course_id = ${courseId}::uuid
@@ -426,6 +425,12 @@ export interface WorkspaceCountsRow {
  * `queriesWithTutorReply` counts threads whose status is `answered` -- the state a tutor reply sets
  * (`07` section 5.1) -- rather than joining `query_messages`, so it agrees with the `Answered` badge
  * the student sees on the same screen.
+ *
+ * **`queries` has no `deleted_at`, and these two counts must not filter as though it did.** Only
+ * `query_messages` is soft-deletable (`0006_queries_faq.sql`): a Query thread is closed by its status,
+ * not removed. A `deleted_at is null` predicate here fails at the database with
+ * "column q.deleted_at does not exist" -- which is what a first live request to this route reported
+ * before the predicate was removed.
  */
 export async function readWorkspaceCounts(
   ex: Executor,
@@ -446,14 +451,12 @@ export async function readWorkspaceCounts(
               where q.assignment_id = ${scope.assignmentId}::uuid
                 and q.student_id = ${studentId}::uuid
                 and q.status = 'open'
-                and q.deleted_at is null
            )::int as open_queries,
            (
              select count(*) from queries q
               where q.assignment_id = ${scope.assignmentId}::uuid
                 and q.student_id = ${studentId}::uuid
                 and q.status = 'answered'
-                and q.deleted_at is null
            )::int as queries_with_tutor_reply,
            (
              select count(*)
@@ -505,6 +508,10 @@ export async function readWorkspaceCounts(
  * `max` rather than the first rule's is what makes the value mean "since when has this been readable
  * in full", and it is `null` (not a fabricated timestamp) when nothing is published, which is D47's
  * unavailable state.
+ * `ai_policy_rules` has no `deleted_at` (`0004_structure.sql`): a policy rule is withdrawn by
+ * publication status, not removed. A `deleted_at is null` predicate here fails at the database, which
+ * is what the first live request to this route reported; `listVisiblePolicyRules` in
+ * `student-visibility.ts` is the read that already gets this right, so the two agree.
  */
 export async function readPolicyPublishedAt(
   ex: Executor,
@@ -516,7 +523,6 @@ export async function readPolicyPublishedAt(
      where assignment_id = ${scope.assignmentId}::uuid
        and structure_id = ${scope.structureId}::uuid
        and publication_status = 'PUBLISHED'
-       and deleted_at is null
   `;
   return isoTimestamp(rows[0]?.published_at ?? null);
 }
