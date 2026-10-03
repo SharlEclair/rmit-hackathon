@@ -24,6 +24,28 @@
 > `git log --format=%ad --date=short | sort -u`, which returns one date however many commits follow.
 **Normative contract:** [`../AGENTS.md`](../AGENTS.md). If this doc set and `AGENTS.md` disagree, `AGENTS.md` wins.
 
+> **Four paths below do not exist in a fresh clone, and that is deliberate rather than broken.** Recorded
+> here because this file is the doc set's entry point and is the one place a reader will look:
+>
+> | Path | Excluded by |
+> |---|---|
+> | `docs/project idea.md` | `.git/info/exclude:7` -- internal product thinking |
+> | `docs/assignment_assistant_project_handoff.md` | `.gitignore:24` (`*handoff*.md`) -- the original design conversation |
+> | `hackathon info/info.md` | `hackathon info/` is untracked -- hackathon-provided material, which the team has no right to republish (`AGENTS.md` section 7) |
+> | `docs/originals/README.md` | `.git/info/exclude:9` (`docs/originals/`) |
+>
+> **Nothing here depends on reading them.** They are inputs: every decision taken from them is in
+> [`01-DECISIONS.md`](01-DECISIONS.md) and every requirement in [`02-SCOPE.md`](02-SCOPE.md). A reader who
+> cannot open them loses provenance, not content.
+>
+> **One case is likely a mistake and is flagged rather than fixed.** `16-VERIFICATION-REPORT.md` is excluded
+> by `.gitignore:30` (`*-VERIFICATION-REPORT.md`), a blanket rule that also catches scratch audits
+> (`*-REVIEW*.md` and `*-AUDIT*.md` sit beside it). Unlike the four above it is **an original artefact
+> written for this project**, and it is cited in the tables of contents of this file and
+> [`18-IMPLEMENTATION-PLAN.md`](18-IMPLEMENTATION-PLAN.md), so those two links do not resolve. Either track
+> it (`git add -f`, which publishes an audit the team may not want public) or drop the two rows -- both
+> one-line changes, and recorded as **I-57** for the team to choose between.
+
 ---
 
 ## 1. Read this first, by role
