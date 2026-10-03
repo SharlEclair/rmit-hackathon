@@ -114,3 +114,30 @@ contract, recorded here so a later session does not re-derive them.
 **How these were verified.** `pnpm test -- tests/guardrail` -> 232 tests in 9 files, all passing,
 in 1.44 s with no network and no provider key; the 53 golden cases of `05` section 11.6 execute with
 no skip list and no `MODALITY` marker. The exact counts and commands are in `../01-STATE.md`.
+
+---
+
+## Session 02 -- Phase 2 session-level readings *(implementation readings that change no contract)*
+
+The contract-changing rulings are register rows **D89**-**D97** in `../../01-DECISIONS.md`. What
+follows is the equivalent of the `A3`-`A15` block: choices taken inside a documented contract.
+
+| # | Reading | Why, and what it would take to overturn |
+|---|---|---|
+| `B7` | **Grounding selection for the Analyst is "first 40 chunks within 60,000 characters, in `listT1Chunks` order", and truncation is recorded in the run's notes.** | `04` section 7 gives stage S6 "chunks (T1)" as input without a retrieval step; section 6.3's ranking is for a *student turn*, which the Analyst does not have. Ordering is fixed rather than relevance-ranked so block C stays byte-stable (`04` section 5.5 rule 1). Change the caps in `analyst.ts` (`MAX_GROUNDING_CHUNKS`, `MAX_GROUNDING_CHARS`) if a larger document needs it -- and keep the note |
+| `B8` | **The 700-token target and 120-token overlap are realised as `CHARS_PER_TOKEN = 4`.** `char_count` is the stored, exact measure. | `04` section 6.2 specifies tokens but `06` section 7.2.3 stores characters. Counting tokens would need the provider's tokenizer, which would make chunk boundaries provider-specific -- and D39 makes the provider a configuration decision. The consequence (a chunk may be larger or smaller than 700 tokens) is stated in the module |
+| `B9` | **The overlap is dropped at a heading boundary.** | A carry from the previous section in front of a heading makes the chunk start with text the heading just closed, and `section_label` then governs text it does not govern. Overlap is for continuity *within* a section |
+| `B10` | **`isHeading` also accepts dotted numbering (`3.2 Referencing`).** | The Phase 1 seed's rule (`\d+\.\s+\S`) missed it; the 120-character cap is what keeps an ordinary numbered sentence out. Accepted by `tests/ingest/chunk.test.ts` |
+| `B11` | **Text extraction for a student upload decodes UTF-8 non-fatally** (invalid bytes become U+FFFD); an empty result is `extraction_status = 'failed'`. | A student pasting text has no control over the encoding, and a hard failure would show a decode error where the honest answer is "nothing readable". `src/lib/extract/plain.ts` stays fatal because a *document* that cannot be decoded is a corrupt document |
+| `B12` | **The Analyst passes run at `temperature: 0`, `maxOutputTokens: 8192`, `timeoutMs: 120000`.** | `04` section 5.2 requires 0 for every classifying capability; the other two are the working defaults. A pass that truncates shows up as a schema failure (`finishReason: length` was not separately handled), which is the conservative outcome |
+| `B13` | **Block B contains approved policy rules and approved milestone *titles* only.** | `04` section 5.5 puts "ids and titles only" in block B and the bodies in block C. It also keeps C2 honest: the title is the tutor's label, not the requirement text |
+| `B14` | **The milestone pass is given the requirement list as `R0. <title>` lines.** | Its `requirementRefs` are positions, and a model cannot link to a list it cannot enumerate (D93). The mock's template counts those lines, which is why the format is a contract between `analyst.ts` and `fixtures/analyst-demo.ts` |
+| `B15` | **`scripts/ingest-once.ts` writes its report to `--out` (default `.local/proposal.json`), not to WP-05's `app/.scratch/proposal.json`.** | `.scratch/` is not gitignored -- only `*.scratch.md` is -- so the gate would have left an untracked artifact in the working tree. `.local/` is ignored. The gate's *purpose* (a human reads the proposal) is unchanged |
+| `B16` | **The script creates a new assignment on the seeded course rather than reusing the seeded demo assignment.** | Running the gate twice must not disturb the state Phase 1 verified, and ingestion is not idempotent by design (`assignment_structures.version` increments per run). The cost is that repeated runs leave assignments behind; they are inert (`draft`/`in_review`, nothing published) |
+
+**Register rows cited.** `D60`, `D67`, `D68`, `D89`-`D97`, `T6`, `T7`, `T27`-`T30`, `I-15`, `I-19`.
+
+**How these were verified.** `pnpm test -- tests/llm tests/ingest tests/extract tests/storage` -> 180
+tests in 10 files, all passing with no network and no provider key; `LLM_PROVIDER=mock pnpm exec tsx
+scripts/ingest-once.ts --fixture demo` -> `ok: true`, `stage: S7`, and the SQL checks in
+`01-STATE.md` section 4. The live structured call is **not** verified (**I-35**).

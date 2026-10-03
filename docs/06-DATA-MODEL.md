@@ -323,7 +323,7 @@ Every table belongs to exactly one class. The class determines what may read it.
 
 | Class | Tables | Contains student identity | Reachable by tutor-facing reads | Notes |
 |---|---|---|---|---|
-| **Identity-bearing** | `users`, `enrollments`, `student_assignments`, `student_checklist_progress`, `assistant_sessions`, `assistant_messages`, `assistant_proactive_messages`, `student_uploads`, `queries`, `query_messages`, `audit_logs` | Yes | Partly, and only in the private-Query sense: a tutor reads a Query thread they are answering, which is D24 and O9. Never for aggregate insight. | `student_checklist_progress` and `student_assignments` are student-facing only; no tutor endpoint in section 5 returns them. |
+| **Identity-bearing** | `users`, `enrollments`, `student_assignments`, `student_checklist_progress`, `assistant_sessions`, `assistant_messages`, `assistant_proactive_messages`, `student_uploads`, `queries`, `query_messages`, `audit_logs`, `ingestion_jobs`, `llm_call_counters` | Yes | Partly, and only in the private-Query sense: a tutor reads a Query thread they are answering, which is D24 and O9. Never for aggregate insight. | `student_checklist_progress` and `student_assignments` are student-facing only; no tutor endpoint in section 5 returns them. `ingestion_jobs` and `llm_call_counters` (section 7.8) carry a tutor or an opaque scope key and are never read by an analytics module. |
 | **Pseudonymous** | `anon_identities`, `discussion_threads`, `discussion_posts`, `moderation_flags` | A pseudonym, joined only inside `anon_identities` | Yes, via `discussion_author_display` only (A-ID-3) | `moderation_flags.reporter_anon_identity_id` stores a pseudonym, never a user id. |
 | **Identity-free** | `courses`, `assignments`, `assignment_sources`, `source_chunks`, `assignment_structures`, `requirement_nodes`, `rubric_sections`, `requirement_rubric_links`, `milestone_requirement_links`, `milestones`, `checklist_items`, `ai_policy_rules`, `ambiguity_findings`, `faq_entries`, `analytics_events`, `milestone_metrics`, `assignment_metrics`, `guardrail_logs` | No | Yes | `analytics_events`, `milestone_metrics`, and `guardrail_logs` are the analytics and audit surface; see 4.7. |
 
@@ -2090,6 +2090,54 @@ join milestone_requirement_links mrl
 ```
 
 `discussion_author_display` exposes `display_label` and nothing else about the author. It never selects `student_id`, and for an anonymous post the `users` join cannot match because `author_user_id` is null by constraint. A tutor-facing handler that needs an author label must read this view (A-ID-3); a tutor-facing handler that reads `anon_identities` directly is a defect with a test attached.
+
+---
+
+### 7.8 Platform jobs and budgets (added in Phase 2)
+
+D60's builder note assigned two tables to WP-04/WP-05, and handoff issue **I-15** recorded that neither existed. Both are added by migration `0011_ingestion_jobs.sql` and specified here, because the SQL files are the schema of record and a table that exists only in a migration is a table nobody can review (`00-INDEX.md` section 5 rule 3).
+
+#### 7.8.1 `ingestion_jobs`
+
+Purpose: one Assignment Analyst run, as the durable row D60 makes the execution model. Class: identity-bearing (the requesting tutor).
+
+| Column | Type | Constraints |
+|---|---|---|
+| `assignment_id` | uuid | not null; FK `assignments (id)` ON DELETE CASCADE |
+| `requested_by_user_id` | uuid | not null; FK `users (id)` |
+| `status` | text | not null default `'queued'`; `CHECK (status in ('queued','running','succeeded','failed'))` |
+| `stage` | text | null; `CHECK (stage is null or stage in ('S0'..'S7'))`; null until the run reaches a stage (`06` section 5.5.8 types it `| null`) |
+| `completed_stages` | integer | not null default 0; `CHECK (completed_stages >= 0 and completed_stages <= total_stages)` |
+| `total_stages` | integer | not null default 8; `CHECK (total_stages > 0)`. Stored rather than hard-coded in the client |
+| `error_code` | text | null; length <= 64; a code, never a stack trace or a driver message |
+| `error_message` | text | null; length <= 500; a sentence safe to show a tutor |
+| `started_at`, `finished_at` | timestamptz | null |
+| `created_at`, `updated_at` | timestamptz | not null default `now()` |
+
+Invariants:
+
+1. `ck_ingestion_jobs_running_started` and `ck_ingestion_jobs_terminal_finished` make "running" imply a start time and a terminal status imply a finish time.
+2. `ck_ingestion_jobs_succeeded_stage` requires `stage = 'S7'` for `succeeded`, so "succeeded" means the whole pipeline ran rather than "the last thing it touched".
+3. **`uq_ingestion_jobs_active` is a partial unique index** on `(assignment_id) where status in ('queued','running')`. It is the `INGESTION_IN_PROGRESS` guard of section 5.3, enforced where a race actually happens; a check-then-insert in application code would let two runs start.
+4. `idx_ingestion_jobs_assignment` on `(assignment_id, created_at desc)` serves the polling read.
+
+#### 7.8.2 `llm_call_counters`
+
+Purpose: the per-budget-unit model-call counter `04` section 5.6 requires to be held in Postgres so it survives a restart. Class: identity-bearing (a scope key names an assistant session or an upload).
+
+| Column | Type | Constraints |
+|---|---|---|
+| `scope_key` | text | not null; `UNIQUE`; length 1-200. The budget unit: an assistant session id, an ingestion run id, or `extraction:<uploadId>` |
+| `scope_kind` | text | not null; `CHECK (scope_kind in ('assistant_session','ingestion_run','attachment_extraction','moderation_batch'))` |
+| `calls_used` | integer | not null default 0; `CHECK (calls_used >= 0 and calls_used <= max_calls)` |
+| `max_calls` | integer | not null; `CHECK (max_calls > 0)`. A snapshot of `LLM_MAX_CALLS_PER_SESSION` taken when the scope opened, so a configuration change cannot retroactively authorise a call already made |
+| `created_at`, `updated_at` | timestamptz | not null default `now()` |
+
+Invariants:
+
+1. **One row per budget unit, not one per call.** D68 requires attachment extraction to have its own counter and never the assistant session counter; that is the scope key, so one table serves all four classes.
+2. The increment and the ceiling check are a single statement (`insert ... on conflict do update ... where calls_used < max_calls`). A read followed by a write would let two concurrent calls both see `calls_used = max_calls - 1`.
+3. The counter increments **before** the call is issued (`04` section 5.6). A counter incremented afterwards cannot stop a runaway loop.
 
 ---
 

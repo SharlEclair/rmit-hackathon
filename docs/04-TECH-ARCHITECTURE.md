@@ -109,6 +109,8 @@ app/
   src/components/                # presentational only, no data fetching
   src/features/
     assignment/                  # ingestion orchestration, map, review state machine
+    ingest/                      # Phase 2's Analyst: extraction wiring, chunking, prompts, pipeline
+    uploads/                     # Phase 2's student attachment intake (O11)
     assistant/                   # student assistant session, prompt assembly, post-check
     discussion/                  # threads, posts, anonymity, moderation queue
     analytics/                   # metric computation, k-anonymity, difficulty rule
@@ -318,6 +320,8 @@ export class LlmError extends Error {
 
 `resolveProvider()` reads `LLM_PROVIDER` and returns the matching `LlmProvider`. Everything above it in the stack depends only on this interface (and on `JsonSchema`), never on a vendor type.
 
+**Built and frozen in Phase 2** (`handoff/04-INTERFACES.md` section 5). Two additions to the listing above, both additive and both recorded: `LlmCallLog` (the audit fields a caller may persist, and nothing that could carry student content -- `04` section 10.1), and `src/lib/llm/schema.ts`, which holds the zod schema for every structured output plus `parseStructured` ("a schema failure is a refusal, not a retry", D16). The folder is exactly the eight modules listed in section 3 plus `prompt.ts` (block A-D assembly, section 5.5), `budget.ts` (the Postgres-backed counter, section 5.6), and `fixtures/analyst-demo.ts` (the mock's committed templates).
+
 ### 5.3 Default provider: Gemini (D61)
 
 **D61 makes `gemini` the project default and D62 fixes the model.** D40's reasoning still holds (one model, one key, one failure mode); the Gemini specifics follow immediately below, and the `deepseek` adapter remains the documented alternative (5.3, last bullet).
@@ -326,7 +330,7 @@ export class LlmError extends Error {
 |---|---|
 | Provider id | `gemini` (default, D61) |
 | Default model id | `gemini-3.8-flash` (D62) |
-| SDK | `@google/genai` - the only vendor SDK imported anywhere, and only inside `src/lib/llm/` (C8) |
+| SDK | none. The Interactions REST shape is called directly with `fetch` -- see the note below and **D89** |
 | Input types | Text, Image, Video, Audio, PDF |
 | Output type | Text |
 | Context window | 1,048,576 input tokens; 65,536 output tokens |
@@ -337,6 +341,7 @@ export class LlmError extends Error {
 
 Consequences the build must honour:
 
+- **The Gemini adapter calls the REST shape directly; no vendor SDK is installed (D89).** This table named `@google/genai`, but D73 settles the call as `POST /v1beta/interactions`, and that surface is not what the SDK's `generateContent` API exposes. Phase 2 therefore implemented the documented REST shape with `fetch` inside `src/lib/llm/gemini.ts` and installed no SDK. C8 is satisfied trivially (nothing vendor-shaped is imported anywhere), and the live call was re-verified on 2026-10-04: `input: <string>` plus `system_instruction` returns HTTP 200 with a `thought` step and a `model_output` step. If a later phase prefers the SDK, that is a dependency change and a new decision -- not an edit to the adapter's public interface, which is frozen.
 - **One model covers every capability that makes a call.** `gemini-3.8-flash` is natively multimodal, so `LLM_MODEL_REASONING` and `LLM_MODEL_MULTIMODAL` both resolve to it when `LLM_MODEL_MULTIMODAL` is empty. No second model is needed for image- or PDF-bearing uploads.
 - **Attachment resolution uses the same rule as any other provider.** With the shipped modalities (PNG/JPEG, PDF, plain text - O11), image and PDF extraction resolves `modelId` from `LLM_MODEL_MULTIMODAL` if non-empty, else `LLM_MODEL_REASONING`. Audio and video never reach this resolution because the picker refuses them. The call the rule resolves is capability `attachment_extraction`: it uses `LLM_THINKING_EXTRACTION` and its own budget counter, and its result is never used to ground another student's answer (D68, 9.2 step 12).
 - **Thinking level is per capability, not global** (D62), because thinking is billed and adds latency: guardrail `low`, assistant `medium`, analyst `high`, moderator `low`, and attachment extraction `low` (D68). The Insight Engine has no level because it makes no model call (D67). The env contract carries these as `LLM_THINKING_*`. Note that `minimal` is not a valid value for this model, so `low` is the floor rather than an off switch - which is consistent with the guardrail being deterministic-first (D7) rather than model-dependent.

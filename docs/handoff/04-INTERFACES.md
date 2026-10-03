@@ -140,3 +140,81 @@ that produces the type, so the runtime check and the compile-time type cannot dr
    add an import there, the test is the reviewer.
 2. **`pnpm test --coverage` was not run at Phase 3.** No coverage provider is installed; see
    **I-31**. The gate line exists in WP-08 and needs a dependency decision before it can be used.
+
+---
+
+## 6. Frozen in Phase 2 (WP-04, WP-05)
+
+Frozen at the Phase 2 exit commit, tagged `phase-02-complete`. Same rules as section 3: a later phase
+may **add**, but changing any of these means raising it in [`05-ISSUES.md`](05-ISSUES.md), recording
+why in [`../../01-DECISIONS.md`](../../01-DECISIONS.md), and updating this file in the same commit.
+
+`18` section 5 makes Phase 2 hand off "**`src/lib/llm/types.ts` and `schema.ts` frozen**; the test
+fixture set; the extraction capability". All three are below.
+
+### 6.1 The adapter contract (`app/src/lib/llm/`)
+
+| Interface | File | What it guarantees | Authority |
+|---|---|---|---|
+| `LlmProviderId`, `AiCapability`, `LlmMessage`/`LlmContentPart`, `LlmRequest`, `LlmResponse`, `LlmUsage`, `LlmCapabilities`, `ModelValidationResult`, `LlmProvider`, `LlmErrorCode`, `LlmError`, `LlmCallLog` | `types.ts` | The `04` section 5.2 contract, reproduced. **`AiCapability` has six members**: `assignment_analyst`, `policy_guard`, `student_assistant`, `discussion_moderator`, `insight_engine`, `attachment_extraction` (D68). `insight_engine` **makes no call**: every adapter throws `CONFIG_INVALID` for it (D67). `LlmCallLog` is additive and carries decision fields only -- no request or response body (`04` section 10.1). | `04` section 5.2; **D67**, **D68**, **D89** |
+| `resolveProvider(config)`, `createLlmClient(options)`, `getLlmClient()`, `resetLlmClient()`, `validateProviderConfiguration(config)` | `index.ts` | `resolveProvider` is pure (never reads `process.env`). `createLlmClient` wraps any provider with the budget check and call logging, and the mock is wrapped identically -- no capability special-cases `mock` (`04` section 5.8 rule 2). `getLlmClient()` is the only way to obtain a provider, so budget enforcement cannot be bypassed by calling an adapter directly. | `04` sections 5.1, 5.4, 5.6, 5.8 |
+| `createGeminiProvider(deps)`, `thinkingKeyFor`, `GEMINI_KNOWN_MODEL_IDS`, `GEMINI_DEFAULT_BASE_URL` | `gemini.ts` | The default provider. `POST /v1beta/interactions`, `x-goog-api-key`, `{ model, system_instruction, input: <string>, store: false, generation_config }`, text from the last `model_output` step (D73, D89). `usage.outputTokens` includes thought tokens. `providerRequestId` is always `null`. Retry policy: one attempt, only for `429`/`5xx`/timeout. | **D73**, **D89**; `04` sections 5.3, 5.4, 5.7 |
+| `createDeepseekProvider(deps)`, `DEEPSEEK_KNOWN_MODEL_IDS` | `deepseek.ts` | The documented alternative (D39). OpenAI-compatible `chat/completions`, bearer auth. **Schema enforcement there is prompt-level** (`response_format: json_object` plus the schema appended at the variable end); zod remains the contract. **No live call has been made through it.** | `04` section 5.3; **I-38** |
+| `createMockProvider(deps)`, `mockResponseKey`, `registerMockResponse`, `resetMockResponses`, `MOCK_KNOWN_MODEL_IDS` | `mock.ts` | Offline, deterministic. An exact-response registry is consulted first, then a committed per-`systemPrefixId` template; an unmatched request returns `json: null` with `finishReason: 'content_filter'` -- a refusal, never an invented success (**D90**). **Phase 3 uses `registerMockResponse` to force any `guardrail_decision`**, which is `04` section 5.8 rule 5. | `04` section 5.8; **D90** |
+| `STRUCTURED_SCHEMAS`, `parseStructured`, `toResponseFormat`, `PLANNING_LEVELS`, `POLICY_EFFECTS`, `POLICY_APPLIES_TO`, `AMBIGUITY_KINDS`, `AMBIGUITY_SEVERITIES`, the per-pass schemas and their inferred types | `schema.ts` | The structured-output contract. `parseStructured` **returns** `{ ok, value }` or `{ ok, issues }` and never throws or retries (D16). `toResponseFormat` emits the provider-facing hint (shape only; zod is the contract -- **D91**). **Every structured schema in the app belongs in this file.** | `04` section 5.2; **D16**, **D91** |
+| `assembleMessages`, `systemPrefixId`, `renderGroundingChunks`, `parseGroundingChunks`, `renderStableJson`, `GroundingChunk`, `ParsedGroundingChunk` | `prompt.ts` | Block A/B in the `system` role, block C/D in the `user` role, variable content last (`04` section 5.5). Grounding chunks are numbered `[#N]` and that number is the only citation handle a model is given (**D93**). `parseGroundingChunks` is the mock's seam. | `04` section 5.5; **D93** |
+| `BudgetStore`, `createPostgresBudgetStore`, `scopeKeyFor`, `scopeKindForCapability`, `maxCallsFromConfig`, `budgetExceeded` | `budget.ts` | The increment happens **before** the call. The scope key is prefixed by kind, so attachment extraction can never share the assistant session counter (D68). The store is injectable so `pnpm test` needs no database. | `04` section 5.6; **D68**, **D92** |
+| `mapHttpStatus`, `maxAttempts`, `toLlmError`, `describeProviderError` | `errors.ts` | The `04` sections 5.4/5.7 tables in one place. `describeProviderError` reads one bounded `message` field and nothing else, so a provider body cannot carry a secret or student text into a log line. | `04` sections 5.4, 5.7; **C7** |
+| `MOCK_TEMPLATES`, `buildStructurePass`, `buildMilestonesPass`, `buildFaqPass`, `buildPolicyPass`, `buildAmbiguityPass`, `buildAttachmentExtraction`, `MILESTONES_TEMPLATE_ID` | `fixtures/analyst-demo.ts` | The mock's committed templates, keyed by `<capability>-v<n>`. Each quotes only spans of the chunks the request carried, so the verbatim validator passes for the right reason. | **D90** |
+
+### 6.2 Storage (`app/src/lib/storage/`)
+
+| Interface | File | What it guarantees | Authority |
+|---|---|---|---|
+| `StorageObject`, `StorageDriver`, `StorageError`, `StorageErrorCode`, `assertValidKey`, `sourceStorageKey`, `uploadStorageKey` | `types.ts` | The `04` section 8 interface. Keys are validated (no `..`, no absolute path, no backslash, no NUL, bounded charset and length) and the resolved path is asserted to stay inside the root. Key builders take ids, never a user filename. | `04` section 8; `11` WP-04 |
+| `LocalStorageDriver` | `local.ts` | Default driver. Atomic temp-then-rename writes; `contentHash` recomputed from the bytes actually read. `signedUrl` **throws `SIGNED_URL_UNSUPPORTED`**: no route serves document bytes yet (**I-06**), and inventing a path would break the 64-route vocabulary (T12). | `04` section 8; **I-06**, **T12** |
+| `S3StorageDriver` | `s3.ts` | SigV4 in-process over `fetch`, no SDK. **Not exercised against a live endpoint**; only the signing arithmetic and key rejection are tested. | `04` section 8; **I-37** |
+| `createStorageDriver(config)`, `getStorageDriver()`, `resetStorageDriver()` | `index.ts` | Driver selection from validated config, memoised. | `04` section 8 |
+
+### 6.3 Extraction (`app/src/lib/extract/`)
+
+| Interface | File | What it guarantees | Authority |
+|---|---|---|---|
+| `ExtractionResult`, `ExtractedPage`, `ExtractionError`, `ExtractionErrorCode`, `PDF_MIME`, `DOCX_MIME`, `PPTX_MIME`, `TEXT_MIME`, `MARKDOWN_MIME` | `types.ts`, `index.ts` | `extractDocument({ bytes, mimeType })` dispatches PDF / DOCX / PPTX / text / Markdown and throws `UNSUPPORTED_FORMAT` for anything else. `hasTextLayer: false` on a text-less PDF is the S3 "flag for tutor attention" outcome, not a crash. | `04` sections 3, 7 |
+| `extractPdf`, `extractOoxml`, `extractPlainText` | `pdf.ts`, `ooxml.ts`, `plain.ts` | Verbatim extraction only -- no normalisation, no re-wording (C2). PDF page anchors per page; DOCX/PPTX have no pages and say so (`pageCount: null`). The ZIP reader verifies the **CRC-32** of every part it returns (**T28**). **Pass a copy of the bytes**: `pdfjs` detaches the buffer (**T27**). | `04` section 7; **T27**, **T28** |
+
+### 6.4 Ingestion (`app/src/features/ingest/`, `app/src/features/uploads/`)
+
+| Interface | File | What it guarantees | Authority |
+|---|---|---|---|
+| `runIngestion(input)`, `IngestionRunInput`, `IngestionRunResult`, `IngestionCounts`, `INGESTION_STAGES`, `resolveAnalystModelId`, `resolveMultimodalModelId` | `ingest/pipeline.ts` | S0-S8 as D60's job row. Returns a result and records failures on the job; it throws only for a caller error. Persists every artifact `AI_GENERATED` then promotes to `NEEDS_REVIEW` in one transaction, and writes one `audit_logs` row (counts and notes only). Never writes `analytics_events` (**T7**). | `04` section 7; **D60**, **D95** |
+| `runAnalyst(input)`, `buildAnalystRequest(input)`, `selectGrounding(chunks)`, `extractAttachment(input)`, `AnalystProposal`, `AnalystInput`, `Grounded<T>`, `MAX_GROUNDING_CHUNKS`, `MAX_GROUNDING_CHARS` | `ingest/analyst.ts` | The five passes. Each resolves its own citations by index and refuses to persist an unresolvable one (**D93**). A schema-invalid pass is a recorded failure, not a retry (D16); a hard provider/config error aborts the run (**D95**). | `04` section 7 stage S6; **D16**, **D93**, **D95** |
+| `ANALYST_PROMPT_VERSION`, `PASS_PREFIX_IDS`, `PASS_SCHEMA_NAMES`, `ANALYST_CAPABILITY`, `STATIC_PLATFORM_BLOCK`, `policyBlock`, `passInstruction` | `ingest/prompts/analyst.v1.ts` | The versioned prompt. **`PASS_PREFIX_IDS` values are also the mock's template keys**, so editing one in place silently changes what the offline path answers; a change is `v2`, never an edit. | `11` WP-05; **D90** |
+| `checkChecklistItem`, `findImplementationVerb`, `isVerbatimSubstring`, `weightAppearsInText`, `findOverlappingRequirements`, `PLANNING_VERBS`, `IMPLEMENTATION_VERBS`, `IngestWarning`, `ValidationWarningCode` | `ingest/prompt-constraints.ts` | The deterministic constraints (D20, O1, I-2, `06` section 7.2.6). **Pure and offline**: Phase 4's review route recomputes the same warnings at read time with these functions, because `06` section 5.5.8 computes `ReviewArtifactResponse.validation` rather than storing it. | `06` sections 5.5.8, 7.2.5, 7.2.6, 7.2.10 |
+| `chunkPages`, `normalisePageText`, `isHeading`, `ChunkCandidate`, `NormalisedPage`, `DEFAULT_TARGET_TOKENS`, `DEFAULT_OVERLAP_TOKENS`, `CHARS_PER_TOKEN` | `ingest/chunk.ts` | S4/S5. A single newline is an extractor artefact and becomes a space; a blank line is a paragraph and survives. Deterministic boundaries (`04` section 5.5 rule 1). `pageAnchors: false` nulls the page range for formats with no pages. | `04` sections 6.2, 7 |
+| `attachStudentUpload(input)`, `AttachInput`, `AttachResult`, `AttachmentRefusal` | `uploads/attachments.ts` | O11 intake. Audio and video are refused with `UP5` before storage and before extraction; size and MIME are refused before the row exists. Extraction runs here under its own budget scope. **The guardrail scan is left `pending`** and the `scan` seam is Phase 3's (**D92**). | `04` sections 7, 9.2 step 12; **D68**, **D92** |
+
+### 6.5 Database (`app/src/lib/db/`)
+
+| Interface | File | What it guarantees | Authority |
+|---|---|---|---|
+| 35 tables, 2 views | `migrations/0002`-`0011` | `0011_ingestion_jobs.sql` adds `ingestion_jobs` and `llm_call_counters` and their two `updated_at` triggers. `06` section 7.8 specifies both. | `06` sections 7.8, 6.2; **D60**, **I-15** |
+| `withTransaction(work)` | `transaction.ts` | The only way a feature opens a transaction without importing the driver. Every write in `persistProposal` is one transaction (trap T7's requirement, applied to the run). | `04` section 4; `handoff/01-STATE.md` section 5 item 4 |
+| `insertQueuedJob`, `startJob`, `advanceJob`, `succeedJob`, `failJob`, `findLatestJob`, `findJobById`, `hasActiveJob`, `INGESTION_TOTAL_STAGES` | `queries/ingestions.ts` | The job lifecycle. The `INGESTION_IN_PROGRESS` guard is the partial unique index, so `insertQueuedJob` reports whether it won the race rather than asking a question first. | `06` sections 5.3, 7.8.1 |
+| `consumeCall`, `readCounter`, `LlmScopeKind` | `queries/llm-budget.ts` | The increment and the ceiling check are one statement, so the ceiling holds under concurrency. | `04` section 5.6; `06` section 7.8.2 |
+| `listSources`, `countSources`, `countChunksForSource`, `findSourceByContentHash`, `updateSourceExtraction`, `listT1Chunks`, `readStructureState`, `setCurrentStructure`, `markAssignmentIngesting`, `markAssignmentInReview`, `markAssignmentDraft`, `findAssignmentScope` | `queries/assignments.ts` | The ingestion reads and the assignment-scope read every assignment route needs. `listT1Chunks` ordering (brief, rubric, policy, then the rest, then chunk index) is part of the prompt, not a convenience: it is what keeps block C stable (`04` section 5.5). | `04` sections 5.5, 6; `06` section 5.2 rule 2 |
+| `listApprovedPolicyRules`, `listApprovedMilestones`, `promoteStructureToNeedsReview` | `queries/structure.ts` | The approved-only reads the prompt uses, and transition 1 (`AI_GENERATED -> NEEDS_REVIEW`, `06` section 3.2) applied to every artifact of one structure plus the FAQ candidates the run inserted. | `06` sections 3.2, 7.2; `04` section 7 stage S8 |
+| `insertAuditLog`, `NewAuditLog` | `queries/audit.ts` | The audit row. `before`/`after` are the writer's redaction duty (reading A12); Phase 2 writes counts and notes only. | `06` section 7.6.5 |
+| `insertStudentUpload`, `findStudentUpload`, `updateUploadExtraction`, `updateUploadScan`, `readUploadExtractedText` | `queries/uploads.ts` | Every read filters by `student_id`; the extracted text has its own reader so it cannot leak into the response shape. | `06` sections 5.2 rule 4, 5.5.10, 7.3.6 |
+| `findEnrolmentRole` | `queries/courses.ts` | Null means "not enrolled", which every route turns into `NOT_FOUND` rather than `FORBIDDEN_ROLE`. | `06` section 5.2 rule 2 |
+
+### 6.6 API (`app/src/lib/api/`, the Phase 2 routes, `app/src/instrumentation.ts`)
+
+| Interface | File | What it guarantees | Authority |
+|---|---|---|---|
+| `ErrorCode` (16 codes), `apiError`, `withRequestId`, `withRetryAfter`, `resolveRequestId`, `AUTH_ERROR_MESSAGES`, `PLATFORM_ERROR_MESSAGES`, `unauthenticated` | `lib/api/errors.ts` | The `06` section 5.3 envelope and status table, in one module. `ErrorCode` is now complete; the old `src/lib/auth/api-errors.ts` is deleted (**D94**, I-19). | `06` section 5.3; **D94** |
+| `IngestionStatusResponse`, `StudentUploadResponse`, `AssignmentSourceResponse` | `lib/api/types.ts` | Three of `06`'s referenced-but-undefined response types (I-03), with no `storageKey`, no filename and no extracted text. | `06` sections 5.4, 5.5.8, 5.5.10; **I-03** |
+| `POST /api/tutor/assignments/{id}/sources` | route | Multipart upload, O5/D57/D80 MIME set, size before type before storage. Records the source `pending`, never `extracted` (**D97**). | `06` section 5.4 |
+| `POST|GET /api/tutor/assignments/{id}/ingest` | route | `POST` enqueues and returns **202** with the polling shape; the work runs under Next's `after()`, so the response is not held open for five model calls (D60). `NO_SOURCES` (422) and `INGESTION_IN_PROGRESS` (409) are decided by the database. `GET` with no run ever requested returns **404** (**I-39**). | `06` sections 5.4, 5.5.8; **D60** |
+| `POST /api/student/uploads`, `GET /api/student/uploads/{uploadId}` | routes | O11 intake and status. The `GET` is owner-scoped in SQL, so another student's upload is indistinguishable from absent. | `06` sections 5.4, 5.5.10; **D92** |
+| `register()` | `src/instrumentation.ts` | Startup provider probe (`04` section 5.4). Aborts with exit `78` when the provider is misconfigured and the rest of the config is valid; a wholly unconfigured checkout reports the variable names and continues, so `/api/health` stays reachable (D77's spirit -- see the file's own table). | `04` sections 5.4, 12; **D77** |

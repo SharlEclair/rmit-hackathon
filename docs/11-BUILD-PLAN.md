@@ -264,14 +264,25 @@ curl -s -b /tmp/c.txt -o /dev/null -w "%{http_code}" http://localhost:3000/tutor
 
 **Effort.** 7 h. (Raised from 5 h on the O11 reversal: student image/PDF/plain-text attachments are IN, which adds the attachment intake path, the multimodal adapter call for images, and the picker's explicit refusal of audio and video. PDF and plain-text intake reuse the extraction path this packet already builds, so the increase is 2 h rather than a second pipeline.)
 
+**Status (Phase 2, complete).** Delivered. Three corrections were made to this packet's own gate, all of the **I-18** kind (a gate that cannot run, or that asserts a state the schema forbids):
+
+1. `# AI_GENERATED` on an `assignments.status` query was **unrunnable as stated**: `assignments.status` has `CHECK (status in ('draft','ingesting','in_review','published','archived'))` (`06` section 7.2.1), and `AI_GENERATED` is a `publication_status`, not an assignment status (`06` section 3.6, trap **T21**). A successful run leaves the assignment `in_review`.
+2. `select min(page), max(page) from source_chunks` named columns that do not exist; they are `page_from` and `page_to` (`06` section 7.2.3).
+3. The UI step is not available yet -- the `(tutor)` pages are WP-06/WP-07 -- so the gate now drives the same rows through `scripts/ingest-once.ts`, which stores the fixture bytes with the real driver and walks S0-S8.
+
+Also: `src/features/uploads/attachments.ts` leaves `guardrail_scan_status` at `pending`, because the scan is Phase 3's (WP-08). The upload path therefore refuses to attach rather than attaching unscanned, which is what C6 and `06` section 5.5.9 stream rule 5 require; the packet's "guardrail scan before the content joins the turn" is satisfied by that refusal, not by a permissive placeholder.
+
 **Verification gate**
 
 ```bash
-cd app && LLM_PROVIDER=mock pnpm dev
-# Upload docs/fixtures/demo-brief.pdf through the UI, then:
-psql "$DATABASE_URL" -c "select count(*) from source_chunks"          # > 0
-psql "$DATABASE_URL" -c "select status from assignments order by created_at desc limit 1"   # AI_GENERATED
-psql "$DATABASE_URL" -c "select min(page), max(page) from source_chunks"                    # non-null, sane
+cd app
+# Offline and deterministic, no key (WP-04's acceptance criterion).
+LLM_PROVIDER=mock pnpm exec tsx scripts/ingest-once.ts --fixture demo
+# The same run through the routes: POST /api/tutor/assignments/{id}/sources then .../ingest.
+
+psql "$DATABASE_URL" -c "select count(*) from source_chunks"                                  # > 0
+psql "$DATABASE_URL" -c "select status from assignments order by created_at desc limit 1"       # in_review
+psql "$DATABASE_URL" -c "select min(page_from), max(page_to) from source_chunks"               # non-null, sane
 pnpm test -- tests/llm tests/ingest
 ```
 
@@ -308,6 +319,24 @@ Also verified without a network connection: unplug the network, repeat the uploa
 **Dependencies.** WP-04.
 
 **Effort.** 6 h.
+
+**Status (Phase 2, partial - see `05-ISSUES.md` I-35).** The five passes, the prompt version, the
+constraints and the offline path are delivered and verified. Two file-map deviations, both recorded:
+
+1. There is no `analyst.v1.schema.ts` and no separate `policy-draft.ts` / `ambiguity.ts`. The
+   structured contract lives in **`src/lib/llm/schema.ts`**, which is frozen at Phase 2
+   (`handoff/04-INTERFACES.md`): one module owns every structured-output schema, because the
+   adapter's `response_format` and the caller's validation must be the same object. The policy and
+   ambiguity passes are the (d)/(e) instructions in `prompts/analyst.v1.ts` plus their resolvers in
+   `analyst.ts`.
+2. The **live** run against `gemini` is not verified. The first structured call returned
+   `HTTP 400 invalid_request` (the provider's opaque schema-compatibility refusal), and before that
+   could be isolated the free tier's **20 requests/day** cap was exhausted (reset ~4 h later). What
+   *is* verified live is the call shape (`input` + `system_instruction` + `steps[] -> model_output`)
+   and that `nullable: true` is accepted. The provider-facing schema was then minimised to the
+   keyword set the provider is asked to honour (bounds dropped; zod remains the contract) -- see
+   **D91**. The next session can confirm the fix with one paced run; nothing in the offline path
+   depends on it.
 
 **Verification gate**
 
