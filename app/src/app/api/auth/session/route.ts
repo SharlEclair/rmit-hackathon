@@ -6,7 +6,7 @@ import {
   resolveRequestId,
   withRequestId,
   type ApiErrorBody,
-} from '@/lib/auth/api-errors';
+} from '@/lib/api/errors';
 import { buildSessionResponse, getSession, type SessionResponse } from '@/lib/auth/roles';
 
 export const runtime = 'nodejs';

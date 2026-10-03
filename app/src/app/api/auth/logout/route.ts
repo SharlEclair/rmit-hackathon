@@ -5,7 +5,7 @@ import {
   apiError,
   resolveRequestId,
   withRequestId,
-} from '@/lib/auth/api-errors';
+} from '@/lib/api/errors';
 import { getSession } from '@/lib/auth/roles';
 import { clearSessionCookie } from '@/lib/auth/session';
 import { getConfig } from '@/lib/config';

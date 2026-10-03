@@ -830,3 +830,57 @@ export const auditLogs = pgTable('audit_logs', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ---------------------------------------------------------------------------------------------
+// 0011_ingestion_jobs.sql -- 06 section 7.7.1-7.7.2 (Phase 2)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * `docs/06` 7.7.1 -- class: identity-bearing (the requesting tutor).
+ *
+ * The D60 execution model: the ingest route enqueues, this row is the progress the tutor polls, and
+ * the pipeline advances it. The `INGESTION_IN_PROGRESS` guard is the partial unique index
+ * `uq_ingestion_jobs_active` over `(assignment_id) where status in ('queued','running')`, which
+ * cannot be expressed here (trap T19) and lives in the SQL.
+ *
+ * There is no `stage_progress` JSON and no per-stage timestamp: `stage` plus `completed_stages` is
+ * what `06` section 5.5.8's `IngestionStatusResponse` returns, and a second progress representation
+ * would be a second source of truth for the same fact.
+ */
+export const ingestionJobs = pgTable('ingestion_jobs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  assignmentId: uuid('assignment_id').notNull(),
+  requestedByUserId: uuid('requested_by_user_id').notNull(),
+  status: text('status').notNull().default('queued'),
+  /** null until the run reaches a stage (`06` section 5.5.8 types it `| null`). */
+  stage: text('stage'),
+  completedStages: integer('completed_stages').notNull().default(0),
+  totalStages: integer('total_stages').notNull().default(8),
+  errorCode: text('error_code'),
+  errorMessage: text('error_message'),
+  startedAt: timestamp('started_at', { withTimezone: true }),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * `docs/06` 7.7.2 -- class: identity-bearing (a scope key names an assistant session or an upload).
+ *
+ * One row per budget unit, not one per call (`04` section 5.6). `max_calls` is a snapshot of
+ * `LLM_MAX_CALLS_PER_SESSION` at the moment the scope opened, so changing the configuration cannot
+ * retroactively authorise a call that was already made or forbid one that was already counted.
+ *
+ * `ck_llm_call_counters_within_limit` makes the ceiling a database fact: a counter cannot be
+ * incremented past its limit even by hand-written SQL.
+ */
+export const llmCallCounters = pgTable('llm_call_counters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** The budget unit: a session id, an ingestion run id, or `extraction:<uploadId>` (D68). */
+  scopeKey: text('scope_key').notNull(),
+  scopeKind: text('scope_kind').notNull(),
+  callsUsed: integer('calls_used').notNull().default(0),
+  maxCalls: integer('max_calls').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});

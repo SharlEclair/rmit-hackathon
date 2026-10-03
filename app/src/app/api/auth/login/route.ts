@@ -9,7 +9,7 @@ import {
   withRequestId,
   withRetryAfter,
   type ApiErrorBody,
-} from '@/lib/auth/api-errors';
+} from '@/lib/api/errors';
 import { checkLoginRateLimit, callerKeyFor } from '@/lib/auth/rate-limit';
 import { buildSessionResponse, type SessionResponse } from '@/lib/auth/roles';
 import {

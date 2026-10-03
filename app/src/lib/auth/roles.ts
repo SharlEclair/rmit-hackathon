@@ -14,7 +14,7 @@
 
 import type { NextRequest } from 'next/server';
 
-import type { AuthErrorCode } from './api-errors';
+import type { ErrorCode } from '@/lib/api/errors';
 import { clearSessionCookie, readSessionCookie, verifySessionToken, type SessionRole } from './session';
 import {
   findUserProfileById,
@@ -92,9 +92,9 @@ export function loginPathWithNext(next: string | null | undefined): string {
  * straight into `apiError` with no translation table.
  */
 export class AuthError extends Error {
-  readonly code: AuthErrorCode;
+  readonly code: ErrorCode;
 
-  constructor(code: AuthErrorCode, message: string) {
+  constructor(code: ErrorCode, message: string) {
     super(message);
     this.name = 'AuthError';
     this.code = code;

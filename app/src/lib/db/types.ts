@@ -47,6 +47,8 @@ import type {
   enrollments,
   faqEntries,
   guardrailLogs,
+  ingestionJobs,
+  llmCallCounters,
   milestoneMetrics,
   milestoneRequirementLinks,
   milestones,
@@ -241,3 +243,25 @@ export type NewAssignmentMetricRow = typeof assignmentMetrics.$inferInsert;
  */
 export type AuditLogRow = typeof auditLogs.$inferSelect;
 export type NewAuditLogRow = typeof auditLogs.$inferInsert;
+
+// ---------------------------------------------------------------------------------------------
+// 06 section 7.7 -- platform jobs and budgets (Phase 2, migration 0011)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * `docs/06` 7.7.1 -- class: identity-bearing (the requesting tutor).
+ *
+ * `status` and `stage` are the two fields the polling response is built from; the
+ * `INGESTION_IN_PROGRESS` guard is the partial unique index, so it is not visible here (trap T19).
+ */
+export type IngestionJobRow = typeof ingestionJobs.$inferSelect;
+export type NewIngestionJobRow = typeof ingestionJobs.$inferInsert;
+
+/**
+ * `docs/06` 7.7.2 -- class: identity-bearing (a scope key names a session or an upload).
+ *
+ * One row per budget unit, not per call. `maxCalls` is a snapshot, so a configuration change does
+ * not retroactively re-price calls that were already counted (`04` section 5.6).
+ */
+export type LlmCallCounterRow = typeof llmCallCounters.$inferSelect;
+export type NewLlmCallCounterRow = typeof llmCallCounters.$inferInsert;

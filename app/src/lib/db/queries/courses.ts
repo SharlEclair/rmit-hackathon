@@ -134,3 +134,26 @@ export async function countEnrolledStudents(ex: Executor, courseId: string): Pro
   const first = rows[0];
   return first === undefined ? 0 : first.total;
 }
+
+/**
+ * The role a user holds on a course, or null when they hold none.
+ *
+ * `06` section 5.2 rule 2: the role check and the enrolment check are separate and both must pass,
+ * and a request for a course the caller is not enrolled on is `NOT_FOUND` rather than
+ * `FORBIDDEN_ROLE`, so the API never confirms that another course's assignment exists. Null means
+ * "not enrolled", and the caller turns that into `NOT_FOUND`.
+ */
+export async function findEnrolmentRole(
+  ex: Executor,
+  userId: string,
+  courseId: string,
+): Promise<RoleInCourse | null> {
+  const rows = await ex<{ role_in_course: string }[]>`
+    select role_in_course
+      from enrollments
+     where user_id = ${userId}::uuid and course_id = ${courseId}::uuid
+     limit 1
+  `;
+  const first = rows[0];
+  return first === undefined ? null : (first.role_in_course as RoleInCourse);
+}

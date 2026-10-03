@@ -456,3 +456,95 @@ export async function insertMilestoneRequirementLinkIfAbsent(
   `;
   return rows.length > 0;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Phase 2 (WP-05): the reads and the one transition the ingestion pipeline owns.
+// ---------------------------------------------------------------------------------------------
+
+/** The AI Usage Policy rules a prompt may rely on: approved or published, in display order. */
+export async function listApprovedPolicyRules(
+  ex: Executor,
+  assignmentId: string,
+): Promise<Array<{ id: string; ruleCode: string; ruleText: string }>> {
+  const rows = await ex<{ id: string; rule_code: string; rule_text: string }[]>`
+    select id, rule_code, rule_text
+      from ai_policy_rules
+     where assignment_id = ${assignmentId}::uuid
+       and publication_status in ('APPROVED','PUBLISHED')
+     order by display_order asc
+  `;
+  return rows.map((row) => ({ id: row.id, ruleCode: row.rule_code, ruleText: row.rule_text }));
+}
+
+/** The milestone titles a prompt may rely on: approved or published, in display order. */
+export async function listApprovedMilestones(
+  ex: Executor,
+  assignmentId: string,
+): Promise<Array<{ id: string; title: string }>> {
+  const rows = await ex<{ id: string; title: string }[]>`
+    select id, title
+      from milestones
+     where assignment_id = ${assignmentId}::uuid
+       and publication_status in ('APPROVED','PUBLISHED')
+       and deleted_at is null
+     order by display_order asc
+  `;
+  return rows.map((row) => ({ id: row.id, title: row.title }));
+}
+
+export interface NeedsReviewPromotion {
+  readonly structureId: string;
+  /** The FAQ candidates this run inserted. `faq_entries` has no `structure_id`, so they are named. */
+  readonly faqEntryIds: readonly string[];
+}
+
+/**
+ * Transition 1 of `06` section 3.2: `AI_GENERATED -> NEEDS_REVIEW`.
+ *
+ * `04` section 7 stage S8 states it as a two-step: "Status starts at `AI_GENERATED` and immediately
+ * moves to `NEEDS_REVIEW`". The insert writes the first state and this writes the second, in the same
+ * transaction as the inserts, so a crash cannot leave artifacts in a state the review screen does not
+ * list.
+ *
+ * Only rows still in `AI_GENERATED` are moved, so a re-run cannot drag an artifact a tutor has
+ * already edited or approved back into the review queue.
+ */
+export async function promoteStructureToNeedsReview(
+  ex: Executor,
+  input: NeedsReviewPromotion,
+): Promise<void> {
+  const { structureId } = input;
+  await ex`
+    update assignment_structures set publication_status = 'NEEDS_REVIEW'
+     where id = ${structureId}::uuid and publication_status = 'AI_GENERATED'
+  `;
+  // Written out one table at a time rather than composed from a loop: a table name cannot be a bound
+  // parameter, and building the statement by string interpolation is how an identifier ends up
+  // injectable. Five literal statements are boring and reviewable.
+  await ex`
+    update requirement_nodes set publication_status = 'NEEDS_REVIEW'
+     where structure_id = ${structureId}::uuid and publication_status = 'AI_GENERATED'
+  `;
+  await ex`
+    update rubric_sections set publication_status = 'NEEDS_REVIEW'
+     where structure_id = ${structureId}::uuid and publication_status = 'AI_GENERATED'
+  `;
+  await ex`
+    update milestones set publication_status = 'NEEDS_REVIEW'
+     where structure_id = ${structureId}::uuid and publication_status = 'AI_GENERATED'
+  `;
+  await ex`
+    update checklist_items set publication_status = 'NEEDS_REVIEW'
+     where structure_id = ${structureId}::uuid and publication_status = 'AI_GENERATED'
+  `;
+  await ex`
+    update ai_policy_rules set publication_status = 'NEEDS_REVIEW'
+     where structure_id = ${structureId}::uuid and publication_status = 'AI_GENERATED'
+  `;
+  if (input.faqEntryIds.length > 0) {
+    await ex`
+      update faq_entries set publication_status = 'NEEDS_REVIEW'
+       where id = any(${input.faqEntryIds}::uuid[]) and publication_status = 'AI_GENERATED'
+    `;
+  }
+}

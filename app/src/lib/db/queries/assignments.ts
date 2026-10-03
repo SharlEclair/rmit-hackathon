@@ -54,6 +54,15 @@ export interface NewAssignmentSource {
   readonly pageCount: number | null;
   /** SHA-256 of the stored bytes, lower-case hex, exactly 64 characters. */
   readonly contentHash: string;
+  /**
+   * The starting `assignment_sources.extraction_status`.
+   *
+   * Defaults to `extracted` because the seed writes sources whose text it has already produced,
+   * which is what Phase 1 relied on. A route that stores bytes and extracts later must pass
+   * `pending`: writing `extracted` before extraction is a false claim about the row, and the
+   * pipeline uses the chunk count, not this column, to decide whether the work is owed.
+   */
+  readonly extractionStatus?: 'pending' | 'extracting' | 'extracted' | 'failed';
 }
 
 export interface NewSourceChunk {
@@ -135,7 +144,7 @@ export async function insertSourceIfAbsent(
       ${source.byteSize},
       ${source.pageCount},
       ${source.contentHash},
-      'extracted'
+      ${source.extractionStatus ?? 'extracted'}
     )
     on conflict do nothing
     returning id
@@ -167,4 +176,309 @@ export async function insertSourceChunkIfAbsent(
     returning id
   `;
   return rows.length > 0;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Phase 2 (WP-04/WP-05): the reads and updates the ingestion pipeline needs.
+//
+// These live here rather than in a new module because `assignments.ts` already owns
+// `assignment_sources` and `source_chunks` (`04-INTERFACES.md` section 4.1: one module per domain),
+// and a second module writing the same tables is how two writers end up disagreeing.
+// ---------------------------------------------------------------------------------------------
+
+export interface AssignmentSourceSummary {
+  readonly id: string;
+  readonly kind: SourceKind;
+  readonly mimeType: SourceMimeType;
+  /** Opaque and driver-relative. Never returned by an API (`06` section 6.9 rule 2, I-7). */
+  readonly storageKey: string;
+  readonly originalFilename: string;
+  readonly byteSize: number;
+  readonly pageCount: number | null;
+  readonly contentHash: string;
+  readonly extractionStatus: 'pending' | 'extracting' | 'extracted' | 'failed';
+  readonly extractionError: string | null;
+}
+
+/** A T1 fragment with the source kind it came from, ordered for prompt assembly. */
+export interface T1Chunk {
+  readonly id: string;
+  readonly sourceId: string;
+  readonly sourceKind: SourceKind;
+  readonly chunkIndex: number;
+  readonly text: string;
+  readonly pageFrom: number | null;
+  readonly pageTo: number | null;
+  readonly sectionLabel: string | null;
+}
+
+/** Active (not soft-deleted) sources for an assignment, oldest first. */
+export async function listSources(
+  ex: Executor,
+  assignmentId: string,
+): Promise<AssignmentSourceSummary[]> {
+  const rows = await ex<
+    {
+      id: string;
+      kind: string;
+      mime_type: string;
+      storage_key: string;
+      original_filename: string;
+      byte_size: string | number;
+      page_count: number | null;
+      content_hash: string;
+      extraction_status: string;
+      extraction_error: string | null;
+    }[]
+  >`
+    select id, kind, mime_type, storage_key, original_filename, byte_size, page_count,
+           content_hash, extraction_status, extraction_error
+      from assignment_sources
+     where assignment_id = ${assignmentId}::uuid and deleted_at is null
+     order by created_at asc
+  `;
+  return rows.map((row) => ({
+    id: row.id,
+    kind: row.kind as SourceKind,
+    mimeType: row.mime_type as SourceMimeType,
+    storageKey: row.storage_key,
+    originalFilename: row.original_filename,
+    byteSize: Number(row.byte_size),
+    pageCount: row.page_count,
+    contentHash: row.content_hash,
+    extractionStatus: row.extraction_status as AssignmentSourceSummary['extractionStatus'],
+    extractionError: row.extraction_error,
+  }));
+}
+
+/** How many active sources the assignment has. The ingest route's `NO_SOURCES` gate reads this. */
+export async function countSources(ex: Executor, assignmentId: string): Promise<number> {
+  const rows = await ex<{ count: string }[]>`
+    select count(*)::text as count
+      from assignment_sources
+     where assignment_id = ${assignmentId}::uuid and deleted_at is null
+  `;
+  return Number(rows[0]?.count ?? '0');
+}
+
+/**
+ * How many chunks one source already has.
+ *
+ * The pipeline uses this per source to decide whether the S3-S5 work is still owed. A crash between
+ * extraction and chunking leaves `extraction_status = 'extracted'` with no chunks, and re-running
+ * S5 is a no-op only if there is something to be a no-op about (`04` section 7: "Re-running S5 for
+ * the same hash is a no-op").
+ */
+export async function countChunksForSource(ex: Executor, sourceId: string): Promise<number> {
+  const rows = await ex<{ count: string }[]>`
+    select count(*)::text as count from source_chunks where source_id = ${sourceId}::uuid
+  `;
+  return Number(rows[0]?.count ?? '0');
+}
+
+/**
+ * The existing source with this content hash, if any (`06` section 6.9 rule 4: identical hash and
+ * same assignment means reuse, never a duplicate row).
+ */
+export async function findSourceByContentHash(
+  ex: Executor,
+  assignmentId: string,
+  contentHash: string,
+): Promise<{ id: string; storageKey: string } | null> {
+  const rows = await ex<{ id: string; storage_key: string }[]>`
+    select id, storage_key
+      from assignment_sources
+     where assignment_id = ${assignmentId}::uuid
+       and content_hash = ${contentHash}
+       and deleted_at is null
+     limit 1
+  `;
+  const row = rows[0];
+  return row === undefined ? null : { id: row.id, storageKey: row.storage_key };
+}
+
+/** Record the outcome of extraction for one source (`06` section 7.2.2). */
+export async function updateSourceExtraction(
+  ex: Executor,
+  input: {
+    readonly sourceId: string;
+    readonly status: 'pending' | 'extracting' | 'extracted' | 'failed';
+    readonly pageCount: number | null;
+    readonly extractionError: string | null;
+  },
+): Promise<void> {
+  await ex`
+    update assignment_sources
+       set extraction_status = ${input.status},
+           page_count = ${input.pageCount},
+           extraction_error = ${input.extractionError}
+     where id = ${input.sourceId}::uuid
+  `;
+}
+
+/**
+ * Every T1 chunk of an assignment, ordered **brief, then rubric, then policy, then the rest**,
+ * then by chunk index.
+ *
+ * The ordering is part of the prompt, not a convenience: `04` section 5.5 requires blocks A and B
+ * to be byte-identical across requests in a scope, and block C (grounding) to change only when the
+ * sources change. A grounding block whose order depended on a table scan would change the prompt
+ * between two identical requests and turn every cache hit into a miss.
+ */
+export async function listT1Chunks(ex: Executor, assignmentId: string): Promise<T1Chunk[]> {
+  const rows = await ex<
+    {
+      id: string;
+      source_id: string;
+      source_kind: string;
+      chunk_index: number;
+      text: string;
+      page_from: number | null;
+      page_to: number | null;
+      section_label: string | null;
+    }[]
+  >`
+    select c.id, c.source_id, s.kind as source_kind, c.chunk_index, c.text,
+           c.page_from, c.page_to, c.section_label
+      from source_chunks c
+      join assignment_sources s on s.id = c.source_id
+     where c.assignment_id = ${assignmentId}::uuid
+       and s.deleted_at is null
+     order by case s.kind
+                when 'brief' then 0
+                when 'rubric' then 1
+                when 'ai_policy' then 2
+                when 'marking_guide' then 3
+                else 4
+              end asc,
+              s.created_at asc,
+              c.chunk_index asc
+  `;
+  return rows.map((row) => ({
+    id: row.id,
+    sourceId: row.source_id,
+    sourceKind: row.source_kind as SourceKind,
+    chunkIndex: row.chunk_index,
+    text: row.text,
+    pageFrom: row.page_from,
+    pageTo: row.page_to,
+    sectionLabel: row.section_label,
+  }));
+}
+
+/** The next structure version for an assignment, and whether a current one already exists. */
+export async function readStructureState(
+  ex: Executor,
+  assignmentId: string,
+): Promise<{ currentStructureId: string | null; maxVersion: number }> {
+  const rows = await ex<{ current_structure_id: string | null; max_version: number | null }[]>`
+    select a.current_structure_id,
+           (select max(version) from assignment_structures st where st.assignment_id = a.id) as max_version
+      from assignments a
+     where a.id = ${assignmentId}::uuid
+     limit 1
+  `;
+  const row = rows[0];
+  return {
+    currentStructureId: row?.current_structure_id ?? null,
+    maxVersion: row?.max_version ?? 0,
+  };
+}
+
+/** Point the assignment at its current structure and clear the previous flag, in that order. */
+export async function setCurrentStructure(
+  ex: Executor,
+  assignmentId: string,
+  structureId: string,
+): Promise<void> {
+  await ex`
+    update assignment_structures
+       set is_current = false
+     where assignment_id = ${assignmentId}::uuid and is_current = true and id <> ${structureId}::uuid
+  `;
+  await ex`
+    update assignment_structures set is_current = true where id = ${structureId}::uuid
+  `;
+  await ex`
+    update assignments set current_structure_id = ${structureId}::uuid where id = ${assignmentId}::uuid
+  `;
+}
+
+/** Move an assignment into `ingesting` (`06` section 7.2.1). Never touches `publication_status`. */
+export async function markAssignmentIngesting(ex: Executor, assignmentId: string): Promise<void> {
+  await ex`
+    update assignments set status = 'ingesting'
+     where id = ${assignmentId}::uuid and status = 'draft'
+  `;
+}
+
+/**
+ * Move an assignment from `ingesting` to `in_review` once a run produces candidates.
+ *
+ * `06` section 3.6: `status` and `publication_status` are different fields and are never
+ * interchangeable. This changes only the assignment's own status; nothing becomes student-visible
+ * (that is the APPROVED -> PUBLISHED transition, D21).
+ */
+export async function markAssignmentInReview(ex: Executor, assignmentId: string): Promise<void> {
+  await ex`
+    update assignments set status = 'in_review'
+     where id = ${assignmentId}::uuid and status = 'ingesting'
+  `;
+}
+
+/** Return a failed run's assignment to `draft` so the tutor can fix a source and retry. */
+export async function markAssignmentDraft(ex: Executor, assignmentId: string): Promise<void> {
+  await ex`
+    update assignments set status = 'draft'
+     where id = ${assignmentId}::uuid and status = 'ingesting'
+  `;
+}
+
+/** The scope fields every assignment-scoped route needs before it does anything else. */
+export interface AssignmentScope {
+  readonly id: string;
+  readonly courseId: string;
+  readonly status: AssignmentStatus;
+  readonly title: string;
+  readonly createdByUserId: string;
+  readonly currentStructureId: string | null;
+}
+
+/**
+ * One assignment's scope fields, or null when it does not exist.
+ *
+ * The caller compares `courseId` against the caller's enrolment and answers `NOT_FOUND` when they do
+ * not match (`06` section 5.2 rule 2), so this function deliberately does not take a user id: an
+ * assignment-scoped query that filtered by caller identity would collapse two distinct checks into
+ * one and could not distinguish "no such assignment" from "not enrolled on its course".
+ */
+export async function findAssignmentScope(
+  ex: Executor,
+  assignmentId: string,
+): Promise<AssignmentScope | null> {
+  const rows = await ex<
+    {
+      id: string;
+      course_id: string;
+      status: string;
+      title: string;
+      created_by_user_id: string;
+      current_structure_id: string | null;
+    }[]
+  >`
+    select id, course_id, status, title, created_by_user_id, current_structure_id
+      from assignments
+     where id = ${assignmentId}::uuid
+     limit 1
+  `;
+  const row = rows[0];
+  if (row === undefined) return null;
+  return {
+    id: row.id,
+    courseId: row.course_id,
+    status: row.status as AssignmentStatus,
+    title: row.title,
+    createdByUserId: row.created_by_user_id,
+    currentStructureId: row.current_structure_id,
+  };
 }

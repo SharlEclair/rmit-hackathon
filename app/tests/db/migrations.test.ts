@@ -75,7 +75,7 @@ function ddl(): string {
     .join('\n');
 }
 
-/** The 33 tables of `06` sections 7.1-7.6, in the order the extract lists them. */
+/** The 35 tables of `06` sections 7.1-7.7, in the order the extract lists them. */
 const EXPECTED_TABLES = [
   'users',
   'courses',
@@ -110,6 +110,9 @@ const EXPECTED_TABLES = [
   'milestone_metrics',
   'assignment_metrics',
   'audit_logs',
+  // 06 section 7.7, added by migration 0011 in Phase 2 (D60's builder note, handoff I-15).
+  'ingestion_jobs',
+  'llm_call_counters',
 ] as const;
 
 describe('migration files (06 section 6.7)', () => {
@@ -143,7 +146,7 @@ describe('migration files (06 section 6.7)', () => {
   });
 });
 
-describe('the 33 tables of 06 section 7 exist in the migrations', () => {
+describe('the 35 tables of 06 section 7 exist in the migrations', () => {
   it('creates each expected table exactly once', () => {
     const source = ddl();
     for (const table of EXPECTED_TABLES) {
@@ -155,11 +158,15 @@ describe('the 33 tables of 06 section 7 exist in the migrations', () => {
   it('creates no table the schema does not define', () => {
     const source = ddl();
     const created = [...source.matchAll(/create table (\w+)/gi)].map((match) => match[1]);
-    // `schema_migrations` is created by the runner, not by a migration; everything else must be
-    // one of the 33. `query_attachments` deliberately does not exist (06 section 10 item 15).
+    // `schema_migrations` is created by the runner, not by a migration; everything else must be one
+    // of the 35. `query_attachments` deliberately does not exist (06 section 10 item 15).
     expect(new Set(created)).toEqual(new Set(EXPECTED_TABLES));
     expect(created).not.toContain('query_attachments');
-    expect(created).not.toContain('ingestion_jobs');
+    // Phase 2 added `ingestion_jobs` and `llm_call_counters` in migration 0011. The Phase 1 version
+    // of this assertion said `ingestion_jobs` must NOT exist, which was correct then and is now the
+    // stale side: 06 section 7.7 defines both tables and D60 assigns the job table to WP-04/WP-05.
+    expect(created).toContain('ingestion_jobs');
+    expect(created).toContain('llm_call_counters');
   });
 
   it('gives every table id, created_at and updated_at (06 section 6.2)', () => {

@@ -66,7 +66,17 @@ export interface NewFaqEntry {
   readonly sourceKind: FaqSourceKind;
   readonly sourceQueryId: string | null;
   readonly sourceQueryMessageId: string | null;
-  readonly publishedByUserId: string;
+  /**
+   * Null for a row that is not published.
+   *
+   * `06` section 7.4.4 permits null and enforces the rule with
+   * `CHECK (publication_status <> 'PUBLISHED' or published_by_user_id is not null)`, so the column is
+   * nullable and the constraint decides when it must be set. Phase 1 typed this `string` because the
+   * only writer was the seed, which publishes; WP-05 writes `AI_GENERATED` FAQ candidates, for which
+   * null is the correct value (`06` section 7.4.4: "only a tutor can create or publish an entry",
+   * D24). Widened here rather than worked around at the call site.
+   */
+  readonly publishedByUserId: string | null;
   readonly displayOrder: number;
   readonly publicationStatus: PublicationStamp['publicationStatus'];
   readonly origin: Origin;
