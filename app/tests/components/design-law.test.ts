@@ -15,10 +15,16 @@ import { describe, expect, it } from 'vitest';
  * - `17` S3.5 rule 1  a content-class frame is flat
  * - `17` S10.4        no animation or transition in the primitives
  * - `17` S11.5        no opacity de-emphasis
+ * - `17` S6.1 rule 1  no component reads an L1 primitive
  * - `AGENTS.md` 5.3   kebab-case files, PascalCase exports, ASCII only
+ *
+ * The token-reference check at the end exists because `check-design.mjs`'s DEF gate reads only
+ * `tailwind.config.ts` and `src/styles/*.css`, so a mistyped `var(--...)` inside a component is
+ * not caught there.
  */
 const UI_DIR = fileURLToPath(new URL('../../src/components/ui/', import.meta.url));
 const UTILS_PATH = fileURLToPath(new URL('../../src/lib/utils.ts', import.meta.url));
+const STYLES_DIR = fileURLToPath(new URL('../../src/styles/', import.meta.url));
 
 const UI_FILES = readdirSync(UI_DIR).filter((name) => name.endsWith('.ts') || name.endsWith('.tsx'));
 
@@ -82,6 +88,40 @@ function classTokens(source: string): string[] {
     .flatMap((literal) => literal.split(/\s+/))
     .map((token) => (token.includes(':') ? token.slice(token.lastIndexOf(':') + 1) : token))
     .filter((token) => token !== '');
+}
+
+/**
+ * A declaration scan tolerant of a quoted property key, which is how a same-file L3 component
+ * token is written in a style object (`'--content-frame-rule': '4px'`) and how `tokens.css`
+ * writes its own names.
+ */
+function declarationSet(source: string): Set<string> {
+  return new Set(
+    [...source.matchAll(/(--[a-z0-9-]+)['"]?\s*:/g)].map((match) => match[1] ?? ''),
+  );
+}
+
+/**
+ * `17` S6.1 rule 1: components read the meaning layer. This is the union of every custom
+ * property declared in `src/styles/*.css` -- `tokens.css`, `typography.css`, `texture.css` and
+ * `motion.css` -- because `17` S10.4 declares the motion tokens in `motion.css` and `17` S10.5
+ * rule 1 requires a component to consume them rather than hard-code a duration.
+ */
+function declarationSetInStylesheets(): Set<string> {
+  const declared = new Set<string>();
+  for (const file of readdirSync(STYLES_DIR)) {
+    if (file.endsWith('.css')) {
+      for (const name of declarationSet(readFileSync(join(STYLES_DIR, file), 'utf8'))) {
+        declared.add(name);
+      }
+    }
+  }
+  return declared;
+}
+
+/** Every `var(--token)` reference, including the `var(--token, fallback)` form. */
+function tokenReferences(source: string): string[] {
+  return [...source.matchAll(/var\(\s*(--[a-z0-9-]+)\s*[,)]/g)].map((match) => match[1] ?? '');
 }
 
 describe('design law over the primitive sources', () => {
@@ -199,5 +239,66 @@ describe('design law over the primitive sources', () => {
     for (const contentClass of ['official', 'approved', 'structure', 'peer', 'interpretation']) {
       expect(source).toContain(`'${contentClass}'`);
     }
+  });
+
+  it('references only custom properties the design system declares, and never an L1 primitive', () => {
+    const declared = declarationSetInStylesheets();
+    // A silently empty declaration set would make the loop below vacuous.
+    expect(declared.size).toBeGreaterThan(40);
+
+    const referenced = new Set<string>();
+    for (const name of UI_FILES) {
+      for (const token of tokenReferences(sourceOf(name))) {
+        referenced.add(token);
+      }
+    }
+    // The primitives do read L2 directly in one place (AuthorityQuote's document-edge hairline),
+    // so an empty reference set would mean this check stopped checking anything.
+    expect(referenced.size).toBeGreaterThan(0);
+
+    for (const name of referenced) {
+      expect(name.startsWith('--p-'), `${name} is an L1 primitive and no component may read it`).toBe(
+        false,
+      );
+
+      // A reference resolves if the design-system stylesheets declare it, or if the referencing
+      // component declares it beside itself: `17` S6.1 rule 3 makes an L3 component token local
+      // and non-exported, so requiring it in `src/styles/` would reject a legitimate token.
+      const declaredInAComponent = UI_FILES.some((file) =>
+        declarationSet(tokenDeclarationsSource(sourceOf(file))).has(name),
+      );
+      expect(
+        declared.has(name) || declaredInAComponent,
+        `${name} is referenced but declared in no stylesheet and in no component`,
+      ).toBe(true);
+    }
+  });
+
+  /**
+   * Negative controls. The resolution rule above is only worth anything if it rejects an
+   * undeclared name and accepts one declared outside `tokens.css`, so both directions are pinned
+   * on synthetic sources rather than trusted.
+   */
+  it('rejects an undeclared token, accepts a motion token, and matches a fallback form', () => {
+    expect(tokenReferences('transition-duration: var(--motion-slow);')).toEqual(['--motion-slow']);
+    expect(tokenReferences('transition-duration: var(--motion-slow, 0ms);')).toEqual([
+      '--motion-slow',
+    ]);
+    expect(tokenReferences('color: var(--not-a-real-token);')).toEqual(['--not-a-real-token']);
+
+    const declared = declarationSetInStylesheets();
+    // `17` S10.4 declares the motion tokens in motion.css, not tokens.css: a transition written
+    // against `--motion-slow` is the correct implementation of S10.5 rule 1 and must resolve.
+    expect(declared.has('--motion-slow')).toBe(true);
+    expect(declared.has('--motion-fast')).toBe(true);
+    expect(declared.has('--ease-out')).toBe(true);
+    expect(declared.has('--not-a-real-token')).toBe(false);
+
+    // A same-file L3 component token (`17` S6.1 rule 3) is accepted by the declaration scan.
+    expect(
+      declarationSet(tokenDeclarationsSource("const css = { '--content-frame-rule': '4px' };")).has(
+        '--content-frame-rule',
+      ),
+    ).toBe(true);
   });
 });

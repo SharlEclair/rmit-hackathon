@@ -234,7 +234,7 @@ export interface ResolvedCitations {
   readonly groundingIds: string[];
   /** Cited FAQ entries, recorded in `cited_faq_entry_ids`. */
   readonly faqEntryIds: string[];
-  /** Refs the model returned that are not in this turn's set. Reported, never invented around. */
+  /** Refs the model returned that are not in this turn's set, deduplicated. Never invented around. */
   readonly droppedRefs: string[];
 }
 
@@ -254,11 +254,15 @@ export function resolveCitedRefs(set: GroundingSet, refs: readonly string[]): Re
   const faqEntryIds: string[] = [];
   const droppedRefs: string[] = [];
   const seen = new Set<string>();
+  const reportedDrops = new Set<string>();
 
   for (const raw of refs) {
     const ref = resolveOne(set, raw);
     if (ref === null) {
-      droppedRefs.push(raw);
+      if (!reportedDrops.has(raw)) {
+        reportedDrops.add(raw);
+        droppedRefs.push(raw);
+      }
       continue;
     }
     if (seen.has(ref.citation.id)) continue;
