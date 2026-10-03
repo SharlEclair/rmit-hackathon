@@ -6,7 +6,10 @@ file is rewritten every session.** It records commands and observed output, neve
 **Tag:** `phase-01-complete` -- Phase 1's final commit, which adds `07-ARCHIVE/phase-01/`. The
 packet commits it contains are `9c84ef8` (WP-01 skeleton), `9d4c16d` (fixtures), `f5360a5` (schema),
 `e16cfa5` (auth), `0ba949f` (the `pdfjs-dist` pin), `3a47eaf` (seed) and `593499a` (these exit
-documents). **Not pushed** at the time of writing: `origin/main` is 7 commits behind `main`.
+documents). **Pushed:** `git push origin main` -> `9dccd0f..49c10e1  main -> main`, and the tag
+`phase-01-complete` was pushed with it, so `origin/main` equals `main` at the tag. (The push happened
+*after* this file was first written; the one-line correction is commit `HEAD` and is the only change
+after the tag. Phase 0 had the same shape -- a follow-up commit after `phase-00-complete`.)
 **Last session:** 01
 **Next phase:** **2 -- NOT STARTED.** `src/lib/llm/`, `src/lib/storage/`, extraction and the
 ingestion job are Phase 2's; the guardrail (WP-08, Phase 3) is file-disjoint and must not wait.
