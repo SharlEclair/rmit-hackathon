@@ -218,3 +218,85 @@ fixture set; the extraction capability". All three are below.
 | `POST|GET /api/tutor/assignments/{id}/ingest` | route | `POST` enqueues and returns **202** with the polling shape; the work runs under Next's `after()`, so the response is not held open for five model calls (D60). `NO_SOURCES` (422) and `INGESTION_IN_PROGRESS` (409) are decided by the database. `GET` with no run ever requested returns **404** (**I-39**). | `06` sections 5.4, 5.5.8; **D60** |
 | `POST /api/student/uploads`, `GET /api/student/uploads/{uploadId}` | routes | O11 intake and status. The `GET` is owner-scoped in SQL, so another student's upload is indistinguishable from absent. | `06` sections 5.4, 5.5.10; **D92** |
 | `register()` | `src/instrumentation.ts` | Startup provider probe (`04` section 5.4). Aborts with exit `78` when the provider is misconfigured and the rest of the config is valid; a wholly unconfigured checkout reports the variable names and continues, so `/api/health` stays reachable (D77's spirit -- see the file's own table). | `04` sections 5.4, 12; **D77** |
+
+---
+
+## 7. Frozen in Phase 4 (WP-06 and gate rule G1)
+
+Frozen at the Phase 4 exit commit, tagged `phase-04-complete`. Same rules as section 3: a later phase
+may **add**, but changing any of these means raising it in [`05-ISSUES.md`](05-ISSUES.md), recording
+why in [`../../01-DECISIONS.md`](../../01-DECISIONS.md), and updating this file in the same commit.
+
+`18` section 5 makes Phase 4 hand off "**the direction of the student-visibility gate**". It is below,
+in `student-visibility.ts`; the state machine and the review contract travel with it because the gate
+is only meaningful next to the transitions that decide what `PUBLISHED` means.
+
+### 7.1 The state machine (`app/src/features/review/transitions.ts`)
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `PublicationStatus`, `ArtifactKind`, `ReviewAction`, `StampEffect`, `PermittedTransition`, `RefusedTransition`, `TransitionResult` | The tutor's half of `06` section 3.2: ten permitted `(from, action) -> to` rows, each carrying the transition number and the stamp effects it must apply. A refusal is a **value** (`ok: false`, `code: 'INVALID_STATE_TRANSITION'`) that names the status and the action, so no caller can mistake an exception for a pass. | `06` section 3.2; **D22**, **D53**, **D102** |
+| `resolveTransition(from, action)` | The only decision function. Refuses `AI_GENERATED -> APPROVED` by name, refuses anything but `APPROVED -> PUBLISHED` for `publish`, and treats `REJECTED` as terminal. | `06` section 3.2; `11` WP-06 |
+| `isStudentVisible(status)` | **The single student-visibility rule**: `PUBLISHED` and nothing else (**D99**, resolves I-21). A UI label only; the enforcement is section 7.2's SQL. | `06` sections 3.1, 3.4; **D99** |
+| `permittedTransitions()`, `APPROVABLE_STATUSES`, `PUBLISHABLE_STATUS` | The whole table, and the status sets the two bulk actions act on, so a route does not restate them. | `06` sections 3.2, 5.4 |
+
+### 7.2 Gate rule G1 (`app/src/lib/db/queries/student-visibility.ts`) -- the phase's handoff
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `VisibleScope`, `findVisibleAssignmentScope(ex, assignmentId)` | The gate: `assignments.status = 'published'` **and** a current structure, resolved in one query. `null` for every failure, so a caller has one branch and cannot distinguish "not published" from "no structure" -- both are `NOT_FOUND`. Returns `courseId` so the caller can also check enrolment without a second read. | `06` section 3.4; trap **T3**; **D99** |
+| `listVisibleRequirements`, `listVisibleRubricSections`, `listVisibleMilestones`, `listVisibleChecklistItems`, `listVisibleFaqEntries`, `listVisiblePolicyRules` | Every student-visible read, each taking a `VisibleScope` **and nothing else**. There is deliberately no `listVisibleX(assignmentId)`: a caller that could list by assignment id could list before checking the gate, and the empty-shell bug would come back. Each selects only `PUBLISHED` rows of the scope's structure (`faq_entries` has no `structure_id`, so it is assignment-scoped), and returns the Map's `sourceRef` fields for requirements and rubric sections. | `06` sections 3.4, 5.4, 5.5.5; trap **T3** |
+| `guardStudentVisibleAssignment(request, requestId, assignmentId)` | `src/lib/auth/guards.ts`. Role, then G1, then enrolment on the assignment's course. **All three failures are `NOT_FOUND`**, so a student cannot use the difference to learn that another course's assignment exists. | `06` sections 3.4, 5.2 rule 2 |
+| `guardTutorAssignment`, `guardTutorArtifact` | The tutor half: role, then the resource, then a tutor enrolment on its course. `guardTutorArtifact` resolves the artifact **first** and takes the assignment id from the artifact, so a tutor on course A cannot act on course B's artifact by pairing their own assignment id with a foreign artifact id. | `06` sections 5.2, 3.5 |
+
+### 7.3 The review query layer (`app/src/lib/db/queries/review.ts`)
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `ReviewArtifactRow`, `listReviewArtifacts(ex, assignmentId, structureId)` | Every artifact of the current structure plus the assignment's FAQ entries, each with its payload, its cited chunk's text, its `revision`, and the structure's requirement quotes (for the overlap warning). O(n) queries, not O(7n). | `06` section 5.5.8 |
+| `readAssignmentHeader`, `readPublicationCounts`, `readGateInputs`, `listAmbiguityFindings` | The bundle's remaining inputs. `readGateInputs` is the SQL half of the publish gate (sources, active job, milestones, milestones without a requirement link, approved policy rules, approved artifacts); the policy half is `computeGates`. | `06` sections 5.5.8, 7.2.8, 7.2.12 |
+| `findReviewArtifact(ex, artifactId)` | One artifact by id across the seven tables. Seven statements rather than a `union`, because the payload columns differ per kind and a union would project every kind onto one row shape. | `06` section 5.5.8 |
+| `writeRequirementNode`, `writeRubricSection`, `writeMilestone`, `writeChecklistItem`, `writeFaqEntry`, `writeAiPolicyRule`, `writeStructureStatus` | One literal UPDATE per kind, each setting its editable columns, the status, the four stamp columns through `case when <effect-flag>`, and `revision = revision + 1`, guarded by `where id = $id and ($expected = 0 or revision = $expected)` in the **same statement**. Table and column names are literals, never interpolated (trap T19's reason, and `structure.ts`'s own note). `expectedRevision = 0` means "no precondition" and is only legitimate for transition 9, whose guard column in `06` section 3.2 is `-`. | `06` sections 5.5.8, 3.2; **D98**, **T-19** |
+| `approveAllReviewable`, `publishApprovedArtifacts`, `rejectArtifact`, `insertTutorArtifact`, `findMilestoneStructureId` | The bulk transitions and tutor authoring. `publishApprovedArtifacts` moves artifacts **before** setting `assignments.status = 'published'`, because that status is G1's third condition and the order is what makes a concurrent student read see a consistent state. `rejectArtifact` writes `REJECTED` and leaves `deleted_at` null (`06` section 3.7 keeps the row as evidence). `insertTutorArtifact` starts every row at `NEEDS_REVIEW`, and its `displayOrder: null` means "append", computed by a subselect in the insert. | `06` sections 3.2, 3.4, 3.7, 5.4 |
+
+### 7.4 The review feature layer (`app/src/features/review/`)
+
+| Interface | File | What it guarantees |
+|---|---|---|
+| `applyTutorTransition`, `rejectWithoutPrecondition`, `TransitionInput`, `ActionOutcome` | `actions.ts` | The ordering of the checks (state machine, then field immutability, then the policy rule code, then warning acknowledgement, then the write), the D53 no-op rule (a save that changes nothing writes nothing), and the audit row every mutating action writes. `ActionOutcome` carries the `ErrorCode` the route maps, so a route computes no status. |
+| `EDITABLE_FIELDS`, `IMMUTABLE_FIELDS`, `refusedPayloadKeys`, `payloadChangesAnything`, `truthTierFor`, `validationFor`, `approvalAllowed`, `isAcknowledgable`, `derivePlanningLevel`, `TUTOR_AUTHORABLE_KINDS`, the six payload type guards | `artifacts.ts` | The pure rules. `verbatimText` and `criteriaText` are immutable (C2); a numeric column compared as a number is not a change; `planningLevel` follows the wording; validation is recomputed from the stored text. |
+| `computeGates`, `PublishBlocker` | `gates.ts` | The four publish blockers and the three gate flags, pure, from the SQL inputs plus the artifacts' recomputed validation. |
+| `checkPolicyRuleCode`, `isAssistantApplicable`, `isCapabilityRule` | `policy-rules.ts` | The AI Usage Policy write guard. **Takes the effect**, because `policyFromRows` requires a capability mapping only for `ALLOW`/`PROHIBIT` -- a guard stricter than the validator invents refusals (trap **T31**). |
+| `inferReviewArtifact` | `mappers.ts` | Row -> `ReviewArtifactResponse`, recomputing the tier and the validation and falling back to `created_at` for a tutor-authored row's required `provenance.generatedAt`. |
+| `buildReviewBundle`, `toSourceResponse` | `bundle.ts` | The whole `06` section 5.5.8 response, or `null` for a missing assignment. `ingestion: null` means no run was ever requested (**I-39**). |
+| `computePublishOutcome` | `publish.ts` | The publish decision, reusing `computeGates`, and distinguishing "blocked" from the two non-blocker reasons (`ASSIGNMENT_NOT_IN_REVIEW`, `NOTHING_APPROVED`) so a refusal never sends the tutor to fix something that is not wrong. |
+
+### 7.5 API and routes (`app/src/lib/api/`, `app/src/app/api/`)
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `ReviewBundleResponse`, `ReviewArtifactResponse`, `ValidationWarning`, `ValidationWarningCode`, `StructureArtifactPatchRequest`, `CreateArtifactRequest`, `ReviewCountsResponse`, `PublishBlocker`, `AmbiguityFindingResponse`, `AssignmentResponse`, `AssignmentMapResponse`, `AssignmentMapNodeResponse`, `AssignmentMapEdgeResponse` | `lib/api/types.ts` | The `06` section 5.4/5.5 shapes, defined when the routes that return them were built (I-03, I-41, **D103**). `AssignmentResponse` closes I-03's assignment case. |
+| `StructurePayload`, `RequirementNodePayload`, `RubricSectionPayload`, `MilestonePayload`, `ChecklistItemPayload`, `FaqEntryPayload`, `AiPolicyRulePayload`, `ReviewArtifactPayload` | `lib/api/types.ts` | `06` section 5.5.8's payload union, complete: the four I-41 named, `RubricSectionPayload`, and a member for `kind: 'structure'` (**D103**). No payload carries a field a tutor may not change -- that is structural, not a validation rule. |
+| `toIngestionStatusResponse` | `queries/ingestions.ts` | The `IngestionStatusResponse` mapping, exported from the module that owns `IngestionJobRow` so the ingest route and the review bundle cannot drift. |
+| `listSources` gained `createdAt`; `AssignmentSourceSummary` gained the field | `queries/assignments.ts` | **Additive** to a Phase 2 signature. `AssignmentSourceResponse.createdAt` is required and the upload route could synthesise it for a row it had just written; the review bundle reads rows that already exist. |
+| `isoTimestamp`, `isoTimestampRequired`, `nullableNumber`, `requiredNumber` | `lib/db/values.ts` | **New.** The driver returns a `timestamptz` as a `Date` **or** a string depending on its type cache, and `Number(...)` is already used for `bigint`/`numeric` for the same reason. Phase 4 hit the string case as a `500` on the review bundle's first live request, so a typed column is normalised at the boundary rather than trusted. Strict about type, silent about value (a bad value must never reach a log line, C7). |
+| `GET /api/tutor/assignments/{assignmentId}/review` | route | The bundle. `NOT_FOUND` for an assignment the caller is not a tutor on. |
+| `PATCH /api/tutor/structure-artifacts/{artifactId}` | route | `save` \| `approve` \| `reject` with `expectedRevision`, `acknowledgeWarnings` for a warning-bearing approval. Failure codes exactly `06` section 5.4's: `IMMUTABLE_FIELD`, `INVALID_STATE_TRANSITION`, `STALE_REVISION`, `VALIDATION_FAILED`. |
+| `DELETE /api/tutor/structure-artifacts/{artifactId}` | route | Transition 9, **no revision precondition** (`06` section 5.4 gives this route no `STALE_REVISION`), `204`. The row is retained as `REJECTED`. |
+| `POST /api/tutor/assignments/{assignmentId}/artifacts` | route | Tutor-authoring for a milestone, checklist item, FAQ entry or policy rule; `201` starting at `NEEDS_REVIEW`. An unmapped assistant-applicable rule code is `VALIDATION_FAILED` (**T22**/**T31**); a `structureId` that is not current is `INVALID_STATE_TRANSITION`; a checklist item's milestone must belong to the same structure. |
+| `POST /api/tutor/assignments/{assignmentId}/approve` | route | Bulk transition 4/5. Reports how many moved. Approving is **not** publishing (**D99**). |
+| `POST /api/tutor/assignments/{assignmentId}/publish` | route | Transition 7, the only action that makes content student-visible. `409 INVALID_STATE_TRANSITION` with `details.blockers` (or `details.reason`). Optional `{ artifactIds }` for the partial publish of `06` section 3.4. |
+| `GET /api/student/assignments/{assignmentId}/structure` | route | The one student route Phase 4 ships, so WP-06's gate is verifiable over HTTP: the Assignment Map of `06` section 5.5.5, `404` for anything G1 hides. Phase 5 (WP-07) owns the rest of the workspace. |
+
+### 7.6 The acceptance run and the two constraints a later phase will hit
+
+1. **`app/scripts/verify-review.ts` is where WP-06's gate lives** (**D105**). It needs a running server
+   and a migrated, seeded database, so it is a script rather than a test: `12` section 3.7 requires
+   `pnpm test` to pass with no network and no database. It mints its own session with
+   `signSessionToken` (the login route's own function) rather than reading the demo password. Eighteen
+   checks; the report lands in `.local/phase4-review-verify.json`.
+2. **`app/src/styles/tokens.css` is still empty, and that is the next UI phase's first job** (**I-44**).
+   Every Tailwind colour key in `app/tailwind.config.ts` resolves to an undefined custom property, so
+   no screen can render correctly and no design-system gate (`17` section 12) exists to catch it. Phase
+   4 therefore delivered WP-06's boundary and contract but **not** its review page or the
+   `AI generated - requires tutor approval` badge; the order that avoids rework is in I-44.

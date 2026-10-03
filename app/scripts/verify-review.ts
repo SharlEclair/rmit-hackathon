@@ -579,7 +579,7 @@ async function main(): Promise<void> {
     },
   );
   record(
-    '16. An escalation rule is accepted even though it has no capability mapping (T31)',
+    '15. An escalation rule is accepted even though it has no capability mapping (T31)',
     '201 with publicationStatus NEEDS_REVIEW',
     `${String(escalation.status)} status=${String(bodyPath(escalation.body, 'publicationStatus'))} ${String(bodyPath(escalation.body, 'error.message') ?? '')}`,
     escalation.status === 201 && bodyPath(escalation.body, 'publicationStatus') === 'NEEDS_REVIEW',
@@ -593,7 +593,7 @@ async function main(): Promise<void> {
     {},
   );
   record(
-    '17. A second publish is refused with the reason named',
+    '16. A second publish is refused with the reason named',
     '409 INVALID_STATE_TRANSITION, reason ASSIGNMENT_NOT_IN_REVIEW',
     `${String(secondPublish.status)} reason=${String(bodyPath(secondPublish.body, 'error.details.reason'))}`,
     secondPublish.status === 409 &&
@@ -610,7 +610,7 @@ async function main(): Promise<void> {
   const actions = auditRows.map((row) => row.action);
   const expectedActions = ['artifact.approved_all', 'assignment.published', 'artifact.edited'];
   record(
-    '18. Every mutating tutor action wrote an audit row (06 section 3.5 rule 4)',
+    '17. Every mutating tutor action wrote an audit row (06 section 3.5 rule 4)',
     `rows include ${expectedActions.join(', ')} twice for artifact.edited (the milestone edit and the race)`,
     JSON.stringify(actions),
     expectedActions.every((action) => actions.includes(action)) &&
@@ -642,7 +642,7 @@ async function main(): Promise<void> {
     },
   );
   record(
-    '19. Approving an already-published artifact is refused, naming the transition',
+    '18. Approving an already-published artifact is refused, naming the transition',
     '409 INVALID_STATE_TRANSITION with the action in the message',
     `${String(illegal.status)} ${String(bodyPath(illegal.body, 'error.code'))} message=${String(bodyPath(illegal.body, 'error.message'))}`,
     illegal.status === 409 &&
