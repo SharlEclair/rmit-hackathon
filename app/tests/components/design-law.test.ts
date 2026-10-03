@@ -265,7 +265,7 @@ describe('design law over the primitive sources', () => {
       // component declares it beside itself: `17` S6.1 rule 3 makes an L3 component token local
       // and non-exported, so requiring it in `src/styles/` would reject a legitimate token.
       const declaredInAComponent = UI_FILES.some((file) =>
-        declarationSet(tokenDeclarationsSource(sourceOf(file))).has(name),
+        declarationSet(sourceOf(file)).has(name),
       );
       expect(
         declared.has(name) || declaredInAComponent,
@@ -295,10 +295,8 @@ describe('design law over the primitive sources', () => {
     expect(declared.has('--not-a-real-token')).toBe(false);
 
     // A same-file L3 component token (`17` S6.1 rule 3) is accepted by the declaration scan.
-    expect(
-      declarationSet(tokenDeclarationsSource("const css = { '--content-frame-rule': '4px' };")).has(
-        '--content-frame-rule',
-      ),
-    ).toBe(true);
+    expect(declarationSet("const css = { '--content-frame-rule': '4px' };").has('--content-frame-rule')).toBe(
+      true,
+    );
   });
 });
