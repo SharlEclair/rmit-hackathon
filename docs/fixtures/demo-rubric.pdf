@@ -1,0 +1,136 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 3 /Kids [ 5 0 R 7 0 R 9 0 R ] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Title (Marking Rubric: Case Analysis and Design Proposal Report \(COSC2407\)) /Producer (make-fixtures.mjs) >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 200 >>
+stream
+BT /F1 15 Tf 64 772 Td (RMIT University Vietnam -- School of Computing Technologies) Tj ET
+BT /F1 8 Tf 64 38 Td (Assignment Assistant -- demo fixture. Synthetic content; not a real assessment.) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 4690 >>
+stream
+BT /F1 15 Tf 64 772 Td (Marking Rubric: Case Analysis and Design Proposal Report \(COSC2407\)) Tj ET
+BT /F1 9 Tf 64 742 Td (Assessment ........ Case Analysis and Design Proposal Report) Tj ET
+BT /F1 9 Tf 64 729 Td (Course ............ COSC2407 Digital Systems Design) Tj ET
+BT /F1 9 Tf 64 716 Td (Weighting ......... 40% of the final course grade) Tj ET
+BT /F1 9 Tf 64 703 Td (Total marks ....... 100) Tj ET
+BT /F1 9 Tf 64 690 Td (Instrument ........ Analytic rubric, five criteria) Tj ET
+BT /F1 9 Tf 64 677 Td (Marker ............ Course tutor, moderated by the course coordinator) Tj ET
+BT /F1 12 Tf 64 652 Td (1. How to read this rubric) Tj ET
+BT /F1 11 Tf 64 633 Td (The five criteria below sum to 100 marks, which is the whole of the assessment. Each) Tj ET
+BT /F1 11 Tf 64 617 Td (criterion states its weight and describes the standard that separates a pass from a) Tj ET
+BT /F1 11 Tf 64 601 Td (distinction. A criterion marked at the pass standard earns half of the weighted marks for) Tj ET
+BT /F1 11 Tf 64 585 Td (that criterion; a criterion marked at the distinction standard earns most of them. The mark) Tj ET
+BT /F1 11 Tf 64 569 Td (for the assessment is the sum of the weighted marks awarded.) Tj ET
+BT /F1 11 Tf 64 548 Td (The rubric describes what is rewarded. It does not describe how to produce any part of the) Tj ET
+BT /F1 11 Tf 64 532 Td (report, and nothing in it authorises work that the assessment AI Usage Policy prohibits.) Tj ET
+BT /F1 12 Tf 64 505 Td (2. Criteria, weights, and pass/distinction standards) Tj ET
+BT /F1 12 Tf 64 480 Td (Criterion 1 -- Problem framing \(20 marks\)) Tj ET
+BT /F1 9 Tf 64 457 Td (  Pass standard                                 Distinction standard) Tj ET
+BT /F1 9 Tf 64 444 Td (  --------------------------------------------  ----------------------------------------------) Tj ET
+BT /F1 9 Tf 64 431 Td (  States the purpose of the service and names   States the problem as a claim the evidence can) Tj ET
+BT /F1 9 Tf 64 418 Td (  at least one finding from the case pack.      test, and reads the evidence against it without) Tj ET
+BT /F1 9 Tf 64 405 Td (  Relies on assertion where evidence exists.    overclaiming what the case pack can support.) Tj ET
+BT /F1 9 Tf 64 392 Td (  Treats the case pack as background.           Distinguishes evidence from interpretation.) Tj ET
+BT /F1 12 Tf 64 367 Td (Criterion 2 -- Design rationale, Part B \(25 marks\)) Tj ET
+BT /F1 9 Tf 64 344 Td (  Pass standard                                 Distinction standard) Tj ET
+BT /F1 9 Tf 64 331 Td (  --------------------------------------------  ----------------------------------------------) Tj ET
+BT /F1 9 Tf 64 318 Td (  Proposes a response and describes it.         Justifies each design decision against named) Tj ET
+BT /F1 9 Tf 64 305 Td (  Gives reasons, but the reasons restate the    evidence and against the course literature,) Tj ET
+BT /F1 9 Tf 64 292 Td (  proposal rather than supporting it.           and names at least one decision it chose not) Tj ET
+BT /F1 9 Tf 64 279 Td (  Some decisions are unexplained.               to make, with the reason.) Tj ET
+BT /F1 12 Tf 64 254 Td (Criterion 3 -- Stakeholder and needs analysis \(20 marks\)) Tj ET
+BT /F1 9 Tf 64 231 Td (  Pass standard                                 Distinction standard) Tj ET
+BT /F1 9 Tf 64 218 Td (  --------------------------------------------  ----------------------------------------------) Tj ET
+BT /F1 9 Tf 64 205 Td (  Identifies the main stakeholder groups and    Derives each need from a specific piece of) Tj ET
+BT /F1 9 Tf 64 192 Td (  lists what each needs.                        evidence or an explicit assumption, and shows) Tj ET
+BT /F1 9 Tf 64 179 Td (  Needs are plausible but not traced to         where two groups' needs conflict and how the) Tj ET
+BT /F1 9 Tf 64 166 Td (  anything in the case pack.                    conflict is handled in the proposal.) Tj ET
+BT /F1 12 Tf 64 141 Td (Criterion 4 -- Risks, ethics, and conclusion \(25 marks\)) Tj ET
+BT /F1 9 Tf 64 118 Td (  Pass standard                                 Distinction standard) Tj ET
+BT /F1 9 Tf 64 105 Td (  --------------------------------------------  ----------------------------------------------) Tj ET
+BT /F1 9 Tf 64 92 Td (  Identifies at least three risks or ethical    Ties each risk to its source, states the) Tj ET
+BT /F1 9 Tf 64 79 Td (  considerations and gives a conclusion.        condition under which it would become real,) Tj ET
+BT /F1 9 Tf 64 66 Td (  Risks are generic and could apply to any      and states what would change the advice) Tj ET
+BT /F1 8 Tf 64 38 Td (Assignment Assistant -- demo fixture. Synthetic content; not a real assessment.) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 3471 >>
+stream
+BT /F1 9 Tf 64 778 Td (  service.                                      given in the conclusion.) Tj ET
+BT /F1 12 Tf 64 753 Td (Criterion 5 -- Communication, referencing, and assessment compliance \(10 marks\)) Tj ET
+BT /F1 9 Tf 64 730 Td (  Pass standard                                 Distinction standard) Tj ET
+BT /F1 9 Tf 64 717 Td (  --------------------------------------------  ----------------------------------------------) Tj ET
+BT /F1 9 Tf 64 704 Td (  Writing is understandable and the report has  Writing is precise and economical; every source) Tj ET
+BT /F1 9 Tf 64 691 Td (  a reference list. Referencing is largely      is acknowledged where it is used, including any) Tj ET
+BT /F1 9 Tf 64 678 Td (  consistent. The body is within the word       permitted use of generative AI. The body is) Tj ET
+BT /F1 9 Tf 64 665 Td (  count stated in the brief.                    within 1,620 to 1,980 words and the declared) Tj ET
+BT /F1 9 Tf 64 652 Td (                                                count matches the submitted document.) Tj ET
+BT /F1 12 Tf 64 627 Td (3. Weight summary) Tj ET
+BT /F1 9 Tf 64 604 Td (  Criterion                                                       Weight) Tj ET
+BT /F1 9 Tf 64 591 Td (  --------------------------------------------------------------  ------) Tj ET
+BT /F1 9 Tf 64 578 Td (  1. Problem framing                                                 20) Tj ET
+BT /F1 9 Tf 64 565 Td (  2. Design rationale \(Part B\)                                       25) Tj ET
+BT /F1 9 Tf 64 552 Td (  3. Stakeholder and needs analysis                                  20) Tj ET
+BT /F1 9 Tf 64 539 Td (  4. Risks, ethics, and conclusion                                   25) Tj ET
+BT /F1 9 Tf 64 526 Td (  5. Communication, referencing, and assessment compliance           10) Tj ET
+BT /F1 9 Tf 64 513 Td (  --------------------------------------------------------------  ------) Tj ET
+BT /F1 9 Tf 64 500 Td (  Total                                                             100) Tj ET
+BT /F1 11 Tf 64 481 Td (The five weights sum to 100. The word-count requirement stated in the assessment brief is) Tj ET
+BT /F1 11 Tf 64 465 Td (enforced under criterion 5: a body outside 1,620 to 1,980 words is penalised there and) Tj ET
+BT /F1 11 Tf 64 449 Td (nowhere else.) Tj ET
+BT /F1 12 Tf 64 422 Td (4. Applying the rubric) Tj ET
+BT /F1 11 Tf 64 403 Td (  - Each criterion is marked against the standards above; a marker may not invent a standard) Tj ET
+BT /F1 11 Tf 64 387 Td (    that this rubric does not describe.) Tj ET
+BT /F1 11 Tf 64 371 Td (  - A criterion at the pass standard earns half of its weighted marks. A criterion at the) Tj ET
+BT /F1 11 Tf 64 355 Td (    distinction standard earns 80% or more of its weighted marks.) Tj ET
+BT /F1 11 Tf 64 339 Td (  - The marks are summed and reported out of 100. No criterion is weighted twice.) Tj ET
+BT /F1 11 Tf 64 323 Td (  - A report that breaches the assessment AI Usage Policy is referred to the academic) Tj ET
+BT /F1 11 Tf 64 307 Td (    integrity process; it is not marked against this rubric and no criterion can offset the) Tj ET
+BT /F1 11 Tf 64 291 Td (    breach.) Tj ET
+BT /F1 11 Tf 64 275 Td (  - Moderation is performed by the course coordinator on a sample of at least 20% of) Tj ET
+BT /F1 11 Tf 64 259 Td (    submissions before marks are released.) Tj ET
+BT /F1 8 Tf 64 38 Td (Assignment Assistant -- demo fixture. Synthetic content; not a real assessment.) Tj ET
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000135 00000 n 
+0000000232 00000 n 
+0000000362 00000 n 
+0000000488 00000 n 
+0000000738 00000 n 
+0000000864 00000 n 
+0000005605 00000 n 
+0000005732 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R /Info 4 0 R >>
+startxref
+9255
+%%EOF

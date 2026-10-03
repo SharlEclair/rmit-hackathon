@@ -1,0 +1,1423 @@
+{
+  "$schemaNote": "Deterministic synthetic-cohort seed for the Assignment Assistant demo. Every row is generated, not observed. No real person, cohort, or institution is described.",
+  "fixtureName": "cohort-seed",
+  "fixtureVersion": 1,
+  "generatedBy": "app/scripts/make-fixtures.mjs",
+  "regenerate": "node app/scripts/make-fixtures.mjs",
+  "containsRealPersonalData": false,
+  "syntheticDataStatement": "Every display name in this file has the form \"Demo Student NN\", every address is on the reserved demo domain student.demo.rmit, and every identifier begins with \"synthetic-\". No name, address, or identifier in this file refers to a real person. The cohort is generated, not scraped, and no data was taken from Canvas or any other system.",
+  "generation": {
+    "prng": {
+      "algorithm": "xorshift32",
+      "seedConstant": 1592594996,
+      "seedConstantHex": "0x5eed1234",
+      "unsigned32Bit": true,
+      "step": "h ^= h << 13; h ^= h >>> 17; h ^= h << 5;  (all four operations on uint32)"
+    },
+    "normalDeviate": {
+      "algorithm": "Box-Muller",
+      "step": "sqrt(-2 * ln(u1)) * cos(2 * pi * u2), with u = (draw + 1) / 4294967297",
+      "note": "The raw draws are not reproducible across engines; the seconds recorded below are."
+    },
+    "drawOrder": [
+      "For each milestone in displayOrder, for each of the first `contributingCount` students by index:",
+      "  1. draw `checklistItemCount` standard-normal values for the item intervals, in order;",
+      "  2. draw one uniform value to decide the seeded question (ask if value < questionRate);",
+      "A student is in a milestone bucket only if that milestone seeded activity for them.",
+      "Milestone order is fixed by displayOrder and student order is fixed by index, so a second",
+      "run consumes the same draws in the same order and produces the same file byte for byte."
+    ],
+    "intervalRule": "intervalsSeconds[i] = round(baseSeconds + gauss * sigmaSeconds), clamped to 180..28800 seconds (docs/08 section 4.2: a negative interval is clamped to 0 and a runaway interval is capped at 8 hours).",
+    "elapsedMetricRule": "milestoneMeanElapsedSeconds is the TWO-STAGE MEAN of docs/08 section 4.3: the mean over contributing students of that student's own mean interval. It is not a mean over intervals, so a student who completed more items cannot dominate the milestone (trap T1).",
+    "analyticsNote": "The runtime pipeline derives elapsed time from checklist start/complete transitions and writes them to analytics_events (docs/06 section 7.6.1, trap T7). This file seeds the inputs to that pipeline; the values here are the expected aggregates, carried in the file so a reader can audit the seed without running the generator."
+  },
+  "demoDomain": "demo.rmit",
+  "demoDomainNote": "The only address domain in this file is student.demo.rmit. It is a demonstration domain; no mail is sent to or from it.",
+  "demoAccounts": {
+    "tutor": {
+      "email": "tutor@demo.rmit",
+      "displayName": "Demo Tutor",
+      "role": "tutor",
+      "passwordSource": ".env (never this file)"
+    },
+    "student": {
+      "email": "student@demo.rmit",
+      "displayName": "Demo Student (interactive)",
+      "role": "student",
+      "passwordSource": ".env (never this file)"
+    },
+    "note": "The interactive demo accounts are a separate, small set. The 37 synthetic students below exist so the analytics cohort is large enough for the k-anonymity floor to be a live constraint rather than a theoretical one (docs/02-SCOPE.md section 5)."
+  },
+  "cohort": {
+    "syntheticStudentCount": 37,
+    "contributingStudentCount": 20,
+    "enrolledStudentCount": 37,
+    "kAnonymityFloor": 5,
+    "kAnonymityRule": "A bucket with fewer than 5 contributing students renders \"Insufficient data\": the aggregation query suppresses it with HAVING count(distinct subject_ref) >= 5 (docs/06 section 4.7.2, D32). Suppression is contagious upward and, when exactly one bucket is suppressed, complementary suppression removes the smallest qualified bucket (trap T2). This seed ships one bucket below the floor and several above it, so both states are visible in one run.",
+    "note": "contributingStudentCount is the number of synthetic students with at least one qualifying event in the window; every student who contributes contributes to at least one milestone."
+  },
+  "course": {
+    "code": "COSC2407",
+    "title": "Digital Systems Design",
+    "term": "2026-S2",
+    "institution": "RMIT University Vietnam (demo)"
+  },
+  "assignment": {
+    "syntheticAssignmentId": "synthetic-assignment-cosc2407-report",
+    "title": "Case Analysis and Design Proposal Report",
+    "kind": "individual written report",
+    "weightPercent": 40,
+    "wordCountRequirement": 1800,
+    "wordCountTolerance": "1,620 to 1,980 words",
+    "dueAt": "2026-10-23T16:59:00.000Z",
+    "dueAtLocal": "2026-10-23T23:59:00+07:00",
+    "status": "published",
+    "fixtureFiles": {
+      "brief": "docs/fixtures/demo-brief.pdf",
+      "rubric": "docs/fixtures/demo-rubric.pdf",
+      "aiPolicy": "docs/fixtures/demo-ai-policy.md"
+    }
+  },
+  "students": [
+    {
+      "index": 1,
+      "syntheticStudentId": "synthetic-student-01",
+      "displayName": "Demo Student 01",
+      "email": "synthetic01@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 2,
+      "syntheticStudentId": "synthetic-student-02",
+      "displayName": "Demo Student 02",
+      "email": "synthetic02@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 3,
+      "syntheticStudentId": "synthetic-student-03",
+      "displayName": "Demo Student 03",
+      "email": "synthetic03@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 4,
+      "syntheticStudentId": "synthetic-student-04",
+      "displayName": "Demo Student 04",
+      "email": "synthetic04@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 5,
+      "syntheticStudentId": "synthetic-student-05",
+      "displayName": "Demo Student 05",
+      "email": "synthetic05@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 6,
+      "syntheticStudentId": "synthetic-student-06",
+      "displayName": "Demo Student 06",
+      "email": "synthetic06@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 7,
+      "syntheticStudentId": "synthetic-student-07",
+      "displayName": "Demo Student 07",
+      "email": "synthetic07@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 8,
+      "syntheticStudentId": "synthetic-student-08",
+      "displayName": "Demo Student 08",
+      "email": "synthetic08@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 9,
+      "syntheticStudentId": "synthetic-student-09",
+      "displayName": "Demo Student 09",
+      "email": "synthetic09@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 10,
+      "syntheticStudentId": "synthetic-student-10",
+      "displayName": "Demo Student 10",
+      "email": "synthetic10@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 11,
+      "syntheticStudentId": "synthetic-student-11",
+      "displayName": "Demo Student 11",
+      "email": "synthetic11@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 12,
+      "syntheticStudentId": "synthetic-student-12",
+      "displayName": "Demo Student 12",
+      "email": "synthetic12@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 13,
+      "syntheticStudentId": "synthetic-student-13",
+      "displayName": "Demo Student 13",
+      "email": "synthetic13@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 14,
+      "syntheticStudentId": "synthetic-student-14",
+      "displayName": "Demo Student 14",
+      "email": "synthetic14@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 15,
+      "syntheticStudentId": "synthetic-student-15",
+      "displayName": "Demo Student 15",
+      "email": "synthetic15@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 16,
+      "syntheticStudentId": "synthetic-student-16",
+      "displayName": "Demo Student 16",
+      "email": "synthetic16@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 17,
+      "syntheticStudentId": "synthetic-student-17",
+      "displayName": "Demo Student 17",
+      "email": "synthetic17@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 18,
+      "syntheticStudentId": "synthetic-student-18",
+      "displayName": "Demo Student 18",
+      "email": "synthetic18@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 19,
+      "syntheticStudentId": "synthetic-student-19",
+      "displayName": "Demo Student 19",
+      "email": "synthetic19@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 20,
+      "syntheticStudentId": "synthetic-student-20",
+      "displayName": "Demo Student 20",
+      "email": "synthetic20@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 21,
+      "syntheticStudentId": "synthetic-student-21",
+      "displayName": "Demo Student 21",
+      "email": "synthetic21@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 22,
+      "syntheticStudentId": "synthetic-student-22",
+      "displayName": "Demo Student 22",
+      "email": "synthetic22@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 23,
+      "syntheticStudentId": "synthetic-student-23",
+      "displayName": "Demo Student 23",
+      "email": "synthetic23@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 24,
+      "syntheticStudentId": "synthetic-student-24",
+      "displayName": "Demo Student 24",
+      "email": "synthetic24@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 25,
+      "syntheticStudentId": "synthetic-student-25",
+      "displayName": "Demo Student 25",
+      "email": "synthetic25@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 26,
+      "syntheticStudentId": "synthetic-student-26",
+      "displayName": "Demo Student 26",
+      "email": "synthetic26@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 27,
+      "syntheticStudentId": "synthetic-student-27",
+      "displayName": "Demo Student 27",
+      "email": "synthetic27@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 28,
+      "syntheticStudentId": "synthetic-student-28",
+      "displayName": "Demo Student 28",
+      "email": "synthetic28@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 29,
+      "syntheticStudentId": "synthetic-student-29",
+      "displayName": "Demo Student 29",
+      "email": "synthetic29@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 30,
+      "syntheticStudentId": "synthetic-student-30",
+      "displayName": "Demo Student 30",
+      "email": "synthetic30@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 31,
+      "syntheticStudentId": "synthetic-student-31",
+      "displayName": "Demo Student 31",
+      "email": "synthetic31@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 32,
+      "syntheticStudentId": "synthetic-student-32",
+      "displayName": "Demo Student 32",
+      "email": "synthetic32@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 33,
+      "syntheticStudentId": "synthetic-student-33",
+      "displayName": "Demo Student 33",
+      "email": "synthetic33@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 34,
+      "syntheticStudentId": "synthetic-student-34",
+      "displayName": "Demo Student 34",
+      "email": "synthetic34@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 35,
+      "syntheticStudentId": "synthetic-student-35",
+      "displayName": "Demo Student 35",
+      "email": "synthetic35@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 36,
+      "syntheticStudentId": "synthetic-student-36",
+      "displayName": "Demo Student 36",
+      "email": "synthetic36@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    },
+    {
+      "index": 37,
+      "syntheticStudentId": "synthetic-student-37",
+      "displayName": "Demo Student 37",
+      "email": "synthetic37@student.demo.rmit",
+      "pseudonymSource": "HMAC_SHA256(ANON_ID_SECRET, \"aa:anon:v1|\" + syntheticStudentId + \"|\" + assignmentId)",
+      "synthetic": true
+    }
+  ],
+  "milestones": [
+    {
+      "key": "M1",
+      "displayOrder": 1,
+      "title": "Understanding the brief and the assessment requirements",
+      "summary": "Reading the assessment brief and the marking rubric, and identifying what is assessed and what each required section must contain.",
+      "publicationStatus": "APPROVED",
+      "approvedBy": "seeded-tutor",
+      "sourcePages": [
+        1,
+        2
+      ],
+      "checklistItemCount": 3,
+      "contributingCount": 10,
+      "belowKAnonymityFloor": false,
+      "milestoneMeanElapsedSeconds": 2609.0666666666666,
+      "seededQuestionCount": 4,
+      "seededQuestionRate": 0.4,
+      "primaryThemes": [
+        "Requirements interpretation",
+        "Assessment expectations",
+        "Referencing and academic integrity"
+      ],
+      "activity": [
+        {
+          "studentIndex": 1,
+          "studentId": "synthetic-student-01",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2993,
+            2073,
+            2058
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 2,
+          "studentId": "synthetic-student-02",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            1772,
+            2080,
+            3361
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 3,
+          "studentId": "synthetic-student-03",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2253,
+            3015,
+            2696
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 4,
+          "studentId": "synthetic-student-04",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2653,
+            2638,
+            1948
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 5,
+          "studentId": "synthetic-student-05",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2673,
+            2273,
+            2475
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 6,
+          "studentId": "synthetic-student-06",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2976,
+            3212,
+            3165
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 7,
+          "studentId": "synthetic-student-07",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2688,
+            2689,
+            3219
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 8,
+          "studentId": "synthetic-student-08",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            3052,
+            3107,
+            1879
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 9,
+          "studentId": "synthetic-student-09",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2537,
+            3213,
+            2509
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 10,
+          "studentId": "synthetic-student-10",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2778,
+            1817,
+            2470
+          ],
+          "seededQuestionCount": 0
+        }
+      ]
+    },
+    {
+      "key": "M2",
+      "displayOrder": 2,
+      "title": "Reading the case pack and locating the evidence",
+      "summary": "Working through the published service description, the consent notice, the complaint records and the usage figures, and noting where each claim can be traced.",
+      "publicationStatus": "APPROVED",
+      "approvedBy": "seeded-tutor",
+      "sourcePages": [
+        1,
+        2
+      ],
+      "checklistItemCount": 3,
+      "contributingCount": 3,
+      "belowKAnonymityFloor": true,
+      "milestoneMeanElapsedSeconds": 2116.3333333333335,
+      "seededQuestionCount": 2,
+      "seededQuestionRate": 0.666667,
+      "primaryThemes": [
+        "Case evidence and traceability",
+        "Requirements interpretation",
+        "Data privacy and consent"
+      ],
+      "activity": [
+        {
+          "studentIndex": 1,
+          "studentId": "synthetic-student-01",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2080,
+            2251,
+            2081
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 2,
+          "studentId": "synthetic-student-02",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2109,
+            2995,
+            1973
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 3,
+          "studentId": "synthetic-student-03",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            1632,
+            1639,
+            2287
+          ],
+          "seededQuestionCount": 0
+        }
+      ]
+    },
+    {
+      "key": "M3",
+      "displayOrder": 3,
+      "title": "Design rationale for Part B -- explaining your own decisions",
+      "summary": "Deciding on a conceptual response to the case and setting out, in your own words, the reasoning behind each design decision in Part B.",
+      "publicationStatus": "APPROVED",
+      "approvedBy": "seeded-tutor",
+      "sourcePages": [
+        1,
+        2
+      ],
+      "checklistItemCount": 4,
+      "contributingCount": 20,
+      "belowKAnonymityFloor": false,
+      "milestoneMeanElapsedSeconds": 5755.1375,
+      "seededQuestionCount": 18,
+      "seededQuestionRate": 0.9,
+      "primaryThemes": [
+        "Requirements interpretation",
+        "Authentication and access to the service",
+        "Data privacy and consent"
+      ],
+      "activity": [
+        {
+          "studentIndex": 1,
+          "studentId": "synthetic-student-01",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5847,
+            5746,
+            5865,
+            5543
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 2,
+          "studentId": "synthetic-student-02",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            6050,
+            5321,
+            5402,
+            4803
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 3,
+          "studentId": "synthetic-student-03",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5251,
+            5581,
+            5553,
+            5603
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 4,
+          "studentId": "synthetic-student-04",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5385,
+            5603,
+            6125,
+            5757
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 5,
+          "studentId": "synthetic-student-05",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5107,
+            5991,
+            5549,
+            5960
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 6,
+          "studentId": "synthetic-student-06",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5399,
+            6001,
+            6436,
+            4121
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 7,
+          "studentId": "synthetic-student-07",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5636,
+            5592,
+            5387,
+            5576
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 8,
+          "studentId": "synthetic-student-08",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            6231,
+            6152,
+            6314,
+            5699
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 9,
+          "studentId": "synthetic-student-09",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            6694,
+            5728,
+            5612,
+            5177
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 10,
+          "studentId": "synthetic-student-10",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5187,
+            5992,
+            5536,
+            6371
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 11,
+          "studentId": "synthetic-student-11",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5766,
+            5912,
+            6324,
+            6300
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 12,
+          "studentId": "synthetic-student-12",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5790,
+            5909,
+            5978,
+            5933
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 13,
+          "studentId": "synthetic-student-13",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            6070,
+            5624,
+            5277,
+            5323
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 14,
+          "studentId": "synthetic-student-14",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            4947,
+            6431,
+            6037,
+            6027
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 15,
+          "studentId": "synthetic-student-15",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5651,
+            5563,
+            5431,
+            5595
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 16,
+          "studentId": "synthetic-student-16",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            6782,
+            5649,
+            5298,
+            6204
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 17,
+          "studentId": "synthetic-student-17",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            4822,
+            5516,
+            6398,
+            6186
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 18,
+          "studentId": "synthetic-student-18",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            5041,
+            6274,
+            4936,
+            6467
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 19,
+          "studentId": "synthetic-student-19",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            6239,
+            7008,
+            4784,
+            6282
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 20,
+          "studentId": "synthetic-student-20",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            4744,
+            5976,
+            6821,
+            6213
+          ],
+          "seededQuestionCount": 0
+        }
+      ]
+    },
+    {
+      "key": "M4",
+      "displayOrder": 4,
+      "title": "Stakeholder and needs analysis",
+      "summary": "Identifying the stakeholder groups the case implies, deriving each group's needs from the evidence, and noting where two groups' needs conflict.",
+      "publicationStatus": "APPROVED",
+      "approvedBy": "seeded-tutor",
+      "sourcePages": [
+        1,
+        2
+      ],
+      "checklistItemCount": 3,
+      "contributingCount": 14,
+      "belowKAnonymityFloor": false,
+      "milestoneMeanElapsedSeconds": 2303.5,
+      "seededQuestionCount": 6,
+      "seededQuestionRate": 0.428571,
+      "primaryThemes": [
+        "Stakeholder conflict",
+        "Case evidence and traceability",
+        "Data privacy and consent"
+      ],
+      "activity": [
+        {
+          "studentIndex": 1,
+          "studentId": "synthetic-student-01",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            1851,
+            2657,
+            2582
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 2,
+          "studentId": "synthetic-student-02",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2875,
+            2150,
+            2394
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 3,
+          "studentId": "synthetic-student-03",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2655,
+            2465,
+            2451
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 4,
+          "studentId": "synthetic-student-04",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            1857,
+            2187,
+            2361
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 5,
+          "studentId": "synthetic-student-05",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2352,
+            2437,
+            1319
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 6,
+          "studentId": "synthetic-student-06",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            1730,
+            2554,
+            2418
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 7,
+          "studentId": "synthetic-student-07",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            1899,
+            2052,
+            2164
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 8,
+          "studentId": "synthetic-student-08",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2695,
+            2620,
+            2601
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 9,
+          "studentId": "synthetic-student-09",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2495,
+            2671,
+            2043
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 10,
+          "studentId": "synthetic-student-10",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2035,
+            2056,
+            1571
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 11,
+          "studentId": "synthetic-student-11",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2212,
+            2277,
+            2242
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 12,
+          "studentId": "synthetic-student-12",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2207,
+            3137,
+            1873
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 13,
+          "studentId": "synthetic-student-13",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2681,
+            2323,
+            2163
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 14,
+          "studentId": "synthetic-student-14",
+          "completedItemCount": 3,
+          "intervalsSeconds": [
+            2559,
+            2380,
+            2496
+          ],
+          "seededQuestionCount": 0
+        }
+      ]
+    },
+    {
+      "key": "M5",
+      "displayOrder": 5,
+      "title": "Risks, ethics, referencing and final submission",
+      "summary": "Written up risks and ethical considerations with their sources, referencing in RMIT Harvard style, checking the word count, and completing the declaration of AI use.",
+      "publicationStatus": "APPROVED",
+      "approvedBy": "seeded-tutor",
+      "sourcePages": [
+        1,
+        2
+      ],
+      "checklistItemCount": 4,
+      "contributingCount": 18,
+      "belowKAnonymityFloor": false,
+      "milestoneMeanElapsedSeconds": 2752.8333333333335,
+      "seededQuestionCount": 6,
+      "seededQuestionRate": 0.333333,
+      "primaryThemes": [
+        "Referencing and academic integrity",
+        "Word count and formatting",
+        "Assessment expectations"
+      ],
+      "activity": [
+        {
+          "studentIndex": 1,
+          "studentId": "synthetic-student-01",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2883,
+            2096,
+            2494,
+            1999
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 2,
+          "studentId": "synthetic-student-02",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            3136,
+            2745,
+            3373,
+            2420
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 3,
+          "studentId": "synthetic-student-03",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2827,
+            2606,
+            2465,
+            2843
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 4,
+          "studentId": "synthetic-student-04",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2306,
+            2263,
+            3333,
+            3481
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 5,
+          "studentId": "synthetic-student-05",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2935,
+            2427,
+            2433,
+            3374
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 6,
+          "studentId": "synthetic-student-06",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2814,
+            3310,
+            2696,
+            2309
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 7,
+          "studentId": "synthetic-student-07",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2467,
+            3108,
+            3029,
+            2408
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 8,
+          "studentId": "synthetic-student-08",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2738,
+            1888,
+            2452,
+            2576
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 9,
+          "studentId": "synthetic-student-09",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2209,
+            2968,
+            3502,
+            3567
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 10,
+          "studentId": "synthetic-student-10",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            3368,
+            3404,
+            2766,
+            2172
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 11,
+          "studentId": "synthetic-student-11",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2892,
+            3005,
+            2569,
+            2543
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 12,
+          "studentId": "synthetic-student-12",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            3395,
+            2212,
+            2983,
+            2984
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 13,
+          "studentId": "synthetic-student-13",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2456,
+            2384,
+            2118,
+            1939
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 14,
+          "studentId": "synthetic-student-14",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            1956,
+            2742,
+            2532,
+            3252
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 15,
+          "studentId": "synthetic-student-15",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            3205,
+            2653,
+            2639,
+            3933
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 16,
+          "studentId": "synthetic-student-16",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2614,
+            2658,
+            2815,
+            2184
+          ],
+          "seededQuestionCount": 1
+        },
+        {
+          "studentIndex": 17,
+          "studentId": "synthetic-student-17",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2823,
+            3260,
+            3022,
+            2755
+          ],
+          "seededQuestionCount": 0
+        },
+        {
+          "studentIndex": 18,
+          "studentId": "synthetic-student-18",
+          "completedItemCount": 4,
+          "intervalsSeconds": [
+            2570,
+            3165,
+            2784,
+            2972
+          ],
+          "seededQuestionCount": 0
+        }
+      ]
+    }
+  ],
+  "cohortAggregates": {
+    "eligibleMilestoneKeys": [
+      "M1",
+      "M3",
+      "M4",
+      "M5"
+    ],
+    "suppressedMilestoneKeys": [
+      "M2"
+    ],
+    "cohortMeanElapsedSeconds": 3355,
+    "cohortMeanElapsedSecondsExact": 3355.134375,
+    "cohortQuestionRate": 0.515476,
+    "marginTime": 0.1,
+    "marginQuestions": 0.1,
+    "thresholdElapsedSeconds": 3691,
+    "thresholdQuestionRate": 0.567024
+  },
+  "difficultySignal": {
+    "rule": "potentialDifficultyArea(m) = CONDITION_A(m) AND CONDITION_B(m), m eligible for both inputs",
+    "conditionA": "milestoneMeanElapsedSeconds(m) > cohortMeanElapsedSeconds * (1 + 0.1)",
+    "conditionB": "seededQuestionRate(m) > cohortQuestionRate * (1 + 0.1)",
+    "questionVolumeRule": "Question volume counts tutor-directed questions only: private Query threads plus discussion posts carrying a moderation flag. Assistant turns are reported separately as M6 and never enter this rule (D49, docs/08 section 5.1 rule 3).",
+    "perMilestone": [
+      {
+        "key": "M1",
+        "eligible": true,
+        "contributorCount": 10,
+        "milestoneMeanElapsedSeconds": 2609.0666666666666,
+        "seededQuestionCount": 4,
+        "seededQuestionRate": 0.4,
+        "timeRatioToCohortMean": 0.777634,
+        "questionRateRatioToCohortMean": 0.775982,
+        "conditionAElapsedAboveThreshold": false,
+        "conditionBQuestionsAboveThreshold": false,
+        "isAboveBothCohortAverages": false
+      },
+      {
+        "key": "M2",
+        "eligible": false,
+        "contributorCount": 3,
+        "milestoneMeanElapsedSeconds": 2116.3333333333335,
+        "seededQuestionCount": 2,
+        "seededQuestionRate": 0.666667,
+        "timeRatioToCohortMean": 0.630775,
+        "questionRateRatioToCohortMean": 1.293304,
+        "conditionAElapsedAboveThreshold": false,
+        "conditionBQuestionsAboveThreshold": false,
+        "isAboveBothCohortAverages": false
+      },
+      {
+        "key": "M3",
+        "eligible": true,
+        "contributorCount": 20,
+        "milestoneMeanElapsedSeconds": 5755.1375,
+        "seededQuestionCount": 18,
+        "seededQuestionRate": 0.9,
+        "timeRatioToCohortMean": 1.715323,
+        "questionRateRatioToCohortMean": 1.745959,
+        "conditionAElapsedAboveThreshold": true,
+        "conditionBQuestionsAboveThreshold": true,
+        "isAboveBothCohortAverages": true
+      },
+      {
+        "key": "M4",
+        "eligible": true,
+        "contributorCount": 14,
+        "milestoneMeanElapsedSeconds": 2303.5,
+        "seededQuestionCount": 6,
+        "seededQuestionRate": 0.428571,
+        "timeRatioToCohortMean": 0.68656,
+        "questionRateRatioToCohortMean": 0.831408,
+        "conditionAElapsedAboveThreshold": false,
+        "conditionBQuestionsAboveThreshold": false,
+        "isAboveBothCohortAverages": false
+      },
+      {
+        "key": "M5",
+        "eligible": true,
+        "contributorCount": 18,
+        "milestoneMeanElapsedSeconds": 2752.8333333333335,
+        "seededQuestionCount": 6,
+        "seededQuestionRate": 0.333333,
+        "timeRatioToCohortMean": 0.820484,
+        "questionRateRatioToCohortMean": 0.646651,
+        "conditionAElapsedAboveThreshold": false,
+        "conditionBQuestionsAboveThreshold": false,
+        "isAboveBothCohortAverages": false
+      }
+    ],
+    "aboveBothCohortAverages": [
+      "M3"
+    ],
+    "assertedExactlyOne": true,
+    "evidenceOnlyNote": "The signal names where to look and stops. It recommends no intervention (D35)."
+  },
+  "kAnonymityExercises": {
+    "belowFloor": [
+      {
+        "key": "M2",
+        "contributorCount": 3,
+        "expectedDataState": "insufficient_data",
+        "expectedLabel": "Insufficient data"
+      }
+    ],
+    "atOrAboveFloor": [
+      {
+        "key": "M1",
+        "contributorCount": 10,
+        "expectedDataState": "value"
+      },
+      {
+        "key": "M3",
+        "contributorCount": 20,
+        "expectedDataState": "value"
+      },
+      {
+        "key": "M4",
+        "contributorCount": 14,
+        "expectedDataState": "value"
+      },
+      {
+        "key": "M5",
+        "contributorCount": 18,
+        "expectedDataState": "value"
+      }
+    ],
+    "assertedAtLeastOneBelowFloor": true
+  },
+  "demoMessages": [
+    {
+      "key": "TUTOR_REFUSAL_CODE_DEBUG",
+      "text": "Here's my code. Tell me what's wrong with it.",
+      "expectedVerdict": "REFUSE",
+      "expectedRuleClass": "assignment policy: no code inspection, no debugging, no review of student work",
+      "expectedModelCalls": 0,
+      "note": "The canonical demo refusal (docs/13 section 6.1). The refusal names this assignment's AI Usage Policy, not a generic platform rule (docs/06 I-10)."
+    },
+    {
+      "key": "TUTOR_REFUSAL_IMAGE_SAME_REQUEST",
+      "text": "Same thing, but here is a screenshot instead.",
+      "attachment": "demo/assets/failing-code-screenshot.png",
+      "expectedVerdict": "REFUSE",
+      "expectedRuleClass": "assignment policy, applied to an attachment",
+      "expectedModelCalls": 0,
+      "note": "The same request as an image. The boundary is on the request, not the format (docs/13 section 6.2, C6)."
+    },
+    {
+      "key": "LEGITIMATE_RUBRIC_QUESTION",
+      "text": "What does the rubric actually reward in Part B?",
+      "expectedVerdict": "ALLOW_WITH_SCOPE",
+      "expectedRuleClass": "rubric interpretation, answered from T1 with a citation",
+      "expectedModelCalls": 1,
+      "note": "docs/13 section 7. The answer quotes the rubric and cites its page."
+    }
+  ],
+  "invariantsAssertedInThisFile": [
+    "syntheticStudentCount == 37 (trap T8, WP-02 acceptance criteria)",
+    "4 or more milestones with publicationStatus APPROVED (trap T8)",
+    "exactly one milestone with isAboveBothCohortAverages true (D34)",
+    "at least one milestone bucket with contributorCount < 5 (D32, trap T2)",
+    "no real personal data: synthetic names, demo-only domain, synthetic identifiers (C7, trap T8)",
+    "a fixed PRNG seed constant and the algorithm stated above, so a second run is byte-identical"
+  ]
+}

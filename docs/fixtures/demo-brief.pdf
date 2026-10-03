@@ -1,0 +1,177 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 4 /Kids [ 5 0 R 7 0 R 9 0 R 11 0 R ] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Title (Assessment Brief: Digital Systems Design \(COSC2407\)) /Producer (make-fixtures.mjs) >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 200 >>
+stream
+BT /F1 15 Tf 64 772 Td (RMIT University Vietnam -- School of Computing Technologies) Tj ET
+BT /F1 8 Tf 64 38 Td (Assignment Assistant -- demo fixture. Synthetic content; not a real assessment.) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 4400 >>
+stream
+BT /F1 15 Tf 64 772 Td (Assessment Brief: Digital Systems Design \(COSC2407\)) Tj ET
+BT /F1 9 Tf 64 742 Td (Course code ......... COSC2407) Tj ET
+BT /F1 9 Tf 64 729 Td (Course title ........ Digital Systems Design) Tj ET
+BT /F1 9 Tf 64 716 Td (Assessment name ..... Case Analysis and Design Proposal Report) Tj ET
+BT /F1 9 Tf 64 703 Td (Assessment type ..... Individual, written report) Tj ET
+BT /F1 9 Tf 64 690 Td (Weighting ........... 40% of the final course grade) Tj ET
+BT /F1 9 Tf 64 677 Td (Word count .......... 1,800 words \(see Section 4 -- this is a requirement\)) Tj ET
+BT /F1 9 Tf 64 664 Td (Due date ............ Friday 23 October 2026, 23:59 \(RMIT Vietnam local time\)) Tj ET
+BT /F1 9 Tf 64 651 Td (Submission point .... Canvas > COSC2407 > Assignments > Case Analysis Report) Tj ET
+BT /F1 9 Tf 64 638 Td (Version ............. 1.0 -- this document is the authoritative requirement) Tj ET
+BT /F1 12 Tf 64 613 Td (1. How this assessment is described in the course guide) Tj ET
+BT /F1 11 Tf 64 594 Td (This assessment asks you to analyse a documented service case and to propose a conceptual) Tj ET
+BT /F1 11 Tf 64 578 Td (design in response to it. It is a written analysis assessment. You are assessed on the) Tj ET
+BT /F1 11 Tf 64 562 Td (quality of your analysis, the traceability of your claims to the case pack and to the course) Tj ET
+BT /F1 11 Tf 64 546 Td (literature, and the clarity of your written argument.) Tj ET
+BT /F1 11 Tf 64 525 Td (This document states what is assessed and what you must submit. It does not tell you how to) Tj ET
+BT /F1 11 Tf 64 509 Td (produce any part of the report. The teaching team will not read an outline before) Tj ET
+BT /F1 11 Tf 64 493 Td (submission, and no draft is assessed.) Tj ET
+BT /F1 12 Tf 64 466 Td (2. Task description) Tj ET
+BT /F1 11 Tf 64 447 Td (You are engaged as a consultant by a mid-sized Australian university. The university has) Tj ET
+BT /F1 11 Tf 64 431 Td (published a student wellbeing check-in service that asks enrolled students to record how) Tj ET
+BT /F1 11 Tf 64 415 Td (they are coping. The service was released to all students at the start of the teaching) Tj ET
+BT /F1 11 Tf 64 399 Td (period. Six weeks later the university has received three complaints, has seen use fall) Tj ET
+BT /F1 11 Tf 64 383 Td (away, and does not know whether the service is working as intended.) Tj ET
+BT /F1 11 Tf 64 362 Td (The case pack in Canvas > Course Resources > Case Pack contains: the published service) Tj ET
+BT /F1 11 Tf 64 346 Td (description; the consent notice that students see; three de-identified complaint records;) Tj ET
+BT /F1 11 Tf 64 330 Td (and one set of fortnightly usage figures. Nothing in the case pack is a requirement of this) Tj ET
+BT /F1 11 Tf 64 314 Td (assessment. The case pack is the material you analyse.) Tj ET
+BT /F1 11 Tf 64 293 Td (Your task is to produce one written report that \(a\) states the problem the service was) Tj ET
+BT /F1 11 Tf 64 277 Td (intended to address and what the available evidence shows about whether it does, \(b\) sets) Tj ET
+BT /F1 11 Tf 64 261 Td (out the stakeholders and the needs that the evidence supports, \(c\) proposes a conceptual) Tj ET
+BT /F1 11 Tf 64 245 Td (response and justifies it against the evidence and the course literature, and \(d\) identifies) Tj ET
+BT /F1 11 Tf 64 229 Td (the risks and ethical considerations that a university would have to weigh before acting on) Tj ET
+BT /F1 11 Tf 64 213 Td (your proposal.) Tj ET
+BT /F1 11 Tf 64 192 Td (Part B of the report is the part that requires you to explain your own design decisions. The) Tj ET
+BT /F1 11 Tf 64 176 Td (explanation in Part B must be your own reasoning, expressed in your own words, and it must) Tj ET
+BT /F1 11 Tf 64 160 Td (be traceable to the evidence you cite. Your tutor will read Part B closely.) Tj ET
+BT /F1 12 Tf 64 133 Td (3. Required sections and deliverables) Tj ET
+BT /F1 11 Tf 64 114 Td (Submit one PDF containing the following sections, in this order.) Tj ET
+BT /F1 11 Tf 64 93 Td (  - Part A -- Problem statement: the purpose of the service and what the evidence shows.) Tj ET
+BT /F1 11 Tf 64 77 Td (  - Part B -- Design rationale: a conceptual response and the reasoning behind each design) Tj ET
+BT /F1 11 Tf 64 61 Td (    decision you make.) Tj ET
+BT /F1 8 Tf 64 38 Td (Assignment Assistant -- demo fixture. Synthetic content; not a real assessment.) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 4173 >>
+stream
+BT /F1 11 Tf 64 778 Td (  - Part C -- Stakeholder and needs analysis: who is affected, what each group needs, and how) Tj ET
+BT /F1 11 Tf 64 762 Td (    you know.) Tj ET
+BT /F1 11 Tf 64 746 Td (  - Part D -- Risks and ethical considerations: at least three, each with the evidence or) Tj ET
+BT /F1 11 Tf 64 730 Td (    source that raises it.) Tj ET
+BT /F1 11 Tf 64 714 Td (  - Part E -- Conclusion: what you would advise the university to do next and what would) Tj ET
+BT /F1 11 Tf 64 698 Td (    change your advice.) Tj ET
+BT /F1 11 Tf 64 682 Td (  - A reference list in RMIT Harvard style.) Tj ET
+BT /F1 11 Tf 64 666 Td (  - An appendix of no more than two pages containing evidence you reference but do not) Tj ET
+BT /F1 11 Tf 64 650 Td (    reproduce in the body.) Tj ET
+BT /F1 12 Tf 64 628 Td (4. Word count -- how the limit is applied) Tj ET
+BT /F1 11 Tf 64 609 Td (The report body is 1,800 words. This is a stated requirement of the assessment and not a) Tj ET
+BT /F1 11 Tf 64 593 Td (suggestion or a target. A submitted report whose body is outside 1,620 words to 1,980 words) Tj ET
+BT /F1 11 Tf 64 577 Td (receives a penalty under criterion 5 of the marking rubric, which is worth 10% of the) Tj ET
+BT /F1 11 Tf 64 561 Td (assessment.) Tj ET
+BT /F1 11 Tf 64 540 Td (The following are excluded from the 1,800-word count: the title page; table of contents and) Tj ET
+BT /F1 11 Tf 64 524 Td (figure and table captions; the in-text citations themselves; the reference list; the) Tj ET
+BT /F1 11 Tf 64 508 Td (appendix; and the declaration of AI use required by Section 7. Everything else in Parts A to) Tj ET
+BT /F1 11 Tf 64 492 Td (E, including headings, counts toward the limit.) Tj ET
+BT /F1 11 Tf 64 471 Td (Student Services does not accept a word count that was not verified. You must state the body) Tj ET
+BT /F1 11 Tf 64 455 Td (word count of the report on the title page, and it must be the word count produced by the) Tj ET
+BT /F1 11 Tf 64 439 Td (word processor used to write the report.) Tj ET
+BT /F1 12 Tf 64 412 Td (5. Format and submission requirements) Tj ET
+BT /F1 11 Tf 64 393 Td (  - One PDF. The submission portal does not accept any other format.) Tj ET
+BT /F1 11 Tf 64 377 Td (  - A4 pages, 2.5 cm margins, a legible 11 or 12 point body font, 1.5 line spacing.) Tj ET
+BT /F1 11 Tf 64 361 Td (  - A title page carrying the course code, assessment name, your student number, your tutor) Tj ET
+BT /F1 11 Tf 64 345 Td (    name, the declared body word count, and the date of submission.) Tj ET
+BT /F1 11 Tf 64 329 Td (  - Page numbers on every page after the title page.) Tj ET
+BT /F1 11 Tf 64 313 Td (  - The declaration of AI use from Section 7, completed and signed, immediately after the) Tj ET
+BT /F1 11 Tf 64 297 Td (    reference list.) Tj ET
+BT /F1 11 Tf 64 281 Td (  - Submitted through Canvas by the due date above. A submission is late from one minute past) Tj ET
+BT /F1 11 Tf 64 265 Td (    the due time.) Tj ET
+BT /F1 12 Tf 64 243 Td (6. Assessment and feedback) Tj ET
+BT /F1 11 Tf 64 224 Td (The assessment is marked out of 100 against the marking rubric published with this brief.) Tj ET
+BT /F1 11 Tf 64 208 Td (The rubric names five criteria and their weights, and describes what separates a pass from a) Tj ET
+BT /F1 11 Tf 64 192 Td (distinction on each. Read the rubric before you begin; the rubric is the statement of what) Tj ET
+BT /F1 11 Tf 64 176 Td (is rewarded.) Tj ET
+BT /F1 11 Tf 64 155 Td (Marks and feedback are returned through Canvas within fifteen working days of the due date.) Tj ET
+BT /F1 11 Tf 64 139 Td (A rubric-based breakdown of your mark is attached to each return.) Tj ET
+BT /F1 11 Tf 64 118 Td (A request for an extension must be lodged through the RMIT extension and special) Tj ET
+BT /F1 11 Tf 64 102 Td (consideration process before the due date. Teaching staff do not grant extensions by email) Tj ET
+BT /F1 11 Tf 64 86 Td (and do not discuss an assessment after the due date except through that process.) Tj ET
+BT /F1 12 Tf 64 59 Td (7. AI use is governed by this assignment's own policy) Tj ET
+BT /F1 8 Tf 64 38 Td (Assignment Assistant -- demo fixture. Synthetic content; not a real assessment.) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 12 0 R >>
+endobj
+12 0 obj
+<< /Length 2484 >>
+stream
+BT /F1 11 Tf 64 778 Td (This assignment has its own AI Usage Policy. It is a separate document, published beside) Tj ET
+BT /F1 11 Tf 64 762 Td (this brief in Canvas, and it forms part of the requirements of this assessment. The policy) Tj ET
+BT /F1 11 Tf 64 746 Td (states the uses of generative AI that are permitted for this assessment and the uses that) Tj ET
+BT /F1 11 Tf 64 730 Td (are prohibited, and it names the one prohibition that has no exceptions.) Tj ET
+BT /F1 11 Tf 64 709 Td (Read the policy before you start work and again before you submit. Work that does not meet) Tj ET
+BT /F1 11 Tf 64 693 Td (the policy is treated as an academic integrity matter under the RMIT Academic Integrity) Tj ET
+BT /F1 11 Tf 64 677 Td (Policy, and it is dealt with under that policy rather than under this brief.) Tj ET
+BT /F1 12 Tf 64 650 Td (8. Academic integrity) Tj ET
+BT /F1 11 Tf 64 631 Td (All submitted work must be your own. Where you use the work, the words, or the ideas of) Tj ET
+BT /F1 11 Tf 64 615 Td (another person, you must acknowledge it in RMIT Harvard style, whether the source is a) Tj ET
+BT /F1 11 Tf 64 599 Td (published document, a teaching staff member, a fellow student, or a generative AI tool.) Tj ET
+BT /F1 11 Tf 64 578 Td (Contract cheating is prohibited. Presenting work that another person produced, including) Tj ET
+BT /F1 11 Tf 64 562 Td (work produced by a generative AI tool at your direction and submitted as your own, is a) Tj ET
+BT /F1 11 Tf 64 546 Td (breach of the Academic Integrity Policy and is reported.) Tj ET
+BT /F1 11 Tf 64 525 Td (The teaching team may ask you to discuss your submission, or the reasoning behind any part) Tj ET
+BT /F1 11 Tf 64 509 Td (of it, at any time after the due date. Being unable to explain your own design decisions in) Tj ET
+BT /F1 11 Tf 64 493 Td (Part B is treated as evidence that the work is not yours.) Tj ET
+BT /F1 12 Tf 64 466 Td (9. Questions about this assessment) Tj ET
+BT /F1 11 Tf 64 447 Td (Questions about the requirements, the rubric or the AI Usage Policy may be raised in the) Tj ET
+BT /F1 11 Tf 64 431 Td (Canvas discussion board for this assessment or privately with your tutor. Answers that) Tj ET
+BT /F1 11 Tf 64 415 Td (change the requirement are published as an announcement and, where the change is material,) Tj ET
+BT /F1 11 Tf 64 399 Td (as a new version of this brief.) Tj ET
+BT /F1 8 Tf 64 38 Td (Assignment Assistant -- demo fixture. Synthetic content; not a real assessment.) Tj ET
+endstream
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000142 00000 n 
+0000000239 00000 n 
+0000000353 00000 n 
+0000000479 00000 n 
+0000000729 00000 n 
+0000000855 00000 n 
+0000005306 00000 n 
+0000005433 00000 n 
+0000009658 00000 n 
+0000009786 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R /Info 4 0 R >>
+startxref
+12322
+%%EOF

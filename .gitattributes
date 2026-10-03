@@ -1,0 +1,54 @@
+# Line endings and binary detection.
+#
+# WHY THIS FILE EXISTS (trap T20, found in Phase 1 and caused by that session).
+#
+# This repository has no `.gitattributes`, and the development checkout runs with
+# `core.autocrlf=true` (the Windows default). Without a hint, git guesses whether a file is
+# text by looking for NUL bytes -- and the committed demo PDFs contain NO NUL bytes, because
+# `make-fixtures.mjs` writes them with **uncompressed** content streams so the text layer stays
+# inspectable. Git therefore classified a PDF as text and rewrote every LF as CRLF on the way
+# into the object store. The committed `demo-brief.pdf` blob came back at 25,678 bytes against a
+# 12,661-byte working file, with every newline doubled. That breaks the `/Length` entries and the
+# `xref` offsets, so the file is unparseable -- and it would have surfaced only when a fresh
+# clone first read the fixture, in Phase 2 (ingestion) or Phase 4, far from the cause.
+#
+# `.gitattributes` is also the only place this can be fixed reliably: a note in a README is not
+# read by git, and `core.autocrlf` is a per-machine setting that a clone does not inherit.
+#
+# Verification that this holds: clone the repository to a temporary directory and compare
+# `pdfjs-dist`'s extraction of `docs/fixtures/demo-brief.pdf` against the working copy.
+
+# Formats that must round-trip byte for byte. `binary` is `-text -diff`: never converted, never
+# diffed as text. Add a line here BEFORE committing a new binary format, not after.
+#
+# Deliberately NO `* text=auto eol=lf` line yet. Text files in this repository were committed
+# under `core.autocrlf=true`, so adding a repo-wide normalisation rule would renormalise every
+# document in one commit and bury the real change in noise. Line endings for text are left as
+# they are; only the formats where a conversion is *corruption* are pinned here.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.bmp   binary
+*.mp4   binary
+*.mp3   binary
+*.wav   binary
+*.ogg   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.zip   binary
+*.gz    binary
+*.7z    binary
+*.xlsx  binary
+*.docx  binary
+*.pptx  binary
+*.sqlite binary
+*.db    binary
+
+# The lockfile is generated; a diff of it is noise, and a merge conflict in it is unreadable.
+pnpm-lock.yaml -diff linguist-generated
