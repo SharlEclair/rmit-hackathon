@@ -242,3 +242,154 @@ every student/tutor surface.
   than asserted. WP-04 needs the same package.
 - `app/src/lib/api/types.ts` -- the home for the response types I-03 says to define when their route
   is built.
+
+### WP-02 -- delivered, with evidence
+
+Work split into three independent tracks (fixtures, data layer, seed) because they touch disjoint
+files. Each was verified by a command, and the load-bearing claims were then re-verified by the
+Lead against the database rather than accepted from the track's own report.
+
+| Item | Evidence (command + observed result) |
+|---|---|
+| 10 migrations, 33 tables, 2 views, 33 triggers | `drop schema public cascade` / `create schema public`, then `pnpm db:migrate` -> `apply 0001_baseline` ... `apply 0010_updated_at_triggers` / `10 applied, 0 already applied`. Read back: 33 project tables plus the runner's `schema_migrations` (34 base tables), 2 views, 33 `trg_*_updated_at` triggers, 8 partial indexes, **0** `CREATE TYPE` enums |
+| Both circular FKs resolved (T18) | `select conname from pg_constraint where conname in ('fk_assignments_current_structure','fk_discussion_threads_first_post')` -> both present; `fk_discussion_threads_first_post` is `condeferrable=t, condeferred=t, confdeltype=n` (ON DELETE SET NULL, reading A9) |
+| `schema.ts` has not drifted from the SQL | `pnpm exec tsx --env-file-if-exists=.env scripts/verify-schema.ts` -> `schema drift: none (33 tables, 444 columns)`. **This gate caught its own bug first:** it counted the two views as tables and failed on a correct schema; the query now joins `information_schema.tables` and filters `BASE_TYPE` |
+| The fixtures are real text-layer PDFs (T8/T9) | `pdfjs-dist@6.3.289` on `docs/fixtures/demo-brief.pdf` -> 4 pages, 7788 extracted chars, contains the word-count requirement, `/concurren/i` absent; `demo-rubric.pdf` -> 3 pages, 5214 chars, no concurrency wording. Re-checked from a **fresh clone**, which is the only check that catches T20 (below) |
+| Fixtures are deterministic | three runs of `node app/scripts/make-fixtures.mjs`, two from the repository root and one from `app/`, produced byte-identical outputs (SHA-256 per file) |
+| Cohort shape matches T8 | 37 students, 5 milestones, `M3` the only milestone above **both** thresholds, `M2` with 3 contributors (below the floor of 5) |
+| **Trap T1 proven from the database, not from the fixture** | Per-student `avg` then `avg` of those, recomputed in SQL: `2609.067 / 2116.333 / 5755.138 / 2303.500 / 2752.833` seconds against `cohort-seed.json`'s `2609.0667 / 2116.3333 / 5755.1375 / 2303.5 / 2752.8333`. Identical for all five. Contributors 10 / 3 / 20 / 14 / 18 |
+| Question volume matches D49 and the oracle | `queries` per milestone -> `4 / 2 / 18 / 6 / 6`; flagged discussion posts -> **0**, so the totals are the Query half alone and the fixture's `seededQuestionCount` values hold exactly |
+| Analytics identity is one-way and complete | 503 events, all with `subject_ref ~ '^[0-9a-f]{32}$'` (503/503 well-formed), 20 distinct subjects, event types `checklist_item_started/completed/reopened` and `query_created` only |
+| No identity column can have leaked into analytics | `information_schema` reports **0** of the 13 column names on the prohibition list (A-ID-6) |
+| Provenance on every AI row | `count(*) filter (where origin='ai' and provenance is null)` -> 0 on `milestones`, `checklist_items`, `requirement_nodes`, `rubric_sections` and `ai_policy_rules` |
+| Gate G1 now shows a student content | `milestones` PUBLISHED joined through the current structure and the published assignment -> **5** (it was **0** before the D81 correction) |
+| Sources built from the committed PDFs | `assignment_sources` -> brief `application/pdf` 4 pages 12661 bytes 26 chunks; rubric `application/pdf` 3 pages 9553 bytes 24 chunks; ai_policy `text/markdown` 9037 bytes 39 chunks; all `extraction_status='extracted'` |
+| The derived Map edge view returns rows | `select count(*) from v_rubric_milestone_edges` -> 15 |
+| **Seed idempotency, database-wide** | `pnpm db:seed` run 1 -> `TOTAL 570 / 0`; run 2 -> `TOTAL 0 / 570`. A single JSON object of **every** base table's row count was captured before and after; the two are identical (`1546689934` both times) |
+| Metrics are not seeded (D67, T7) | `milestone_metrics` and `assignment_metrics` both 0 rows -- WP-11 computes them from `analytics_events` |
+| `tests/db` exists and passes | `pnpm test -- tests/db` -> 15 passed. It is **static** by design: `12` section 3.7 requires `pnpm test` to pass with no network, so a DB-backed suite would break the gate on a reviewer's machine. It encodes T18 and T19 as assertions over the committed SQL |
+
+### WP-02 -- the six defects this session found, and where each is recorded
+
+| # | Defect | Recorded as |
+|---|---|---|
+| 1 | `11` WP-02's gate queried `milestones.status`, a column that does not exist | **I-18** (resolved) |
+| 2 | `11` WP-02's acceptance called `publication_status` a Postgres enum, contradicting `06` section 6.3 and trap T19 | corrected in `11` |
+| 3 | The gate's "at least 4 **approved** milestones" is the wrong predicate: G1 needs PUBLISHED, and the seeded state was half-published -- a `published` assignment with six artifact kinds PUBLISHED and its milestones only APPROVED | **D81**, **I-21** (resolved) |
+| 4 | `.local/spec/schema.md` ambiguity A1 asserted a `06` section 4.6 classification that 4.6 does not make | trust note in `01-DECISIONS.md` section J; corrected in `0006_queries_faq.sql` |
+| 5 | The demo fixture's activity was claimed (by this session) to predate publication. **It does not:** `events_before_publish` = 0 | **I-22**, withdrawn with the query that disproves it |
+| 6 | The "37 synthetic students" contract can only hold if the interactive demo account is one of the 37 | **D82**, remainder in **I-23** |
+
+### WP-03 -- delivered, with evidence
+
+| Item | Evidence (command + observed result) |
+|---|---|
+| Unit tests | `pnpm test -- tests/auth` -> 37 passed in 2 files (27 session, 10 password) |
+| The gate, run live against `pnpm dev` + Postgres, with the **seeded** accounts | See the table below |
+| Middleware redirect observed without following it | `/tutor` and `/student` with no cookie, `-MaximumRedirection 0` -> **307** each |
+| A valid session reaches a protected route | `/tutor` with a real tutor cookie, `-MaximumRedirection 0` -> **404** (no `(tutor)` page exists yet), i.e. the gate passes a valid session through rather than over-blocking |
+| Logout | `POST /api/auth/logout` with a real cookie jar -> **204**, and the session is then **401** |
+| Tamper rejection | last-char flipped, first-char flipped, truncated, and empty token -> **401**, **401**, **401**, **401** |
+| Rate limit | an 11th attempt from one IP -> **429** with `Retry-After: 600`, enforced before the password comparison |
+| Anti-enumeration | a wrong password and an unknown email both -> identical `401 UNAUTHENTICATED` with the same message |
+| Cookie attributes | `aa_session` present, `HttpOnly=True`, `Secure=False` in development, expiry exactly 12 h after issue |
+
+### The auth harness bug that cost a round trip (recorded in I-09)
+
+The first live run reported `logout -> 401` and `/tutor -> 200`, both of which look like product
+defects and neither was. **PowerShell 5.1 silently drops a `Cookie` header passed through
+`Invoke-WebRequest -Headers`, and `Invoke-WebRequest` follows a `307` automatically.** Re-running
+with `-WebSession` (a real cookie jar) and `-MaximumRedirection 0` produced 204 and 307. Appended to
+`05-ISSUES.md` **I-09** so the next session does not repeat it.
+
+### Decisions taken
+
+- Migrations are `NNNN_<slug>.sql` applied by `src/lib/db/migrate.ts` with a checksum ledger --
+  **D74** -- `04`, `11`, `06` -- recorded because `04` section 2.1/2.3 and `11` WP-01 disagree.
+- Tailwind v4 CSS-first with `@config` -- **D75** -- `04` section 2.2, `17` sections 4.6/6.2/6.3.
+- `HealthResponse` defined -- **D76** -- `06` section 5.5.15, closing half of I-03.
+- `DATABASE_URL` absence is degraded, not fatal -- **D77** -- `04` sections 5.4, 11.
+- The lint stack is eslint 9 + `@babel/eslint-parser` -- **D78**.
+- The session is a stateless signed token; revocation is absent -- **D79**.
+- `assignment_sources.mime_type` accepts D57's full set -- **D80** -- `06` section 7.2.2 corrected.
+- The seeded demo assignment is fully PUBLISHED and the gate predicate accepts both -- **D81**.
+- The 37-student cohort includes the interactive demo account -- **D82**.
+- Twelve migration-author readings for `06`'s silent points -- **H4** in `02-DECISIONS.md`.
+
+### Invariants touched
+
+- **I1 (the guardrail never does the assignment)** -- honoured; untouched. Phase 1 wrote no model
+  call and no assistant path.
+- **I2 (nothing AI-generated is student-visible until a tutor approves it)** -- honoured, and
+  **strengthened rather than weakened** by D81: the seed's structure is PUBLISHED, which is reachable
+  only through APPROVED (`06` section 3.2 transition 7), and the approval stamps survive the publish.
+  The `AI generated - requires tutor approval` badge is a WP-06 deliverable and does not exist yet.
+- **I3 (the brief is verbatim)** -- honoured: `source_chunks.text` is the extractor's own output,
+  never rewritten, and the view/UI that would paraphrase it does not exist yet.
+- **I4 (a refusal is a 200)** -- not exercised; the assistant route is Phase 5's.
+- **C7 (secrets)** -- honoured and actively checked: `git diff --cached` was scanned before every
+  commit; no key-shaped string is staged; `.gitattributes` was corrected so the lockfile is diffable
+  and therefore reviewable again (a `-diff` attribute would have blinded that check); the only
+  credential in the tree is `DEMO_PASSWORD = 'demo1234'`, which `12` section 3.6 publishes.
+- **Newly accepted risk:** session revocation has no storage -- **I-20**.
+
+### Discovered traps for later phases
+
+- **T20 (new)** -- a missing `.gitattributes` silently corrupted the committed PDFs. This session
+  caused it, found it, and fixed it; the clue was git's own "LF will be replaced by CRLF" warning on
+  a `.pdf`. A working-tree hash proves nothing here, because the conversion happens on the way into
+  the object store. Verified with a fresh clone.
+- **T21 (new)** -- a verification gate quoted from a doc can name a nonexistent column. It bit twice
+  in one packet (`milestones.status`, and `.local/spec`'s A1). Run a gate before trusting it.
+- **Vitest does not read `tsconfig.json` paths** -- every test that transitively imports `@/...`
+  failed to resolve until the alias was added to `app/vitest.config.ts`. Fixed here; recorded in
+  `04-INTERFACES.md` section 4.
+- **Every `typescript-eslint` package aborts on `typescript` >= 7**, and `@babel/eslint-parser` is
+  incompatible with eslint 10. A phase that wants a type-aware lint rule must change the pin and
+  re-verify, not add a plugin.
+- **PowerShell 5.1 drops a `-Headers` `Cookie` and follows redirects** -- I-09.
+- **A "37 students" count and an interactive demo account cannot both be literal** unless the account
+  is one of the 37 -- **D82**.
+- **The demo fixture cannot discriminate T1's two-stage mean from a flat mean** -- **I-24**; WP-11's
+  test must supply the discriminating case.
+
+### Not delivered, and why
+
+- **Any LLM call, the storage driver, and any ingestion pipeline** -- WP-04/WP-05, by design. The
+  seed writes fixture bytes straight to `STORAGE_LOCAL_DIR`, because `src/lib/storage/` does not
+  exist yet. **Consequence:** a later phase must not assume the storage interface has ever been
+  exercised, and `assignment_sources.storage_key` values are `sources/<kind>/<sha256>` rather than
+  anything the future driver produces.
+- **The guardrail and its 53-case golden set** -- WP-08, Phase 3, by design. It is the highest-risk
+  packet and the plan's own instruction is that it must not wait.
+- **`app/tests` coverage of the ingestion and analytics behaviour** -- `tests/db` is static, so the
+  validator rules that cannot be `CHECK`s (the requirement-substring rule, `CHECKLIST_IMPERATIVE`,
+  `WEIGHT_NOT_FOUND`) are satisfied by construction and checked by hand, not by a test.
+- **The five undefined response types other than `HealthResponse`** -- still **I-03**, each to be
+  defined when its route is built.
+- **`ingestion_jobs`** -- still absent and still **I-15**; D60/D71 assign it to WP-04/WP-05. The seed
+  creates no row for it.
+- **`app/src/lib/auth/api-errors.ts` was not relocated to `src/lib/api/`** -- **I-19**, reassigned to
+  Phase 2 with the reason recorded.
+
+### What I could not verify
+
+- **The Gemini path at runtime.** Phase 1 made no provider call. `LLM_PROVIDER=gemini` is validated
+  by `config.ts` and reported by `/api/health`, but no adapter exists, so nothing has exercised the
+  key, the `03`-style thinking levels, or the D73 call shape since Phase 0's three probes.
+- **`pnpm start` in production.** The migration-head check and the served response were verified
+  locally, but not with `NODE_ENV=production`, so the `Secure` cookie attribute and the production
+  abort behaviour are asserted by unit test and code reading only.
+- **Any surface other than `/`, `/login` and the three auth routes.** No `(tutor)` or `(student)`
+  page exists, so the middleware's pass-through was verified by observing a `404` rather than a
+  rendered page, and `FORBIDDEN_ROLE` has no live route to return it from.
+- **The seed against a *second* Postgres version.** Everything was verified on 18.6 (D66). Path A
+  pins `postgres:16-alpine` and is untested.
+- **That the batch of `.local/spec/` extracts is complete.** Two of its claims were wrong on
+  re-check (A1, and the "the doc's CHECK includes plain text" claim); the rest were taken as
+  reported. Anything a Phase 2 session takes from `.local/spec/` must be checked against `docs/**`.
+- **Cost.** No model call was made, so no billing figure exists. Phase 0's three probes remain the
+  only spend on record.
+- **The full acceptance-criteria checklists** in `11` WP-01/02/03. Each packet's *verification gate*
+  was run; the individual checkboxes were not all re-walked one by one, and the ones that were are
+  named in this entry rather than marked in `11`.

@@ -3,9 +3,11 @@
 **Purpose.** What is actually built, what is not, and the command that proves each claim. **This
 file is rewritten every session.** It records commands and observed output, never adjectives.
 
-**Tag:** `phase-00-complete` (commit `3654c28`, **pushed** to `origin/main`)
-**Last session:** 00, plus a post-phase follow-up (00b)
-**Next phase:** **1 -- NOT STARTED.** The owner is starting Phase 1 in a separate chat window.
+**Tag:** `phase-01-complete` (commit `3a47eaf`, **not yet pushed** at the time of writing;
+`origin/main` is 7 commits behind)
+**Last session:** 01
+**Next phase:** **2 -- NOT STARTED.** `src/lib/llm/`, `src/lib/storage/`, extraction and the
+ingestion job are Phase 2's; the guardrail (WP-08, Phase 3) is file-disjoint and must not wait.
 
 **Authority:** below `AGENTS.md`, [`../01-DECISIONS.md`](../01-DECISIONS.md) and
 [`../02-SCOPE.md`](../02-SCOPE.md). If this file contradicts the register, this file is the bug.
@@ -15,122 +17,151 @@ file is rewritten every session.** It records commands and observed output, neve
 ## 1. Re-verify before trusting this file
 
 ```powershell
-git log --oneline -3                 # expect 3654c28 (phase-00) at or near HEAD
+git log --oneline -1                 # expect 3a47eaf (phase-01 wp-A..wp-C)
 git status --porcelain               # expect clean
-git tag                              # expect phase-00-complete
-git remote -v                        # origin https://github.com/SharlEclair/rmit-hackathon.git
-Test-Path app                        # expect False  <-- Phase 1 has NOT started
-Test-Path docs/fixtures              # expect False
-Get-Service postgresql-x64-18 | Select-Object Status   # expect Running
-node -v; pnpm -v                     # expect v24.x / 12.x
+git tag                              # expect phase-00-complete and phase-01-complete
+Test-Path app                        # expect True
+Test-Path docs/fixtures/demo-brief.pdf   # expect True
+cd app; pnpm typecheck               # expect no output
+pnpm lint                            # expect "C8 import/endpoint gate: ok"
+pnpm test                            # expect 52 passed in 3 files
+pnpm db:migrate                      # expect "no pending migrations (10 already applied)"
+pnpm exec tsx --env-file-if-exists=.env scripts/verify-schema.ts   # expect "schema drift: none (33 tables, 444 columns)"
 $PSVersionTable.PSVersion            # expect 5.1 (see 05-ISSUES I-09)
-(Get-ChildItem docs/handoff).Name    # expect 8 entries
+node -v; pnpm -v                     # expect v24.x / 12.x
+Get-Service postgresql-x64-18 | Select-Object Status   # expect Running
 ```
 
-## 2. Environment fingerprint (observed, Session 00/00b)
+The database assertions need `PGPASSWORD` and the local role:
+
+```powershell
+$env:PGPASSWORD='password'
+psql -U user -h localhost -p 5432 -d assignment_assistant -tAc "select count(*) from users where role='student'"
+# expect 37
+psql -U user -h localhost -p 5432 -d assignment_assistant -tAc "select count(*) from milestones where publication_status in ('APPROVED','PUBLISHED')"
+# expect 5
+Remove-Item Env:PGPASSWORD
+```
+
+## 2. Environment fingerprint (observed, Session 01)
 
 | Fact | Observed value | How |
 |---|---|---|
-| Shell | **Windows PowerShell 5.1.26100.9549, Desktop** -- not `pwsh` 7 | `$PSVersionTable` |
+| Shell | **Windows PowerShell 5.1.26100.9549** -- not `pwsh` 7 | `$PSVersionTable` |
 | Node | `v24.15.0` | `node -v` |
 | pnpm | `12.4.2` | `pnpm -v` |
-| psql / Postgres | `18.6`; service `postgresql-x64-18` -> `Running`, native, port 5432 (**D66**) | `Get-Command psql`, `Get-Service` |
-| Docker | client `29.4.3`; **daemon not running** | `docker info --format '{{.ServerVersion}}'` |
-| Git | `origin` set; `phase-00-complete` = `3654c28`, pushed | `git push` -> `da00f71..3654c28 main -> main` |
-| GitHub visibility | **PUBLIC** -- verified anonymously: HTTP 200, `"private": false`, `"visibility": "public"` | `web_fetch https://api.github.com/repos/SharlEclair/rmit-hackathon`. **I-07 resolved** |
-| Gemini key | present in `.env` (length 53); `DEEPSEEK_API_KEY` empty | checked by **name and length only** |
-| Live Gemini | reachable: `POST /v1beta/interactions` -> 200 (**D73**) | see section 4 |
-| **Node runs `.ts` directly** | yes: a `.ts` file with a type annotation executed as `node file.ts` | probe in `%TEMP%` |
-| **`node --test` finds `*.test.ts`** | yes: `a.test.ts` discovered and executed, 1 pass | probe in `%TEMP%`. A zero-dependency runner exists -- but see the `vitest` pin in section 5 |
-| Registry at time of check | `next` 16.3.8, `react` 19.3.0, `tailwindcss` 4.3.3, `pg` 8.23.1, `eslint` 10.12.0 | `pnpm view <pkg> version` |
+| psql / Postgres | `18.6`; service `postgresql-x64-18` -> `Running`, native, port 5432 (**D66**) | `psql --version`, `Get-Service` |
+| Docker | client present; **daemon not running** | not re-checked this session |
+| Git | `main` = `3a47eaf`, 16 commits; `origin` = `SharlEclair/rmit-hackathon`, public, **7 commits behind** | `git rev-list --count`, `git rev-list --left-right --count origin/main...HEAD` |
+| Tags | `phase-00-complete`, `phase-01-complete` | `git tag` |
+| Repository visibility | PUBLIC (verified in Phase 0 and Session 00b) | not re-checked this session |
+| Registry pins as installed | `next` 16.3.8, `react`/`react-dom` 19.3.0, `tailwindcss` 4.3.3, `typescript` 7.0.2, `zod` 4.6.5, `vitest` 5.0.3, `tsx` 4.23.15, `drizzle-orm` 0.45.3, `drizzle-kit` 0.31.11, `postgres` 3.4.9, `pdfjs-dist` 6.3.289, `eslint` 9.39.5, `@babel/eslint-parser` 7.29.9, `@node-rs/argon2` 2.2.1 | `app/package.json` |
+| Database | empty before Phase 1; now 34 base tables (33 project + `schema_migrations`), 2 views, 33 triggers, 8 partial indexes, 444 columns | `information_schema`, `scripts/verify-schema.ts` |
+| Seeded state | 38 users (37 students + 1 tutor), 1 course, 1 assignment, 3 sources, 69 chunks, 5 milestones, 17 checklist items, 233 progress rows, 36 queries, 503 analytics events | `pnpm db:seed` summary, `psql` |
 
 ## 3. State of the build
 
 | Area | State | Evidence |
 |---|---|---|
-| Repository + remote | **built**, public, Phase 0 pushed | `git log`, `git push` output |
-| Documentation set (00-18) | **built**, reconciled in Phase 0 | `git show --stat phase-00-complete` |
-| `docs/handoff/` scaffold | **built** (8 entries) | `Get-ChildItem docs/handoff` |
-| `.env` provider contract | **reconciled -- local only, gitignored** | 5 x `LLM_THINKING_*`; `gemini` / `gemini-3.8-flash` |
-| Spec extracts for Phase 1 | **prepared, local only** -- `.local/spec/` (gitignored) | section 7 |
-| `app/` | **NOT STARTED** | `Test-Path app` -> `False` |
-| `docs/fixtures/` | **NOT STARTED** | `Test-Path docs/fixtures` -> `False` |
-| Schema / migrations / seed | **NOT STARTED** | no `app/` |
-| Guardrail + 53 golden cases | **NOT STARTED** | no `app/` |
-| Ingestion / Analyst / Assistant / analytics | **NOT STARTED** | no `app/` |
-| Anything mocked | **nothing is mocked, because no code exists** | -- |
+| `app/` skeleton (WP-01) | **built** | `pnpm typecheck` clean; `pnpm lint` clean; `pnpm build` compiles; `/api/health` -> `{"ok":true,"db":"up",...}` |
+| `/api/health` degraded path | **built** | with `DATABASE_URL` removed from `.env`: `{"ok":false,"db":"down",...}` and `/` still 200 from the same process |
+| `docs/fixtures/` (WP-02) | **built** | 5 files; `pdfjs-dist@6.3.289` extracts 4 and 3 pages; three generator runs byte-identical |
+| Schema: 33 tables, 2 views, 33 triggers, 8 partial indexes | **built** | `pnpm db:migrate` from a dropped schema -> `10 applied`; second run -> `no pending migrations`. `verify-schema.ts` -> no drift across 33 tables / 444 columns |
+| Seed: deterministic cohort (WP-02) | **built** | `pnpm db:seed` run 1 -> `TOTAL 570 / 0`; run 2 -> `TOTAL 0 / 570`; whole-database row counts identical. T8's shape verified: 37 students, 5 milestones, M3 above both thresholds, M2 with 3 contributors |
+| Auth (WP-03) | **built** | `pnpm test -- tests/auth` -> 37 passed; live: login 200 with an `HttpOnly; SameSite=Lax; Max-Age=43200` cookie, wrong password and unknown email both identical 401, `/tutor` -> 307 without a cookie and 404 with one, logout 204 then 401, four tamper shapes -> 401, 11th attempt -> 429 |
+| `tests/db` | **built** (static) | `pnpm test -- tests/db` -> 15 passed. It asserts traps T18/T19 over the committed SQL and needs no database |
+| Design tokens | **paths only** | the five `src/styles/*.css` files and `tailwind.config.ts` exist and compile; the token **values** are `07`/`17`'s and land with the first UI phase (**D75**) |
+| `src/lib/llm/` (the adapter) | **NOT STARTED** | does not exist. No provider call has been made since Phase 0's three probes |
+| `src/lib/storage/` | **NOT STARTED** | does not exist. The seed writes fixture bytes to `STORAGE_LOCAL_DIR` directly |
+| Extraction / chunking pipeline | **NOT STARTED** | the seed chunks the PDFs with an ad-hoc path; WP-04 owns the real one |
+| Guardrail + 53 golden cases (WP-08) | **NOT STARTED** | Phase 3's, and file-disjoint from Phase 2 |
+| Review/approval state machine (WP-06) | **NOT STARTED** | no state machine exists; the seed sets statuses directly |
+| Student/tutor surfaces | **NOT STARTED** | no `(tutor)` or `(student)` page exists. `/login` is the only page |
+| Analytics computation (WP-11) | **NOT STARTED** | `milestone_metrics` and `assignment_metrics` are deliberately empty (D67, T7) |
+| Ingestion job table (I-15) | **NOT STARTED** | still absent; D60/D71 assign it to WP-04/WP-05 |
+| `expectedRevision` storage (I-16) | **NOT STARTED** | no revision column exists, deliberately (A8) |
+| Anything mocked | **nothing is mocked** | the seed is fixture data, not a mock; no adapter exists to mock |
 
-**Do not mark WP-01 complete.** Only its git half landed. See the status note in `11` WP-01.
+**WP-01, WP-02 and WP-03 are complete**, each against its own verification gate. Do not mark the KANBAN
+checkboxes in `11` wholesale: the gates were run, the per-item acceptance lists were not all walked
+one by one (see section 7 of [`06-SESSION-LOG.md`](06-SESSION-LOG.md) Session 01, "What I could not
+verify").
 
-## 4. Phase 0 evidence
+## 4. Phase 1 evidence, condensed
 
-| Deliverable | Evidence |
+Full evidence is in [`06-SESSION-LOG.md`](06-SESSION-LOG.md) Session 01. The four checks worth
+quoting here, because each one is a claim a later phase depends on:
+
+| Claim | Command and observed result |
 |---|---|
-| Handoff scaffold, 8 paths | `git ls-tree -r phase-00-complete -- docs/handoff` -> 9 files (8 paths + the phase-00 archive) |
-| Rulings A-I | [`../01-DECISIONS.md`](../01-DECISIONS.md) section I: **D68-D73** + the letter map |
-| Provider call shape | **D73**; live probes recorded in [`02-DECISIONS.md`](02-DECISIONS.md) H1 |
-| Live model call | `POST /v1beta/interactions` -> **200**, `steps: [thought, model_output]`, text `"ok"` |
-| Structured output | same route + `response_format` -> **200**, `{"ok": true}` |
-| `minimal` rejected | -> **400** `THINKING_LEVEL_MINIMAL is not supported` |
-| Env reconciled | `.env` LLM_* read back: `gemini`, `gemini-3.8-flash`, 5 thinking levels |
-| Specs corrected | 24 files, +1170/-89 in `3654c28`; route table still **64**; max decision id **73** |
-| Trap register | [`03-INVARIANTS.md`](03-INVARIANTS.md) **T1-T19** |
-| `AGENTS.md` pointer | three lines at the top of section 4 |
+| Migrations apply from nothing and are idempotent | `drop schema public cascade` + `create schema public` -> `pnpm db:migrate` -> `apply 0001_baseline` ... `apply 0010_updated_at_triggers` / `10 applied, 0 already applied`; second run -> `no pending migrations (10 already applied)` |
+| The seed is idempotent database-wide | run 1 `TOTAL 570 / 0`; run 2 `TOTAL 0 / 570`; every base table's row count identical between the two |
+| Trap T1 holds in the seeded data | per-student mean then mean of means, recomputed in SQL -> `2609.067 / 2116.333 / 5755.138 / 2303.500 / 2752.833` seconds, matching `docs/fixtures/cohort-seed.json` for all five milestones |
+| Gate G1 shows a student content | `milestones` PUBLISHED joined through the current structure and the published assignment -> **5**. Before the D81 correction it was **0**, while 233 completed items sat under those milestones |
 
 ## 5. Phase 1 entry checklist (read this before writing a line)
 
-1. **Stack pins are exact, and `latest` must never be installed blindly** (`04` section 2.2):
-   `next` 16.3.8, `react`/`react-dom` 19.3.0, `tailwindcss` 4.3.3, `typescript` 7.0.2, `zod` 4.6.5,
-   `vitest` 5.0.3, `tsx` 4.23.15, `drizzle-orm` 0.45.3, `drizzle-kit` (same 0.x line),
-   `pdfjs-dist` 6.3.289, `react-pdf` 11.0.0, `@xyflow/react` 12.12.0, `mermaid` 12.1.0.
-   The pin table does **not** name `eslint`; Phase 1 must choose it and record the choice.
-2. **The query layer is Drizzle ORM 0.45.3 over the `postgres` driver** (`04` section 2.1, D37),
-   with hand-readable SQL migrations under `src/lib/db/migrations/`. Prisma is rejected (2.1).
-   Do not hand-roll a `pg` client instead.
-3. **Tailwind is v4** (`04` section 2.2). But `17` section 6.3 expects `app/tailwind.config.ts` that
-   *replaces* default theme keys and `app/src/styles/globals.css` importing four token files.
-   Reconcile v4's CSS-first model with those paths, and record the resolution -- do not silently do
-   one and document the other.
-4. **Postgres is already provisioned** on 5432 and `DATABASE_URL` needs no change (**D66**). The
-   app must not shell out to `psql` (`04` section 2.3 rule 2).
-5. **WP-01 deliverables** (`11` WP-01): `app/package.json` (scripts `dev`, `build`, `start`,
-   `typecheck`, `lint`, `test`, `db:migrate`, `db:seed`), `tsconfig.json` with `strict: true`, Next +
-   PostCSS config, `app/.env.example`, `layout.tsx`/`page.tsx`, `api/health/route.ts` returning
-   `{"ok":true,"db":"up","llmProvider":"<provider>","commit":"<sha>"}`, `src/lib/config.ts` as the
-   **sole** `process.env` reader, `src/lib/db/client.ts`, `migrations/0001_baseline.sql`,
-   `src/lib/db/migrate.ts`, `compose.yaml` (host port **5433**), `app/README.md`.
-6. **The seed fixture is load-bearing** (trap **T8**): 37 synthetic students, >= 4 approved
-   milestones, one milestone above **both** averages, one bucket below 5 contributors, and the demo
-   brief as a **text-layer** PDF under `docs/fixtures/`.
-7. **Emit `analytics_events` at the point of the event** from the first feature that touches it --
-   analytics cannot be backfilled (trap **T7**).
-8. **Write the guardrail and its 53-case golden set early** (WP-08 before WP-09, `11` section 3):
-   it is the highest-risk code and it must pass with no network and no provider key.
-9. A zero-dependency test runner is available (section 2), but `04` section 2.2 pins `vitest 5.0.3`.
-   Use the pin unless a register row changes it.
+1. **`.env` is gitignored and `app/.env` is what the app reads.** Copy the root `.env.example`.
+   Scripts need `--env-file-if-exists=.env`; Next loads it itself. A fresh clone has **no** `.env`
+   and **no** seeded data.
+2. **`app/src/lib/config.ts` is the only module that reads `process.env`.** Do not add a second
+   reader. Add a variable to `.env.example` **and** `04` section 11 in the same change.
+3. **The SQL migrations are the schema of record**, not `schema.ts`. After any change to either,
+   run `pnpm exec tsx --env-file-if-exists=.env scripts/verify-schema.ts`. **Migrations are
+   immutable once applied** -- the runner stores a SHA-256 and refuses a changed file. Escape by
+   resetting the database, never by editing the ledger.
+4. **`src/lib/db/queries/**` is the only place SQL may live.** Features call repository functions.
+   Every write takes a transaction, because trap T7 requires the event and the state change it
+   describes to commit together.
+5. **`tsconfig.json` is at the future pin set**: `strict`, `noUnusedLocals`, `noUnusedParameters`,
+   `noUncheckedIndexedAccess`. `tsc --noEmit` owns unused-symbol checking, because no
+   `typescript-eslint` package can load under `typescript 7.0.2` (**D78**).
+6. **Vitest does not read `tsconfig.json` paths.** The `@/*` alias is in `app/vitest.config.ts`
+   (**D78**'s neighbour); a test that fails to resolve `@/...` transitively is this, not a bug in
+   the module under test.
+7. **`pnpm test` must pass with no network.** Keep DB-backed checks in `scripts/` (as
+   `verify-schema.ts` does), not in `tests/`, unless you are willing to make the suite
+   environment-dependent.
+8. **Do not seed `milestone_metrics` or `assignment_metrics`.** They are computed from
+   `analytics_events` by WP-11's deterministic refresh (D67); a seeded copy is a second source of
+   truth.
+9. **Phase 2 owns `src/lib/llm/types.ts` and its `AiCapability` union** (`04-INTERFACES.md` section
+   1). Phase 3 must request an enum change through `05-ISSUES.md` rather than editing it.
+10. **Phase 2 also owns `I-19`**: relocate the house error envelope from `src/lib/auth/api-errors.ts`
+    to `src/lib/api/errors.ts` before a second phase imports the wrong path.
 
 ## 6. What a later phase must NOT assume
 
-1. **Do not assume `.env` is correct on a clean clone** -- it is gitignored; copy `.env.example`.
-2. **Do not assume line numbers in the docs are stable.** Phase 0 moved many; cite headings.
-3. **Do not assume a `*Response` type exists** because a route references it (I-03), the ingestion
-   job table exists (I-15), or an artifact revision column exists (I-16).
-4. **Do not assume `17`'s `--border-peer` is `#98A2B3`** -- it is `#667085` (D65, I-05, trap T11).
-5. **Do not assume `pnpm typecheck`/`lint`/`test` exist** until WP-01 creates `package.json`.
-6. **Do not assume the shell is PowerShell 7**; it is 5.1 (I-09).
-7. **Do not treat `../16-VERIFICATION-REPORT.md` as current state** (I-14), and do not treat
-   `.local/spec/` as normative (section 7).
+1. **Do not assume the storage interface has ever been exercised.** `src/lib/storage/` does not
+   exist. The seed writes to `STORAGE_LOCAL_DIR` directly, and `assignment_sources.storage_key`
+   values are `sources/<kind>/<sha256>`, which is the seed's convention and not a driver's output.
+2. **Do not assume any provider call works.** No adapter exists; the last live call was Phase 0's.
+   `LLM_PROVIDER=gemini` is validated by config only.
+3. **Do not assume a student-visible surface exists.** There is no `(tutor)` or `(student)` page, so
+   `FORBIDDEN_ROLE` has never been returned by a live route and the middleware's pass-through was
+   observed as a `404`, not a rendered page.
+4. **Do not assume the design tokens have values.** The files exist; `tokens.css` is deliberately
+   empty of declarations (D75). Seeding a value there is a `07` amendment, not a Phase 2 shortcut.
+5. **Do not assume session revocation exists.** It does not, and there is no table to add it to
+   (**D79**, **I-20**). A token stays valid until it expires.
+6. **Do not trust a gate query's column name (T21).** `11` WP-02's gate asked for
+   `milestones.status`, which does not exist, and `.local/spec/schema.md`'s ambiguity A1 asserted a
+   classification `06` section 4.6 does not make. Run it and check the schema before concluding the
+   work is wrong.
+7. **Do not treat `.local/spec/` as normative**, and do not treat `../16-VERIFICATION-REPORT.md` as
+   current state (**I-14**).
+8. **Do not assume a fresh clone's `.storage/` is populated.** It is gitignored; the seed writes it.
+9. **Do not expect `cohort-seed.json`'s 37th student to be seeded** -- it is not (**I-23**), because
+   the interactive `student@demo.rmit` occupies that slot (**D82**).
+10. **Do not expect the fixture to discriminate trap T1** -- it numerically cannot (**I-24**).
 
-## 7. Local-only preparation for Phase 1 -- `.local/spec/`
+## 7. Local-only preparation for Phase 2
 
-Prepared during the Phase 0 follow-up by reading the normative docs. **Gitignored** (`.gitignore`
-line 40, `.local/`), so it does **not** survive a fresh clone and is **not** authoritative: where a
-file and `docs/01`-`docs/18` disagree, the doc wins.
+| Path | Contents | Survives a clone? |
+|---|---|---|
+| `.local/spec/schema.md` | SQL-ready DDL for the 33 tables, the index inventory, both views, the pseudonym derivation, and 15 ambiguities | **No** (`.local/` is gitignored). Two of its claims were wrong on re-check |
+| `.local/spec/api-contracts.md` | The 64-route index, the error table, the defined request/response interfaces, the SSE protocol | **No** |
+| `.local/spec/guardrail.md` | The rule-id table, the decision pipeline, the 53 golden cases | **No** |
+| `.local/verify-*.sql`, `.local/verify-*.mjs` | The Lead's own verification queries and extraction checks from this session | **No** |
 
-| File | Contents |
-|---|---|
-| `.local/spec/schema.md` | SQL-ready DDL for the **33 tables** in `06` sections 6-7, as `text`+`CHECK` enums (section 6.3), every index, the `search_tsv` generated column, `set_updated_at()` trigger, both views verbatim; the 15 migration-author ambiguities; the two circular FKs and the six tables needing `assignment_structures (id, assignment_id)` first |
-| `.local/spec/api-contracts.md` | The 64-route index (R1-R64), `ApiErrorResponse` + the 16-code failure table with a retryable column, every defined request/response interface verbatim, the 11 undefined response types, the SSE protocol, and the route -> file-layout mapping |
-| `.local/spec/guardrail.md` | The rule-id table, the decision pipeline, the structured decision contract, the four refusal templates, the logging denylist, the `UP1`-`UP5` upload sub-guard, and all **53** golden cases (G01-G53) with verdicts, rules and layers |
-
-Regenerate rather than trust them if the docs have moved: they were extracted at `3654c28`.
+Regenerate rather than trust any of it; where a file and `docs/**` disagree, the doc wins.

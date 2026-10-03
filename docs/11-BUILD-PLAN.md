@@ -69,12 +69,16 @@ pnpm demo:smoke         scripted end-to-end check of the demo loop (created in W
 
 ### WP-01 -- Repository, toolchain and walking skeleton
 
-**Status (Phase 0 reconciliation).** WP-01 is **partially done and must not be marked complete.**
-- Done and independently verified: `git init`; remote `origin` = `https://github.com/SharlEclair/rmit-hackathon.git`; 7 commits, HEAD `da00f71`; root `.gitignore` covers `.env`, `cookies.txt`, `.storage/`, `out/`, `node_modules/` and `.next/`; root `.env.example` exists.
-- Unstarted: the entire `app/` tree (no manifest, no `tsconfig.json`, no Next/Tailwind/PostCSS config, no `/api/health` handler, no `config.ts`, no DB client or migration runner, no `compose.yaml`, no `app/README.md`). `docs/fixtures/` does not exist, so WP-04's gate input is missing.
-- Consequently the verification gate below is not runnable and the acceptance criteria are unverified. Do not check them off. Re-run the gate only after the skeleton lands.
+**Status (Phase 1, complete).** WP-01 landed in Phase 1 (`git tag phase-01-complete`). Every deliverable in the table below exists, and the verification gate was **run**, not read:
+- `pnpm install`, `pnpm typecheck` (with `strict`, `noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess`), `pnpm lint` (eslint plus the `04` S5.9 C8 endpoint gate) all pass.
+- `pnpm db:migrate` applies `0001_baseline` and reports no pending migrations on a second run; the ledger, the ordering and the checksum-immutability guard were each exercised, and the head check aborts with exit 78 when a migration is pending.
+- `pnpm dev` serves `/` and `/api/health` reports `{"ok":true,"db":"up","llmProvider":"gemini","commit":"<sha>"}`. With `DATABASE_URL` removed from `.env` the same process stays up and reports `{"ok":false,"db":"down",...}`. `pnpm build` compiles and `pnpm start` runs the migration-head check before serving.
+- Deviations from this packet's letter, all recorded: migrations are applied by `src/lib/db/migrate.ts` rather than drizzle-kit (**D74**); Tailwind v4 is CSS-first with `@config` (**D75**); the lint stack is eslint 9 with `@babel/eslint-parser` because every `typescript-eslint` package refuses the pinned `typescript 7.0.2` (**D78**); `DATABASE_URL` absence is degraded rather than fatal (**D77**).
+- `docs/fixtures/` landed with WP-02 (see that packet's status).
 
 **Goal.** A public GitHub repository with commit history, and an `app/` that boots, serves one page, reads its configuration, and can reach Postgres.
+
+**Effort.** 5 h. (The `git init` + public repo + first commit step was already done before Phase 1; the repository was not re-initialised.)
 
 **Deliverables**
 
@@ -125,6 +129,8 @@ git remote -v              # origin -> a public GitHub URL
 
 ### WP-02 -- Data model, migrations and the demo fixture
 
+**Status (Phase 1, complete).** Every deliverable exists and the gate was run from a clean schema: `drop schema public cascade` / `create schema public`, then `pnpm db:migrate` (10 applied, 0 already applied) and `pnpm db:seed` twice. The second run inserted **0** rows and a whole-database row-count comparison across all 34 base tables was **identical**, so idempotency is proven rather than asserted. `pnpm test -- tests/db` passes 15 tests. `scripts/verify-schema.ts` reports no drift across 33 tables and 444 columns. Two corrections were made to this packet's own gate in Phase 1 (**I-18**, **I-21**): the column is `publication_status` and the predicate must accept `PUBLISHED`, because gate G1 makes PUBLISHED the only student-visible status (**D81**). The fixture is realised as 36 fixture-driven students plus the interactive demo account (**D82**), and `cohort-seed.json`'s unused 37th entry is **I-23**.
+
 **Goal.** Every entity in the data model exists as a migration, and the seed script produces a complete, deterministic demo state: one course, one tutor, 37 synthetic students, one assignment with approved structure, and reproducible activity.
 
 **Deliverables**
@@ -151,12 +157,21 @@ pnpm db:migrate                       # idempotent: run twice, second run is a n
 pnpm db:seed
 pnpm db:seed                          # run twice on purpose
 psql "$DATABASE_URL" -c "select count(*) from users where role='student'"     # 37
-# NOTE (corrected in Phase 1): an artifact's lifecycle column is `publication_status`, never
-# `status` -- `06` section 3.6 makes `assignment.status` and `artifact.publicationStatus` two
-# different fields, and `06` section 6.3 attaches the six-value CHECK to `publication_status`.
-# The original query here asked for `milestones.status`, which does not exist. See
-# `docs/handoff/05-ISSUES.md` I-18.
-psql "$DATABASE_URL" -c "select count(*) from milestones where publication_status='APPROVED'"  # >= 4
+# NOTE (corrected in Phase 1, twice). First: an artifact's lifecycle column is
+# `publication_status`, never `status` -- `06` section 3.6 makes `assignment.status` and
+# `artifact.publicationStatus` two deliberately different fields. The original query asked for
+# `milestones.status`, which does not exist (issue I-18). Second: the predicate must accept
+# PUBLISHED as well as APPROVED. `06` section 3.4 (gate G1) makes PUBLISHED the only
+# student-visible status and `04` section 12 says the same ("only the APPROVED -> PUBLISHED
+# transition is student-visible", D21), while `13-DEMO-STORY.md` beats 4-8 and the guardrail's
+# PUBLISHED-only policy rule (`06` section 7.2.11) both need content a student can actually see.
+# A seed that leaves the artifacts APPROVED produces a structure that is half-published under an
+# already-`published` assignment, so a student sees published checklist items whose milestones are
+# invisible. PUBLISHED subsumes approval -- transition 7 requires a prior APPROVED state and the
+# approval stamps survive the publish -- so the intent, a tutor-sanctioned structure, is unchanged.
+# See decision D81 and issue I-21. A count of PUBLISHED milestones is also asserted below.
+psql "$DATABASE_URL" -c "select count(*) from milestones where publication_status in ('APPROVED','PUBLISHED')"  # >= 4
+psql "$DATABASE_URL" -c "select count(*) from milestones where publication_status='PUBLISHED'"  # 5
 pnpm test -- tests/db
 ```
 
@@ -176,6 +191,8 @@ Observable behaviour: after two consecutive `pnpm db:seed` runs, row counts are 
 ---
 
 ### WP-03 -- Authentication and role scoping
+
+**Status (Phase 1, complete).** `pnpm test -- tests/auth` passes 37 tests in 2 files; `pnpm typecheck` and `pnpm lint` are clean. The gate below was run live against `pnpm dev` and the local Postgres, with the **seeded** demo accounts: `POST /api/auth/login` for `tutor@demo.rmit` and `student@demo.rmit` returns 200 with the exact `SessionResponse` shape and an `HttpOnly; SameSite=Lax; Max-Age=43200` cookie; a wrong password and an unknown email both return an identical `401 UNAUTHENTICATED`; `/tutor` and `/student` without a cookie return **307** to `/login?next=...`; with a valid session `/tutor` returns 404 because no `(tutor)` page exists yet -- the middleware does **not** over-block; `POST /api/auth/logout` returns 204 and the session is then 401; and a last-char-flipped, first-char-flipped, truncated or empty token all return 401. Session revocation is deliberately absent (**D79**, accepted risk **I-20**). Widen the lint and test toolchain notes as recorded in **D78**.
 
 **Goal.** Two seeded accounts can sign in; a tutor cannot see a student route and a student cannot see a tutor route.
 
