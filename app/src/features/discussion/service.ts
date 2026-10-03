@@ -56,6 +56,7 @@ import {
 } from '@/lib/db/queries/student-visibility';
 import { insertFaqEntryIfAbsent } from '@/lib/db/queries/questions';
 import { identityFor, findIdentityFor, identityMatches } from '@/features/discussion/anon-identity';
+import { applyModerationStatus, type ModerationHook } from '@/features/discussion/moderation';
 
 /** `06` section 5.6: 20 discussion threads per assignment per student per hour. */
 export const THREADS_PER_HOUR = 20;
@@ -293,6 +294,8 @@ export async function createThread(
     readonly milestoneId: string | null;
     readonly anonymous: boolean;
     readonly now: Date;
+    /** The moderation hook for the thread's first post, or `null` to skip moderation explicitly. */
+    readonly moderate?: ModerationHook | null;
   },
 ): Promise<DiscussionOutcome<DiscussionThreadResponse>> {
   const title = input.title.trim();
@@ -362,6 +365,14 @@ export async function createThread(
   });
   await linkFirstPost(ex, threadId, postId);
 
+  // The first post is moderated exactly as a reply is. `05` section 9.1 needs no distinction between them:
+  // both are student-visible public content, and a thread whose opening post escapes moderation would be
+  // the easiest way to publish something the moderator exists to catch.
+  if (input.moderate !== undefined && input.moderate !== null) {
+    const decision = await input.moderate(postId, body, ex);
+    await applyModerationStatus(ex, postId, decision.action, input.now);
+  }
+
   const detail = await buildThreadDetail(ex, threadId, input.viewer);
   if (detail === null) {
     // Unreachable: the thread and its first post were written in this transaction, so the read-back
@@ -389,6 +400,17 @@ export async function createPost(
     readonly body: string;
     readonly parentPostId: string | null;
     readonly now: Date;
+    /**
+     * The moderation hook, or `null` to skip moderation explicitly.
+     *
+     * **The insert and the auto-action share this transaction**, so a post is never briefly visible at a
+     * severity that `05` section 9.4 says must hide it. A caller with no provider -- the acceptance
+     * script, a seeded fixture -- passes `null`, which makes "moderation did not run" a visible decision at
+     * the call site rather than an accident of configuration.
+     */
+    readonly moderate?: ModerationHook | null;
+    /** The assignment title the moderator classifies against. Required when `moderate` is supplied. */
+    readonly assignmentTitle?: string;
   },
 ): Promise<DiscussionOutcome<DiscussionPostResponse>> {
   const body = input.body.trim();
@@ -429,6 +451,15 @@ export async function createPost(
     authorUserId: anonymousHere ? null : input.viewer.userId,
     isAnonymised: anonymousHere,
   });
+
+  // The moderation pass, before the read-back, so the response a student receives already reflects the
+  // post's visibility. A hidden post's body is still returned to its own author (`06` section 5.5.13
+  // hides it only from other students), so the student sees "Hidden pending tutor review" rather than a
+  // post that appeared and then vanished.
+  if (input.moderate !== undefined && input.moderate !== null) {
+    const decision = await input.moderate(postId, body, ex);
+    await applyModerationStatus(ex, postId, decision.action, input.now);
+  }
 
   const row = await findPost(ex, postId);
   if (row === null) {

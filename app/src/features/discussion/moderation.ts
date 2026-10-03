@@ -193,15 +193,15 @@ async function writeFlags(
 }
 
 /**
- * `moderation_flags.severity` is the **word** (`low`/`medium`/`high`), while `05` section 9.2's severity is
- * the **number** 1..4.
+ * `06` section 4.4's severity word from `05` section 9.2's number.
  *
- * The mapping is not one-to-one in either direction, and that is `06` section 4.4's own design: the column
- * has three values and `05`'s scale has four, so 3 and 4 both read as `high`. **The numeric severity is
- * what drives the automatic action** (`05` section 9.4), and the word is what the flag carries. Losing the
- * distinction between 3 and 4 in the column is acceptable because the action has already been taken and
- * the audit row records it -- but it is recorded here rather than left implicit, because two scales with
- * four and three values is exactly the kind of thing a later reader assumes is one scale.
+ * The mapping is not one-to-one in either direction, and that is the schema's own design: the column has
+ * three values (`low`/`medium`/`high`) and `05`'s scale has four, so 3 and 4 both read as `high`. **The
+ * numeric severity is what drives the automatic action** (`05` section 9.4), and the word is what the flag
+ * carries. Losing the distinction between 3 and 4 in the column is acceptable because the action has
+ * already been taken and the audit row records it -- but it is recorded here rather than left implicit,
+ * because two scales with four and three values is exactly the kind of thing a later reader assumes is one
+ * scale.
  */
 function severityWord(severity: ModeratorFlag['severity']): 'low' | 'medium' | 'high' {
   switch (severity) {
@@ -213,4 +213,62 @@ function severityWord(severity: ModeratorFlag['severity']): 'low' | 'medium' | '
       // 3 and 4: `06` section 4.4's `high` covers both, and the distinction survives in the action.
       return 'high';
   }
+}
+
+/**
+ * The post status a moderation action requires, or `null` when the action leaves it alone.
+ *
+ * `05` section 9.4: 3 hides the post pending review and 4 hides it immediately; 0, 1 and 2 leave it
+ * visible (1 and 2 are "Visible. Queued"). Both hiding severities map to the same column value, because
+ * `06` section 7.5.2's `status` has one pending-review state and the difference between "pending" and
+ * "immediate" is a question of how loudly a tutor was notified rather than of the post's visibility.
+ */
+export function statusForAction(action: ModerationAction): 'hidden_pending_review' | null {
+  return action === 'hide_pending_review' || action === 'hide_immediate'
+    ? 'hidden_pending_review'
+    : null;
+}
+
+/**
+ * The moderation hook the discussion feature calls after inserting a post.
+ *
+ * **The executor is a parameter so the flag write joins the caller's transaction.** `06` section 3.5
+ * rule 4 wants a moderation record written with the state change it justifies, and the only way to be in
+ * that transaction is to receive the handle from the caller -- `Postgres`'s `TransactionSql` cannot be
+ * obtained any other way, which is the same reason every query in this codebase takes one.
+ *
+ * **Why a hook rather than a direct call from the route.** The auto-action is a change to the post's own
+ * row, so it has to happen inside `createPost`'s transaction rather than after it. Passing the function in
+ * lets the feature keep its transaction boundary, and lets a caller with no provider -- the acceptance
+ * script, a seeded fixture -- pass `null` and skip moderation **explicitly** rather than accidentally,
+ * which matters because "moderation did not run" must be a visible decision at the call site.
+ */
+export type ModerationHook = (
+  postId: string,
+  postBody: string,
+  ex: Executor,
+) => Promise<{ readonly action: ModerationAction }>;
+
+/**
+ * Apply a moderation action to a post that was just created.
+ *
+ * Returns the status the post takes, or `null` when the action left it visible. Exported so the wiring is
+ * testable without a provider: the caller supplies whatever the hook decided.
+ */
+export async function applyModerationStatus(
+  ex: Executor,
+  postId: string,
+  action: ModerationAction,
+  now: Date,
+): Promise<'hidden_pending_review' | null> {
+  const status = statusForAction(action);
+  if (status === null) return null;
+  await ex`
+    update discussion_posts
+       set status = ${status},
+           updated_at = ${now.toISOString()}::timestamptz
+     where id = ${postId}::uuid
+       and deleted_at is null
+  `;
+  return status;
 }

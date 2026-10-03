@@ -1,4 +1,4 @@
-/**
+﻿/**
  * The two things every discussion route needs before it can call the feature: the caller as the feature
  * sees them, and the anonymisation secret.
  *
@@ -11,7 +11,10 @@
 
 import type { SessionContext } from '@/lib/auth/roles';
 import { getConfig } from '@/lib/config';
+import type { Executor } from '@/lib/db/queries/courses';
+import { getLlmClient } from '@/lib/llm';
 import type { DiscussionViewer } from '@/features/discussion/service';
+import { moderatePost, type ModerationHook } from '@/features/discussion/moderation';
 
 /**
  * The guarded pair a discussion route holds after its guard succeeded.
@@ -68,4 +71,63 @@ export function viewerFor(
     anonIdSecret,
     isTutor: role === 'tutor',
   };
+}
+
+/**
+ * The moderation hook a discussion route passes to `createPost` or `createThread`.
+ *
+ * **It never throws, and that is the point.** `moderatePost` already converts a provider error, a schema
+ * failure, a `content_filter` refusal and a timeout into `05` section 9.4 binding rule 5's severity-2
+ * outcome. This wrapper handles the one thing left: a fault *outside* that conversion -- a database error
+ * while writing the flags, say -- and it must not fail the student's post for it. So a throw is caught and
+ * turned into `mark` (flagged, visible), the same action the in-service failure path uses, because the
+ * alternative would be either losing the post or publishing it unexamined. Binding rule 5 forbids both.
+ *
+ * **The `sessionId` is the assignment id**, so `llm/budget.ts`'s `moderation_batch` scope accumulates per
+ * assignment rather than per post. `04` section 9.2 step 12 counts a moderation pass as a batch, and one
+ * budget per post would make the ceiling meaningless.
+ *
+ * **A client that cannot be constructed is also caught.** `getLlmClient()` throws when the configuration is
+ * unusable, which on a moderation path must degrade to "flagged and visible" rather than to a `500` on a
+ * student's post.
+ */
+export function moderatorHookFor(input: {
+  readonly assignmentId: string;
+  readonly assignmentTitle: string;
+  readonly grounding: string;
+}): ModerationHook {
+  return async (postId: string, postBody: string, ex: Executor) => {
+    try {
+      const result = await moderatePost(ex, getLlmClient(), {
+        postId,
+        assignmentId: input.assignmentId,
+        assignmentTitle: input.assignmentTitle,
+        grounding: input.grounding,
+        postBody,
+        modelId: getConfig().llmModelReasoning ?? getConfig().llmProvider,
+        sessionId: input.assignmentId,
+      });
+      return { action: result.action };
+    } catch {
+      return { action: 'mark' as const };
+    }
+  };
+}
+
+/**
+ * The assignment's title, for the moderator's prompt, or `null`.
+ *
+ * The moderator is asked whether a post is **off-topic**, which needs something to be off from; without a
+ * title the category cannot be judged and every post looks plausibly related. `null` is passed through
+ * rather than substituted, because the prompt's `Assignment:` line should say nothing rather than say
+ * something false -- a fabricated title would make an off-topic judgement unfalsifiable.
+ */
+export async function readAssignmentTitle(
+  ex: Executor,
+  assignmentId: string,
+): Promise<string | null> {
+  const rows = await ex<{ title: string }[]>`
+    select title from assignments where id = ${assignmentId}::uuid limit 1
+  `;
+  return rows[0]?.title ?? null;
 }

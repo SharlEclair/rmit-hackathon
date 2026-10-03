@@ -6,7 +6,7 @@ import { guardStudentVisibleAssignment } from '@/lib/auth/guards';
 import { withTransaction } from '@/lib/db/transaction';
 import { findThread } from '@/lib/db/queries/discussions';
 import { createPost } from '@/features/discussion/service';
-import { viewerFor } from '@/features/discussion/routes';
+import { moderatorHookFor, readAssignmentTitle, viewerFor } from '@/features/discussion/routes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,6 +41,10 @@ export async function POST(
   const viewer = viewerFor(guarded.value, 'student');
   if (viewer === null) return apiError('INTERNAL', PLATFORM_ERROR_MESSAGES.internal, requestId);
 
+  // The moderator's prompt needs the assignment's title, read inside the same transaction as the write so
+  // it cannot describe a different assignment than the one the post lands in.
+  const assignmentTitle = (await withTransaction((tx) => readAssignmentTitle(tx, located.assignmentId))) ?? '';
+
   const outcome = await withTransaction((tx) =>
     createPost(tx, {
       scope: guarded.value.scope,
@@ -49,6 +53,13 @@ export async function POST(
       body: parsed.body,
       parentPostId: parsed.parentPostId,
       now: new Date(),
+      // `05` section 9.1: every student-visible public post is moderated. The hook cannot throw, so a
+      // moderation fault degrades to "flagged and visible" rather than failing the student's reply.
+      moderate: moderatorHookFor({
+        assignmentId: located.assignmentId,
+        assignmentTitle,
+        grounding: '',
+      }),
     }),
   );
   if (!outcome.ok) return apiError(outcome.code, outcome.message, requestId);

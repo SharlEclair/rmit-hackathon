@@ -5,7 +5,7 @@ import type { DiscussionThreadResponse } from '@/lib/api/types';
 import { guardStudentVisibleAssignment } from '@/lib/auth/guards';
 import { withTransaction } from '@/lib/db/transaction';
 import { createThread } from '@/features/discussion/service';
-import { viewerFor } from '@/features/discussion/routes';
+import { moderatorHookFor, readAssignmentTitle, viewerFor } from '@/features/discussion/routes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,6 +41,9 @@ export async function POST(
   const viewer = viewerFor(guarded.value, 'student');
   if (viewer === null) return apiError('INTERNAL', PLATFORM_ERROR_MESSAGES.internal, requestId);
 
+  const assignmentTitle =
+    (await withTransaction((tx) => readAssignmentTitle(tx, guarded.value.scope.assignmentId))) ?? '';
+
   const outcome = await withTransaction((tx) =>
     createThread(tx, {
       scope: guarded.value.scope,
@@ -50,6 +53,13 @@ export async function POST(
       milestoneId: parsed.milestoneId,
       anonymous: parsed.anonymous,
       now: new Date(),
+      // The thread's first post is moderated exactly as a reply is: it is the same student-visible content,
+      // and an unmoderated opening post would be the easiest way to publish what the moderator catches.
+      moderate: moderatorHookFor({
+        assignmentId: guarded.value.scope.assignmentId,
+        assignmentTitle,
+        grounding: '',
+      }),
     }),
   );
 
