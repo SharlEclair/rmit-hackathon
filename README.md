@@ -2,7 +2,7 @@
 
 **An AI-native assignment workspace for university students and tutors.**
 
-Built for the **CSIT RE:Uni Hackathon 2026** — theme: *Innovating Education*.
+Built for the **CSIT RE:Uni Hackathon 2026** -- theme: *Innovating Education*.
 
 > The assignment workspace that understands the brief, protects academic integrity, and shows tutors where students are getting stuck.
 
@@ -12,41 +12,41 @@ Built for the **CSIT RE:Uni Hackathon 2026** — theme: *Innovating Education*.
 
 University assignments sit between two groups who are both poorly served by the current tooling.
 
-**Students** hesitate to ask for clarification — the question feels stupid, the fear of judgment is real, and they often do not know whether AI is even allowed for this particular assignment. Generic AI assistants make the last problem worse: they will happily write the code or produce the answer, which is exactly what academic integrity rules forbid.
+**Students** hesitate to ask for clarification -- the question feels stupid, the fear of judgment is real, and they often do not know whether AI is even allowed for this particular assignment. Generic AI assistants make the last problem worse: they will happily write the code or produce the answer, which is exactly what academic integrity rules forbid.
 
 **Tutors** answer the same questions over and over, cannot see which part of the assignment the cohort is actually struggling with, and only discover that a requirement was ambiguous after students start work.
 
 ## The product
 
-The assignment — not a chat window — is the central object.
+The assignment -- not a chat window -- is the central object.
 
 ```text
-TUTOR                                          STUDENT
-  │                                               │
-  │  uploads brief + rubric + AI policy           │
-  ▼                                               │
-AI ingests and proposes a structure:              │
-  · Assignment Map        (navigation)            │
-  · Milestones + checklist (progress)             │
-  · FAQ candidates        (shared answers)        │
-  · Ambiguity / contradiction flags               │
-  · AI-usage rules        (the guardrail)         │
-  │                                               │
-  ▼                                               │
-TUTOR REVIEWS, EDITS, APPROVES ──────────────────►│
-                                                  │
-                                    works through the assignment:
-                                      · original brief, verbatim
-                                      · the approved Assignment Map
-                                      · checklist progress + elapsed time
-                                      · a strictly constrained AI coach
-                                      · private questions to the tutor
-                                      · anonymous peer discussion
-                                                  │
-                                                  ▼
-                                     TUTOR: aggregate cohort insight —
-                                     where time goes, where questions cluster,
-                                     which areas need intervention
+TUTOR  STUDENT
+  |  |
+  |  uploads brief + rubric + AI policy  |
+  v  |
+AI ingests and proposes a structure:  |
+  - Assignment Map  (navigation)  |
+  - Milestones + checklist (progress)  |
+  - FAQ candidates  (shared answers)  |
+  - Ambiguity / contradiction flags  |
+  - AI-usage rules  (the guardrail)  |
+  |  |
+  v  |
+TUTOR REVIEWS, EDITS, APPROVES ------------------>|
+  |
+  works through the assignment:
+  - original brief, verbatim
+  - the approved Assignment Map
+  - checklist progress + elapsed time
+  - a strictly constrained AI coach
+  - private questions to the tutor
+  - anonymous peer discussion
+  |
+  v
+  TUTOR: aggregate cohort insight  -- 
+  where time goes, where questions cluster,
+  which areas need intervention
 ```
 
 ### The four things that make it different
@@ -56,7 +56,7 @@ TUTOR REVIEWS, EDITS, APPROVES ────────────────�
 | 1 | **Assignment-specific AI policy enforcement** | The assistant knows what AI use *this* assignment permits, and refuses the rest. Not a generic chatbot with a disclaimer. |
 | 2 | **Upload once, get a workspace** | The brief stops being a PDF in an LMS and becomes a navigable, structured, tutor-approved workspace. |
 | 3 | **Anonymous peer discussion with a route to shared knowledge** | Psychological safety increases the number of questions asked; tutor approval turns good answers into official cohort-wide FAQs. |
-| 4 | **Cohort difficulty detection** | Elapsed time and question volume are combined to surface *"this section is a problem"* — not just a bar chart. |
+| 4 | **Cohort difficulty detection** | Elapsed time and question volume are combined to surface *"this section is a problem"* -- not just a bar chart. |
 
 ### The refusal is the feature
 
@@ -64,10 +64,10 @@ TUTOR REVIEWS, EDITS, APPROVES ────────────────�
 Student:  "Here's my code. What's wrong with it?"
 
 Assistant: "I can't inspect or modify your implementation under this
-            assignment's AI policy.
+  assignment's AI policy.
 
-            I can help with: interpreting the requirement you're working on,
-            what the rubric rewards, or planning your own next steps."
+  I can help with: interpreting the requirement you're working on,
+  what the rubric rewards, or planning your own next steps."
 ```
 
 This is the deliberate design of the product, not a limitation of it. The AI is constrained so that the student remains the one doing the academic work.
@@ -76,7 +76,7 @@ This is the deliberate design of the product, not a limitation of it. The AI is 
 
 ## Repository status
 
-**Documentation phase — no application code yet.** The docs below are the implementation contract; the build follows.
+**Documentation phase -- no application code yet.** The docs below are the implementation contract; the build follows.
 
 | Path | What it is |
 |---|---|
@@ -84,7 +84,7 @@ This is the deliberate design of the product, not a limitation of it. The AI is 
 | `CONTRIBUTING.md` | Team working agreement: commits, branches, definition of done. |
 | `docs/00-INDEX.md` | Map of the whole doc set, and the reading order per role. |
 | `docs/01-DECISIONS.md` | Decided / recommended / open, with rationale. The canonical answer to "what did we settle?" |
-| `docs/02-SCOPE.md` | Committed MVP cut — what is in, what is mocked, what is out. |
+| `docs/02-SCOPE.md` | Committed MVP cut -- what is in, what is mocked, what is out. |
 | `docs/03-PRD.md` | Product requirements, user stories, acceptance criteria. |
 | `docs/04-TECH-ARCHITECTURE.md` | Stack, system shape, LLM provider adapter. |
 | `docs/05-AI-GUARDRAILS.md` | The policy layer: rules, decision procedure, golden test set. |
@@ -99,9 +99,9 @@ This is the deliberate design of the product, not a limitation of it. The AI is 
 | `docs/14-HACKATHON-SUBMISSION.md` | Devpost + presentation requirements, including AI-use disclosure. |
 | `docs/15-GLOSSARY.md` | Canonical vocabulary: one term, one meaning, everywhere. |
 | `hackathon info/info.md` | The official brief, rubric, and schedule. **Frozen input.** |
-| `docs/project idea.md`, `docs/assignment_assistant_project_handoff.md` | Original product thinking. **Frozen inputs** — superseded in form, not in substance. |
+| `docs/project idea.md`, `docs/assignment_assistant_project_handoff.md` | Original product thinking. **Frozen inputs** -- superseded in form, not in substance. |
 
-`archive/canvas-scraper/` is a retired read-only Canvas discussion scraper built during the design phase. It answered a research question at the time — *can we harvest real discussion data as a design input?* — and it is **no longer required and not used by the app**: Canvas integration is out of MVP scope (D45) and the scraper is never imported by `app/` (D44). See `archive/canvas-scraper/README.md`.
+`archive/canvas-scraper/` is a retired read-only Canvas discussion scraper built during the design phase. It answered a research question at the time -- *can we harvest real discussion data as a design input?* -- and it is **no longer required and not used by the app**: Canvas integration is out of MVP scope (D45) and the scraper is never imported by `app/` (D44). See `archive/canvas-scraper/README.md`.
 
 ---
 
@@ -111,17 +111,17 @@ This is the deliberate design of the product, not a limitation of it. The AI is 
 
 ```bash
 # 1. Configuration
-cp .env.example .env          # then fill in DATABASE_URL and AUTH_SECRET
-                              # LLM_PROVIDER=mock works with no API key at all
+cp .env.example .env  # then fill in DATABASE_URL and AUTH_SECRET
+  # LLM_PROVIDER=mock works with no API key at all
 
 # 2. Install and prepare
 cd app
 pnpm install
 pnpm db:migrate
-pnpm db:seed                  # loads the demo assignment and cohort
+pnpm db:seed  # loads the demo assignment and cohort
 
 # 3. Run
-pnpm dev                      # http://localhost:3000
+pnpm dev  # http://localhost:3000
 ```
 
 With `LLM_PROVIDER=mock`, the whole product loop is walkable offline: ingestion produces canned-but-realistic structured output, and the guardrail still runs its real, deterministic rules. Swap in `deepseek` or `gemini` by setting the provider and a key.

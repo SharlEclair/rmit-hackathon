@@ -107,7 +107,7 @@ This section exists so the disclosure in S5 can be checked against it. Verified 
 | Canonical vocabulary | [`docs/15-GLOSSARY.md`](15-GLOSSARY.md) | One term, one meaning, and a do-not-use list |
 | Environment contract | [`.env.example`](../.env.example) | Includes the offline `mock` provider and the per-assignment anonymity key |
 | Frozen originals, unmodified | `docs/project idea.md`, `docs/assignment_assistant_project_handoff.md`, `hackathon info/info.md` | The prior product thinking, preserved verbatim ([`docs/originals/README.md`](originals/README.md)) |
-| Canvas discussion research (retired) | `archive/canvas-scraper/` | A read-only scraper with 28 offline tests, an 8-check integrity gate, and one measured discussion topic (33 posts, 12 root questions) used as a design input. Retired prior work — not required by, and not used by, the app |
+| Canvas discussion research (retired) | `archive/canvas-scraper/` | A read-only scraper with 28 offline tests, an 8-check integrity gate, and one measured discussion topic (33 posts, 12 root questions) used as a design input. Retired prior work -- not required by, and not used by, the app |
 
 ### 4.2 What does not exist today, and must not be claimed
 

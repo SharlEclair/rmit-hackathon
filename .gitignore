@@ -1,11 +1,11 @@
-# Assignment Assistant — repository ignore rules
+# Assignment Assistant -- repository ignore rules
 #
 # Rule: no credential, no real personal data, and no transient developer or
 # tool output is ever committed. Constraint C7 (see AGENTS.md section 2) makes
 # the credential rules non-negotiable.
 
 # ---------------------------------------------------------------------------
-# Credentials and secrets — never commit, never force-add
+# Credentials and secrets -- never commit, never force-add
 # ---------------------------------------------------------------------------
 .env
 .env.*
@@ -18,7 +18,7 @@ cookies.txt
 .credentials.yaml
 
 # ---------------------------------------------------------------------------
-# Personal, session and tool-transient material — never commit
+# Personal, session and tool-transient material -- never commit
 # These belong in local untracked space only. See CONTRIBUTING.md.
 # ---------------------------------------------------------------------------
 *handoff*.md
@@ -43,7 +43,7 @@ private/
 notes/
 
 # ---------------------------------------------------------------------------
-# Real discussion data — contains identifiable third parties (never commit)
+# Real discussion data -- contains identifiable third parties (never commit)
 # ---------------------------------------------------------------------------
 archive/canvas-scraper/out/
 harvested/

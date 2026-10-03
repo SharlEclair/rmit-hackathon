@@ -1,4 +1,4 @@
-# CONTRIBUTING.md — Team Working Agreement
+# CONTRIBUTING.md -- Team Working Agreement
 
 > Human-facing companion to `AGENTS.md`. Agents must follow `AGENTS.md`; humans should follow both.
 
@@ -11,7 +11,7 @@ The hackathon explicitly rewards visible, honest progress (`hackathon info/info.
 ### Rules
 
 1. **Commit small and often.** One logical change per commit. Aim for many commits over the weekend, not one large commit at 11:45 AM on Sunday.
-2. **Never commit secrets.** `cookies.txt`, `.env`, API keys, tokens, and exported Canvas sessions must stay out of the repository. `.gitignore` already covers them — verify before every `git add -A`.
+2. **Never commit secrets.** `cookies.txt`, `.env`, API keys, tokens, and exported Canvas sessions must stay out of the repository. `.gitignore` already covers them -- verify before every `git add -A`.
 3. **Never commit work that is not ours.** No vendored third-party code without a licence check, no datasets we do not have the right to publish, no old project or coursework material.
 4. **Never rewrite shared history.** No `push --force` to a branch someone else is working on, no `rebase` of already-pushed commits. If the history is wrong, add a commit that fixes it.
 5. **Frozen files stay frozen.** `docs/project idea.md`, `docs/assignment_assistant_project_handoff.md`, and `hackathon info/info.md` are source-of-truth inputs. Do not edit, move, or reformat them. If something in them is now wrong, record the change in `docs/01-DECISIONS.md` instead.
@@ -48,7 +48,7 @@ docs(scope): commit the MVP cut and move deadline tracking out of scope
 fix(assistant): stop echoing student code back in refusal messages
 ```
 
-Because AI assistance must be disclosed, make it easy to reconstruct the story: if a commit's content was substantially AI-drafted, that is fine — but the commit message must describe the change accurately, and the disclosure in `docs/14-HACKATHON-SUBMISSION.md` must stay truthful.
+Because AI assistance must be disclosed, make it easy to reconstruct the story: if a commit's content was substantially AI-drafted, that is fine -- but the commit message must describe the change accurately, and the disclosure in `docs/14-HACKATHON-SUBMISSION.md` must stay truthful.
 
 ---
 
@@ -56,8 +56,8 @@ Because AI assistance must be disclosed, make it easy to reconstruct the story: 
 
 Small team, short timeline. Keep it simple:
 
-- `main` — always runnable. Never push a broken build to `main`.
-- `feat/<short-name>` or `fix/<short-name>` — one branch per meaningful unit of work.
+- `main` -- always runnable. Never push a broken build to `main`.
+- `feat/<short-name>` or `fix/<short-name>` -- one branch per meaningful unit of work.
 
 Open a PR into `main` when a unit is complete and verified. Keep PRs small enough that another team member can review them in a few minutes. A PR description should state: what changed, how it was verified, what is mocked, and which doc it implements.
 
@@ -69,7 +69,7 @@ A piece of work is done when **all** of the following hold:
 
 - [ ] It runs, and someone other than the author has seen it run.
 - [ ] Typecheck, lint, and tests pass.
-- [ ] It does not weaken any constraint in `AGENTS.md` §2.
+- [ ] It does not weaken any constraint in `AGENTS.md` S2.
 - [ ] If AI behaviour changed, the guardrail golden set was updated and passes.
 - [ ] Docs changed in the same PR if interfaces or behaviour changed.
 - [ ] Any mock or shortcut is labelled in code **and** listed in `docs/11-BUILD-PLAN.md` under *what is mocked*.
@@ -93,7 +93,7 @@ Hackathon crunch makes it tempting to relax exactly the things that make this pr
 
 ## 6. Getting unstuck
 
-1. Re-read the relevant doc in `docs/` — most blockers in this project are a requirement that was already decided.
+1. Re-read the relevant doc in `docs/` -- most blockers in this project are a requirement that was already decided.
 2. If the doc is silent, add an entry to `docs/01-DECISIONS.md` with the conservative choice, then proceed.
-3. If two docs disagree, the earlier-numbered doc wins, and the later one is buggy — fix it in the same commit.
+3. If two docs disagree, the earlier-numbered doc wins, and the later one is buggy -- fix it in the same commit.
 4. If you are blocked on something outside the team's control (an API key, a rate limit, a Canvas session), say so immediately and pick up unblocked work. Do not idle.
