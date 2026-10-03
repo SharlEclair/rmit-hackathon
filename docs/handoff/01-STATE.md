@@ -3,12 +3,14 @@
 **Purpose.** What is actually built, what is not, and the command that proves each claim. **This
 file is rewritten every session.** It records commands and observed output, never adjectives.
 
-**Tag:** `phase-02-complete` -- the Phase 2 exit commit, which adds `07-ARCHIVE/phase-02/` and lands
-**after** `phase-03-complete` in history, because Phases 2 and 3 ran concurrently (`18` section 5.1)
-and Phase 3 pushed first. The tag order is therefore **not** the commit order: `phase-03-complete` is
-an ancestor of `phase-02-complete`. Phase 2's packet commits are the storage, extraction, adapter,
-schema, pipeline, route, test and exit-document commits listed by `git log --oneline` after
-`1498e53`.
+**Tag:** `phase-02-complete` -- the Phase 2 exit commit `6062aff` (the exit documents), which adds
+`07-ARCHIVE/phase-02/`. The four packet commits are `4b51e55` (the adapter), `d77958c` (storage and
+extraction), `8e62fa7` (the Analyst, the ingestion job and upload intake) and `6062aff` (the exit
+documents), branched from `98072ae` -- **after** `phase-03-complete`, because Phases 2 and 3 ran
+concurrently (`18` section 5.1) and Phase 3 pushed first. The tag order is therefore **not** the
+commit order: `phase-03-complete` is an ancestor of `phase-02-complete`. **Pushed:** `git push origin
+main` -> `98072ae..6062aff  main -> main`, and `git push origin phase-02-complete` -> `* [new tag]`,
+so `git rev-list --left-right --count origin/main...HEAD` is `0  0`.
 **Last session:** 02 and 03 (concurrent; both complete, and both are in this file because the state
 below is the state of the *repository*, not of one session).
 **Next phase:** **4 -- review, approval, state machine, gate rule G1.** Phases 0, 1, 2 and 3 are
