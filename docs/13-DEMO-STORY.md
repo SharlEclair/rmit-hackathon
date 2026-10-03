@@ -407,20 +407,25 @@ The spoken version, twenty seconds, five sentences:
 > Generative AI was used in three places. It organised our own pre-hackathon design thinking into the
 > documentation set you have seen, under a working agreement that constrains what it is allowed to write --
 > the product decisions, the scope cuts and the refusal-as-feature stance are ours and predate the event. It
-> wrote the application during the event; every commit in the repository is dated today, and it carries a
-> hundred-and-nine numbered decisions and forty-one recorded traps, so the AI's work is checkable against a
-> written contract rather than taken on trust. It runs inside the product, but only behind a guardrail we
+> wrote the application during the event; every commit in the repository is dated today, and beside it are a
+> numbered decisions register and a register of the traps the AI fell into, so its work is checkable against
+> a written contract rather than taken on trust. It runs inside the product, but only behind a guardrail we
 > wrote, which refuses by default and can be tested without a model call. And every phase ended with an
 > executed command rather than a claim: type-check, lint, the unit suite, a production build and four
 > end-to-end acceptance runs. The full disclosure, including what was AI-assisted and what was not, is in the
 > repository.
 
-**The two numbers are deliberate and checkable on stage.** "109 decisions, 41 traps" are facts a judge can
-verify in the repository, and they are the strongest available answer to "did you build this today?" -- which
-S12 scenario 13 anticipates. **Neither number is the commit count**, and that is deliberate: this file is
-itself committed, so any commit-count claim written here is stale the moment it lands. The verifiable
-version of that claim is the date property, which is durable: `git log --format=%ad --date=short | sort -u`
-returns a single date, `2026-10-04`. Read the numbers off the repository if asked rather than from memory.
+**The spoken version names the registers rather than their sizes, and that is T42 applied to this script.**
+An earlier revision said "109 decisions, 41 traps"; the count was 42 by the time it was committed, and the
+revision that said 42 was already wrong too. The durable claim is that the registers **exist, are dated, and
+are in the repository** -- all three survive any further commit. If a judge asks for the totals, count them
+live rather than quoting a file:
+
+```powershell
+Select-String docs/01-DECISIONS.md -Pattern '^\| D\d+ \|' | Measure-Object            # decisions
+Select-String docs/handoff/03-INVARIANTS.md -Pattern '^\| \*\*T\d+\*\*' | Measure-Object  # traps
+git log --format=%ad --date=short | Sort-Object -Unique                               # event-window proof
+```
 
 ---
 
