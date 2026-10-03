@@ -82,7 +82,7 @@ Borders       --border-default #D0D5DD
               --border-official #1F4E79      (solid)
               --border-approved #027A48      (solid)
               --border-interpretation #B54708 (dashed)
-              --border-peer #98A2B3          (dotted)
+              --border-peer #667085          (dotted)
 
 Accents       --accent-official #1F4E79
               --accent-approved #027A48
