@@ -86,3 +86,49 @@ first commit, so a session that dies mid-task still left its intent on disk.
   headroom for a build session. The `429` path is therefore untested.
 - **Cost.** Three live calls were made; token usage came back (`total_thought_tokens: 69` for a
   one-token answer at `low`), but no billing figure was checked.
+
+## Session 00b - Phase 0 follow-up: public repo verified, Phase 1 specs extracted - 2026-10-04
+
+**Phase:** 0 (follow-up)   **Status:** complete
+**Spec docs read:** `01`, `04` sections 2-3, `11` WP-01, `06`, `05`, `17` (targeted)
+**Commit range:** `3654c28`..this commit   **Tag:** none (no phase boundary crossed)
+
+### Delivered (with evidence)
+
+| Item | Evidence |
+|---|---|
+| Phase 0 pushed to the public remote | `git push origin main` -> `da00f71..3654c28  main -> main` |
+| I-07 resolved | anonymous `GET api.github.com/repos/SharlEclair/rmit-hackathon` -> HTTP 200, `"private": false`, `"visibility": "public"` |
+| Runtime facts recorded | Node 24.15 executes `.ts` directly and `node --test` discovers `*.test.ts` (both probed); registry: next 16.3.8, react 19.3.0, tailwind 4.3.3, eslint 10.12.0 |
+| Phase 1 spec extracts prepared | `.local/spec/{schema.md,api-contracts.md,guardrail.md}` -- 33 tables, the 64-route index, the 53 golden cases. Gitignored, local-only, derived (not normative) |
+
+### Not delivered, and why
+
+- **No `app/` code and no Phase 1 work** -- the owner is starting Phase 1 in a separate chat window.
+  Verified afterwards: `Test-Path app` -> `False`.
+
+### Decisions taken
+
+- **None.** No register row was added; nothing here changed product or architecture behaviour.
+
+### Invariants touched
+
+- **All honoured, unchanged.** This follow-up added documentation and read-only extracts only.
+
+### Discovered traps for later phases
+
+- **T18** -- the schema's two circular foreign keys and the required creation order.
+- **T19** -- `06` section 6.3's `text`+`CHECK` enums are normative over `CREATE TYPE`; three
+  `UNIQUE ... WHERE deleted_at IS NULL` specs are partial unique indexes; `embedding` stays a
+  separate migration.
+- **I-15/I-16/I-17** -- the ingestion-job table is still undefined, `expectedRevision` has no column
+  to live in, and `assignment_sources.mime_type`'s CHECK contradicted **D57**.
+
+### What I could not verify
+
+- **That the spec extracts are complete.** They were produced by three read-only passes over
+  `docs/05`, `docs/06` and `docs/17` and spot-checked, but no one has executed them, and they are
+  gitignored so they cannot be reviewed from a clone. Anything a Phase 1 session takes from
+  `.local/spec/` must be checked against the normative doc first.
+- **That no Phase 1 artefact exists.** Verified `app/` absent, but a future session should re-run
+  section 1 of `01-STATE.md` rather than trust this line.
