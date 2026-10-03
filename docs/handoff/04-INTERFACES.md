@@ -376,3 +376,64 @@ satisfy both sides.
    `src/app/tutor/**` are pages; `src/app/api/student/**` and `src/app/api/tutor/**` are the routes. The
    middleware protects both prefixes, and the pages still authorise independently.
 
+---
+
+## 9. Frozen in Phase 6 (WP-10 and WP-11)
+
+Frozen at the Phase 6 exit commit, tagged `phase-06-complete`. Same rules as sections 3 and 8: a later
+phase may **add**, but changing any of these means raising it in [`05-ISSUES.md`](05-ISSUES.md), recording
+why in [`../../01-DECISIONS.md`](../../01-DECISIONS.md), and updating this file in the same commit.
+
+`18` section 5 makes Phase 6 hand off **the anonymity contract's enforcement points** and **the analytics
+aggregation shape**. Both are below, plus the three surfaces the phase had to build to reach them.
+
+### 9.1 The anonymity contract (`app/src/features/discussion/anon-identity.ts`) -- the phase's handoff
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `identityFor`, `findIdentityFor`, `identityMatches`, `displayLabelFor`, `candidateNumbers` | The derivation of `06` section 4.2, and its three non-obvious properties. **(a) The row is looked up by `(student_id, assignment_id)`, never re-derived from the HMAC**, so an `ANON_ID_SECRET` rotation cannot re-label an existing post (`06` section 4.2 fact 6, trap **T14**). **(b) The collision loop probes the numbers actually taken**, with `UNIQUE (assignment_id, display_number)` as the arbiter, so two concurrent first-posts cannot silently share a label. **(c)** The identity is created **lazily** -- on the first anonymous post, thread or flag, never for a student who only reads -- and is never deleted, so a later post cannot appear as a different person mid-discussion (`06` section 4.3). `candidateNumbers` is exported so the derivation's **order** is testable without a database | `06` sections 4.2, 4.3; A-ID-1..A-ID-8; **D26**, **D27**, **D55**; trap **T14** |
+| `moderatorOutputSchema`, `MODERATOR_REASON_CODES`, `MODERATOR_CODE_SEVERITY`, `actionFor`, `moderatorFailureFallback` | The Discussion Moderator's contract. **Two combinator rules live in the schema rather than at a call site**: `overallSeverity` must equal the maximum flag severity, and a code's severity is a property of the code -- so a model filing `MOD_HARASSMENT` as severity 1 is a **validation failure**, not a silently corrected row. The reason-code **enum** is what makes `05` section 9.6's "an unknown `reasonCode` is a validation failure" true; the doc's `^MOD_[A-Z_]+$` pattern alone would accept `MOD_FOOBAR`. `moderatorFailureFallback` is `05` section 9.4 binding rule 5's outcome: severity 2, flagged, **visible** | `05` sections 9.2, 9.3, 9.4, 9.6; **D109**; `AGENTS.md` section 6 rule 4 |
+| `moderatePost`, `statusForAction`, `applyModerationStatus`, `ModerationHook` | The pass, and **the rule that no path does nothing**: a provider error, a schema failure, a `content_filter` refusal and a timeout all land on severity 2 with a tutor note. `actionFor` cannot return a removal -- binding rule 1, "there is no severity that results in silent deletion". The hook takes the caller's `Executor` so the flag write joins the post's transaction, and a caller with no provider passes `null` **explicitly** rather than accidentally | `05` section 9.4 binding rules 1, 3, 5; `06` section 3.5 rule 4 |
+| `buildModeratorRequest`, `moderatorJsonSchema`, `buildModeratorPrompt` | The provider-facing schema, **generated rather than added to the frozen `STRUCTURED_SCHEMAS`** (I-49). The prompt never truncates the post body -- a fragment could miss the sentence that matters, and binding rule 5's asymmetry makes that unacceptable -- and it asks for a tutor-facing description rather than a verdict on the person | **I-49**; trap **T30**; `04` section 5.5 |
+| `tests/discussion/imports.test.ts` | The **structural** half of the contract. **A-ID-2**: exactly one runtime file names the identity table in executable code, and the Drizzle declaration's exemption is itself tested (the schema must contain no query against it). **A-ID-6**: the analytics service never names that table and never uses the `aa:anon:` domain, asserted against the **migration files** because the suite runs with no database. **A-ID-5**: `DiscussionAuthor` has exactly `isAnonymised` and `displayLabel` and none of the six forbidden identifiers | `06` section 4.4; A-ID-2, A-ID-5, A-ID-6 |
+
+### 9.2 The discussion surface (`app/src/features/discussion/service.ts`, `app/src/lib/db/queries/discussions.ts`)
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `buildPostResponse`, `buildThreadResponse`, `buildStudentDiscussion`, `buildTutorDiscussion`, `buildThreadDetail` | **Anonymity is enforced as a shape, not a filter.** Every `DiscussionAuthor` is built in one function from the `discussion_author_display` view, so there is no intermediate object carrying an author id that a later filter could forget to strip (A-ID-5). `displayLabel` is present and **correct** -- A-ID-5 requires a tutor to see it; the forbidden thing is anything that resolves it to a person | A-ID-3, A-ID-5, **D55**; traps **T14**, **T3** |
+| `createThread`, `createPost`, `editPost`, `deletePost`, `flagPost`, `promoteToFaq` | The transitions. A **reply adopts the thread's anonymity** rather than re-choosing it, because a later named reply would unmask every post before it. A peer's thread is `NOT_FOUND`, not `FORBIDDEN_ROLE` (`06` section 9.2's T-12). `promoteToFaq` refuses an unapproved answer, a root post and a removed one; `ck_faq_entries_peer_answer_source` is the schema refusing an unlinked peer answer even if those guards were deleted | `06` sections 5.5.13, 7.5.1, 7.5.2, 7.5.4; O8, **D28**, **D29**, **D50**, **D99** |
+| `listThreads`, `listPosts`, `findThread`, `findPost`, `listModerationQueue`, `insertPost`, `insertThread`, `setPostStatus`, `setAcceptedAnswerStatus` | The reads and writes. **No read orders by an author column** -- there is no `orderBy: 'author'` option to pass, because A-ID-4 makes that a violation "even when the id is not returned". A tutor never edits: `setPostStatus` writes `status` and nothing else, which is what makes `editedByModerator` a truthful `false` | A-ID-3, A-ID-4; `07` section 6.2 rules 6, 8 |
+
+### 9.3 The Query and FAQ surfaces (`app/src/features/queries/`, `app/src/features/faq/`, `app/src/lib/db/queries/query-threads.ts`, `faq.ts`)
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `listQueriesForStudent`, `listQueriesForTutor`, `listQueryMessages`, `setQueryStatus`, `findQueryScope`, `queryBelongsToStudent` | A Query is **always attributed** (D24, D50), which is why `listQueryMessages` may join `users` -- and why **nothing in the discussion feature imports anything from this one**. Ownership is filtered in SQL against the session's own id, so no route accepts a student id from the client | `06` sections 5.5.12, 5.2 rule 4; reading A1; **D50** |
+| `openQuery`, `addStudentMessage`, `addTutorReply`, `resolveOwnQuery`, `publishReplyAsFaq` | The machine, one edge per actor: the **tutor's reply is the `open -> answered` transition**, written by the same statement that inserts the message (trap **T7**); only the asking student resolves, and only from `answered`; `closed` accepts nothing. `publishReplyAsFaq` copies the text rather than linking it, so a later edit withdraws the entry instead of changing it | `06` sections 7.4.1-7.4.4, 5.6; `07` section 5.4; **D24**, **D28**, O8 |
+| `buildStudentFaq`, `buildTutorFaq`, `authorFaqEntry`, `editFaqEntry`, `faqResponseOf` | **The student read and the tutor read are different functions on purpose.** A student's is `listPublishedFaqEntries` (filtered in SQL); the tutor's is `listAllFaqEntries` (unfiltered). One function with an `isTutor` flag would move gate rule G1 into a boolean at the call site. A tutor-authored entry starts `NEEDS_REVIEW`; `APPROVED` remains invisible (**D99**); a `revision` mismatch is `409 STALE_REVISION` | `06` sections 5.5.3, 7.4.4, 5.2; **D98**, **D99**, **D109**; `07` section 5.5 |
+| `listPublishedFaqEntries` (in `student-visibility.ts`) | The **one** FAQ read that takes no `VisibleScope`, for a tutor's own course. Its only callers are tutor routes that already ran `guardTutorAssignment`; requiring a scope would force them to fabricate one, and a fabricated scope is the argument a later reader trusts and reuses on a student path | `01-STATE.md` section 5 item 4; gate rule **G1** |
+
+### 9.4 The analytics aggregation (`app/src/lib/db/queries/metrics.ts`, `app/src/features/analytics/service.ts`)
+
+| Interface | What it guarantees | Authority |
+|---|---|---|
+| `refreshMilestoneMetrics`, `readMilestoneMetrics`, `refreshAssignmentMetrics`, `readAssignmentMetrics`, `listPublishedMilestones` | **M4 is a mean of per-student means, not a flat average.** The per-student mean is the inner `group by subject_ref` and is **never selected outward** -- `08` section 6 bullet 4 permits it only as an intermediate. The build **inserts, then the response reads back**, so "stored" and "computed" can differ visibly, which is the one defect a read model exists to expose. `contributor_count >= 5` is both a `having` and `ck_milestone_metrics_contributor_count`, so a small bucket is **absent** rather than suppressed. `MEDIAN_FLOOR` is **8**, above the k-anonymity floor | `06` section 4.7.2; `08` sections 4.3, 5.1; **D31**, **D32**; traps **T38**, **T39**; **I-50**, **I-51** |
+| `detectDifficultyAreas`, `joinMilestones`, `milestoneResponseOf`, `windowFor`, `MARGIN_TIME`, `MARGIN_Q`, `MIN_ELIGIBLE_MILESTONES` | The two-condition rule, with **both margins as constants rather than environment variables**, because `08` section 5.1 note 4 requires that "a flag cannot be tuned away during a demo". The rule is **not evaluated below five eligible milestones** and says why. `insufficient_data` projects **every metric as `null`, never as zero** | `08` sections 5.1, 5.2; `06` section 5.5.11; **D34**, **D35** |
+| `moderatorHookFor`, `readAssignmentTitle`, `viewerFor` (in `features/discussion/routes.ts`) | The route-side wiring. `moderatorHookFor` **never throws**: a fault outside `moderatePost`'s own conversion becomes `mark`, because binding rule 5 forbids both hiding and silence. `viewerFor` takes the **union** of the two guard scopes, because `VisibleScope` names the field `assignmentId` and `AssignmentScope` names it `id` | `05` section 9.4 binding rule 5; trap **T41** |
+
+### 9.5 The four acceptance runs, and what a later phase must know
+
+| Script | Checks | What it is for |
+|---|---|---|
+| `scripts/verify-student.ts` | **18** | Phase 5's workspace, gate G1 in both directions, the checklist round trip, the SSE refusal beat |
+| `scripts/verify-review.ts` | **20** | Phase 4's review gate, plus the two page-rendering checks Phase 5 added |
+| `scripts/verify-analytics.ts` | **13** | WP-11. Includes the **M4 discrimination** (`08` section 9's A15) on a fixture built so the two candidate formulas must differ by more than half |
+| `scripts/verify-discussion.ts` | **20** | WP-10's anonymity at runtime, the Query machine, the FAQ chain in **both** intermediate states |
+
+**None of them belongs in `pnpm test`.** `12` section 3.7 requires the suite to pass with no network and no
+database, and all four need both by design (`app/scripts/` is operator tooling, **D72**). Each builds its
+own fixture and mints its own session with `signSessionToken`, so none depends on seed state or a
+published password.
+
+
