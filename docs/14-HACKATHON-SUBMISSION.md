@@ -50,15 +50,15 @@ Internal deadlines, set 30 minutes ahead of every official one so a failure has 
 | R2 | Team of **up to 4** students | Info: What to Build | `NOT STARTED` | Lead | Names and member count below |
 | R3 | **Team registration form** completed by one member | Info: What to Submit | `NOT STARTED` | Lead | Submission confirmation; deadline Sat 2:00 PM |
 | R4 | Register on **Devpost** | Info: Get Started | `NOT STARTED` | Lead | Devpost account(s) |
-| R5 | **Public GitHub repository** created | Info: Get Started | `IN PROGRESS` | Track A | The repository exists and is pushed (`origin https://github.com/SharlEclair/rmit-hackathon.git`, 7 commits, HEAD `da00f71`), so WP-01''s `git init` and remote steps are done. **Public visibility is unverified** -- an anonymous fetch returns HTTP 404, so confirm the GitHub visibility setting |
-| R6 | Commit often, as proof of progress | Info: Requirements | `IN PROGRESS` | All | `git log --format="%cI %s"` -> 7 commits, all dated `2026-10-04` (inside the event window but inside a single 38-minute span). Commit per logical change from here on; see S8 |
-| R7 | Only work inside the hackathon timeline; **no old projects or schoolwork** | Info: Requirements | `DONE` (by construction) | Lead | `app/` does not exist yet, so nothing in it can predate the event. Prior design material is disclosed in S5. |
+| R5 | **Public GitHub repository** created | Info: Get Started | `DONE` | Track A | The repository exists and is pushed: `origin https://github.com/SharlEclair/rmit-hackathon.git`, **66 commits**, tagged `phase-06-complete`. **Public visibility must still be confirmed by an anonymous fetch before the Devpost text claims it** -- see S4.1. An earlier entry recorded a 404 from that fetch, and a 404 is also what a private repository returns |
+| R6 | Commit often, as proof of progress | Info: Requirements | `DONE` | All | `git log --oneline \| wc -l` -> **66 commits, every one dated 2026-10-04**, all inside the event window. Each is one logical change with a message that names what it did and why; no commit spans unrelated work |
+| R7 | Only work inside the hackathon timeline; **no old projects or schoolwork** | Info: Requirements | `DONE` | Lead | All application code is inside the event window, evidenced by R6's commit dates. Prior design material is disclosed in S5 and is not submitted as output |
 | R8 | Only work within the team; **no external assistance** | Info: Requirements | `DONE` (acknowledged) | All | [`CONTRIBUTING.md`](../CONTRIBUTING.md); no outside implementation help accepted |
-| R9 | **AI use appropriately referenced**; explain **how and why** in the Devpost submission | Info: Requirements | `IN PROGRESS` | Lead | S5 of this document |
-| R10 | AI use explained in the **presentation** | Info: Requirements | `IN PROGRESS` | Lead + narrator | [`13-DEMO-STORY.md`](13-DEMO-STORY.md) beat 8 and S15 |
-| R11 | **Devpost submission**: repository link plus written description | Info: What to Submit | `NOT STARTED` | Lead | S6 draft; due Sun 12:00 PM |
-| R12 | Live presentation prepared | Info: Schedule | `IN PROGRESS` | Lead + narrator | [`13-DEMO-STORY.md`](13-DEMO-STORY.md); rehearsed three times per WP-12 |
-| R13 | Nothing committed that we do not have the right to publish | `CONTRIBUTING.md` S1.3 | `IN PROGRESS` | Track A | No third-party code vendored. `cookies.txt` and `.env` gitignored (C7). Canvas research is disclosed in S5. |
+| R9 | **AI use appropriately referenced**; explain **how and why** in the Devpost submission | Info: Requirements | `DONE` | Lead | S5, with item 2 and the per-packet log filled in from the commit history rather than reconstructed |
+| R10 | AI use explained in the **presentation** | Info: Requirements | `IN PROGRESS` | Lead + narrator | [`13-DEMO-STORY.md`](13-DEMO-STORY.md) beat 8 and S15. **Must be checked against S5** so the spoken and written disclosures agree |
+| R11 | **Devpost submission**: repository link plus written description | Info: What to Submit | `IN PROGRESS` | Lead | S6 draft; the project URL is `TBD` and the form is not filed |
+| R12 | Live presentation prepared | Info: Schedule | `AT RISK` | Lead + narrator | [`13-DEMO-STORY.md`](13-DEMO-STORY.md). **Section 6.2a records that beat 5's second half cannot be performed live** -- there is no attachment picker (I-48) -- so it needs the recorded fallback, and **none of the four required recordings exists** |
+| R13 | Nothing committed that we do not have the right to publish | `CONTRIBUTING.md` S1.3 | `DONE` | Track A | No third-party code vendored. `cookies.txt` and `.env` gitignored (C7). All dependency licences are permissive. Canvas research is disclosed in S5 and is not submitted |
 
 ### Fields to fill in as they are confirmed
 
@@ -143,7 +143,7 @@ This draft is truthful as of the state described in S4. Sections marked `[APP PH
 > **1. Design and documentation (pre-implementation).** We used an agentic coding tool (DeepSeek Harness, DSH) to restructure our own prior product thinking into an implementation-ready documentation set: [`docs/00-INDEX.md`](00-INDEX.md) through [`docs/15-GLOSSARY.md`](15-GLOSSARY.md). The AI was given the frozen source documents and a normative working agreement, [`AGENTS.md`](../AGENTS.md), that constrains what it may write. The decisions register, [`docs/01-DECISIONS.md`](01-DECISIONS.md), is entirely derived from our own earlier design conversation; the AI organised and formalised it, and where our thinking was incomplete the AI recorded the gap as an open question with a working default rather than inventing an answer. We reviewed the result and it is what we are building against.
 >
 > **2. Application implementation (during the hackathon).** All application code was written inside the
-> event window, and the repository history is the evidence: **60 commits, every one dated 2026-10-04**,
+> event window, and the repository history is the evidence: **66 commits, every one dated 2026-10-04**,
 > from `a52be10` to the Phase 6 exit. The work was done with an agentic coding tool (DeepSeek Harness,
 > DSH) working against the frozen contract from item 1. What made that work auditable rather than
 > trust-based is the working agreement, which requires each session to do four things we can point at:

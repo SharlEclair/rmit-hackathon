@@ -174,6 +174,37 @@ you continue. You can also ask your tutor privately.
 2. `demo/assets/failing-code-screenshot.png` exists locally: a screenshot of a code editor showing an error, taken on this project, with nothing confidential visible. Capture it on Saturday.
 3. The attachment path is exercised in rehearsal. If it has not been, the second half is cut (see S11) and the beat runs as text only.
 
+### 6.2a Blockers verified at the Phase 7 freeze -- read before promising this beat
+
+Measured on the live system, not inferred. **The capability is real and the server side is complete; three
+things outside the code are missing, and all three are demo-day prerequisites rather than defects.**
+
+| What | State | Evidence |
+|---|---|---|
+| **The `+` picker and the chip UI** | **ABSENT.** `07` section 4.7.2 rule 5 specifies the control; `07-UI-UX-SPEC`'s panel has no such component, and handoff **I-48** records the whole Attachment UI as deliberately unbuilt | `app/src/components/assistant-panel.tsx` has no file input; a `grep` for a picker finds none |
+| **The server-side modality refusal** | **WORKS, and is better than the script assumes.** A `.wav` upload is refused `415 UNSUPPORTED_FORMAT` with `details.rule = "UP5"` and the allowed list -- before storage and before any extraction | live `POST /api/student/uploads` with `audio/wav` |
+| **The server-side guardrail scan gate** | **WORKS and fails closed.** An upload whose extraction failed (`extractionStatus: failed`) is refused entry to an Assistant turn: `400 VALIDATION_FAILED`, `details.uploadIds`, *"One or more attachments have not passed the guardrail scan and cannot be sent."* A malformed image cannot reach the model | live `POST .../assistant/messages` with that upload id |
+| **The classifier reaches a live model** | **WIRED.** `createGuardrailClassifierPort` defaults to `getLlmClient()`, so a real screenshot is classified by the real vision path | `src/lib/guardrail/classifier-port.ts:160` |
+| **`demo/assets/failing-code-screenshot.png`** | **ABSENT.** `demo/assets/` does not exist | `Test-Path demo/assets` -> False |
+
+**What this means for the beat, stated plainly.** Without the picker there is no way to attach a file *on
+camera*, so beat 5's second half cannot be performed live through the UI. The two options are (a) capture
+the recording the fallback already prescribes, or (b) narrate the second turn while showing the guardrail
+log, whose two classifications (`P5` and `UP1`) are real. **Option (a) is preferred** and is what S12
+scenario 4 already says; the honest sentence is *"the attachment is not cooperating, so I will show you the
+recorded version."*
+
+**Do not** resolve this by uploading through a REST client on stage. It would work, and it would read as a
+product with no upload button -- which is worse than the stated fallback, because the audience would
+correctly conclude that the interface cannot do the thing being narrated.
+
+**The image asset is not optional.** Because the scan gate fails closed, a screenshot must extract
+*successfully* for the classifier to see it: a placeholder or a tiny malformed PNG produces
+`extractionStatus: failed` and the turn is refused **before** the guardrail classifies it -- a `400`, not
+the `UP1` refusal the beat is about. That refusal is the correct behaviour (it is C6 doing its job), but it
+is the *wrong refusal* for this beat, which is why S12 scenario 3's rule about refusing "for the wrong
+reason" applies here too.
+
 **Fallback, first half.** See S12, scenario 3. If the live assistant is unavailable, the refusal is the one beat that must still happen: show the recorded response and the guardrail log, and say plainly *"this was recorded on the live system ten minutes ago; here is its decision log."* Honesty costs nothing here and the beat survives.
 
 **Fallback, second half.** See S12, scenario 4. If the attachment path fails live, say so and fall back to the text-only refusal that has just landed: *"the attachment is not cooperating, so I will show you the recorded version."* Then either play the recorded image refusal or drop to the guardrail log and say: *"the second turn is classified `UP1` -- the same rule as the text turn -- and both refused with no model call."* **The second half must never be skipped silently.** A quiet omission reads as a feature that does not exist; a stated fallback reads as a feature that exists and is being demonstrated carefully.
@@ -312,6 +343,16 @@ Not Sunday morning. Files, not intentions:
 2. **`demo/fallback/refusal.png`** or `.mp4` -- the text refusal exchange plus the guardrail decision log showing verdict, rule id, and zero model calls.
 3. **`demo/fallback/refusal-image.mp4`** -- the image half of beat 5 on the live system: the chip uploading, the `UP1` classification, the refusal. This is the newest beat and therefore the one most likely to fail unrehearsed.
 4. **`demo/fallback/health.png`** -- the Assignment Health view with the difficulty-area row and an `Insufficient data` cell visible.
+
+**Status at the Phase 7 freeze: `AT RISK`. None of the four exists.** `demo/fallback/` holds only
+`README.md`, which lists the beats and the naming convention. `pnpm demo:smoke` reports the missing
+recordings as a **failing** check rather than a warning, deliberately: a smoke test that shrugged at a
+missing fallback would hide the one thing it exists for.
+
+**Number 3 is the one to worry about**, because section 6.2a records that its live half cannot be performed
+through the UI at all -- there is no `+` picker (I-48). A recording of it therefore requires the upload to
+be exercised by some other means on a real screenshot, and the recording is *the* artefact that makes the
+beat survivable. If only one of the four gets captured, capture this one.
 
 ---
 
