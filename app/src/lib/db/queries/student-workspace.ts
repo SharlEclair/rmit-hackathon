@@ -74,8 +74,30 @@ export async function listCoursesForUser(ex: Executor, userId: string): Promise<
   }));
 }
 
-/** One course, for the route that addresses it directly. `null` means "not enrolled". */
-export async function findCourseForUser(
+/**
+ * How many courses have at least one open Query with a tutor reply, keyed by course id.
+ *
+ * `07` section 3.4 gives the dashboard "one attention line when the student has an open Query with a
+ * new tutor reply". A tutor reply sets a Query's status to `answered` (`07` section 5.1), so the
+ * condition is `open or answered` in the student's own threads -- and it is aggregated per course so
+ * the dashboard issues one query rather than one per card.
+ */
+export async function countAnsweredQueriesPerCourse(
+  ex: Executor,
+  userId: string,
+): Promise<Map<string, number>> {
+  const rows = await ex<{ course_id: string; answered_count: string | number }[]>`
+    select a.course_id, count(distinct q.id) as answered_count
+      from queries q
+      join assignments a on a.id = q.assignment_id
+     where q.student_id = ${userId}::uuid
+       and q.status = 'answered'
+     group by a.course_id
+  `;
+  return new Map(rows.map((row) => [row.course_id, requiredNumber(row.answered_count)]));
+}
+
+/** One course, for the route that addresses it directly. `null` means "not enrolled". */export async function findCourseForUser(
   ex: Executor,
   userId: string,
   courseId: string,
@@ -378,6 +400,7 @@ export async function listBriefSections(
 /** The published page text the brief viewer renders, in reading order. */
 export interface BriefPageRow {
   readonly sourceId: string;
+  readonly chunkId: string;
   readonly page: number;
   readonly text: string;
 }
@@ -394,15 +417,22 @@ export async function listBriefPageText(
   scope: VisibleScope,
 ): Promise<BriefPageRow[]> {
   const rows = await ex<
-    { source_id: string; page_from: number | null; page_to: number | null; text: string }[]
+    {
+      id: string;
+      source_id: string;
+      page_from: number | null;
+      page_to: number | null;
+      text: string;
+    }[]
   >`
-    select source_id, page_from, page_to, text
+    select id, source_id, page_from, page_to, text
       from source_chunks
      where assignment_id = ${scope.assignmentId}::uuid
      order by source_id asc, chunk_index asc
   `;
   return rows.map((row) => ({
     sourceId: row.source_id,
+    chunkId: row.id,
     page: row.page_from ?? row.page_to ?? 1,
     text: row.text,
   }));

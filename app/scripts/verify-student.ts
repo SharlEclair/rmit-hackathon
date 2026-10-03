@@ -417,12 +417,23 @@ async function main(): Promise<void> {
     ? (at(brief.body, 'documents.0.sections') as unknown[]).length
     : -1;
   const hasViewerUrl = at(brief.body, 'documents.0.viewerUrl') !== undefined;
+  const pageCount = Array.isArray(at(brief.body, 'documents.0.pages'))
+    ? (at(brief.body, 'documents.0.pages') as unknown[]).length
+    : -1;
+  const firstPageText = at(brief.body, 'documents.0.pages.0.text');
   record(
-    'brief: a manifest with page sections and no viewerUrl (06 5.5.4, I-06)',
-    'status 200, 1 document, 1 section, viewerUrl absent',
+    'brief: a manifest with page sections and stored page text, and no viewerUrl (06 5.5.4, D107)',
+    'status 200, 1 document, 1 section, 1 page with text, viewerUrl absent',
     `status ${String(brief.status)}, documents ${String(docCount)}, sections ${String(sectionCount)}, ` +
+      `pages ${String(pageCount)}, firstPageHasText ${String(typeof firstPageText === 'string' && firstPageText.length > 0)}, ` +
       `viewerUrl present ${String(hasViewerUrl)}`,
-    brief.status === 200 && docCount === 1 && sectionCount === 1 && !hasViewerUrl,
+    brief.status === 200 &&
+      docCount === 1 &&
+      sectionCount === 1 &&
+      pageCount === 1 &&
+      typeof firstPageText === 'string' &&
+      firstPageText.length > 0 &&
+      !hasViewerUrl,
   );
 
   // --- 4. policy ------------------------------------------------------------

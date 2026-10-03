@@ -459,6 +459,13 @@ export interface BriefDocumentSectionResponse {
 
 export interface BriefDocumentResponse {
   id: string;
+  /**
+   * The stored filename, for `07` section 4.2 rule 3's `Source: <filename>, page <n>` marker.
+   *
+   * It is a document label and never requirement text (C2): the document itself is what is rendered
+   * verbatim below it.
+   */
+  title: string;
   kind: SourceKindApi;
   mimeType: string;
   pageCount: number;
@@ -466,10 +473,21 @@ export interface BriefDocumentResponse {
   sections: BriefDocumentSectionResponse[];
   /**
    * `07` section 4.2 rule 8's extraction warning. `05-ISSUES.md` I-06 keeps the byte-serving route
-   * unbuilt, so this response is a **manifest only**: `viewerUrl` is absent by design rather than
-   * present-but-broken (WP-07 acceptance criterion: an absent affordance beats a broken one).
+   * unbuilt, so this response is a **manifest plus the stored extraction**: `viewerUrl` is absent by
+   * design rather than present-but-broken, and `pages` is the verbatim text the viewer renders
+   * (WP-07 acceptance criterion: an absent affordance beats a broken one). See **D107**.
    */
   extractionFailed: boolean;
+  /**
+   * The document's own extracted text, page by page, in reading order.
+   *
+   * This is `source_chunks.text` as the extractor produced it: never re-flowed, never summarised,
+   * never re-authored (C2, D17, N8). It exists because **D107** resolves I-06 by rendering the stored
+   * extraction rather than serving document bytes, so the viewer's content has to travel with the
+   * manifest. A page with no extracted text is `text: ''`, which the viewer renders as the page's
+   * frame with the `07` section 4.2 rule 8 notice rather than as a blank.
+   */
+  pages: Array<{ page: number; text: string; sourceChunkIds: string[] }>;
 }
 
 export interface BriefResponse {

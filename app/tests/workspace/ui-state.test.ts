@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ChecklistItemResponse } from '@/lib/api/types';
 
-import { uiStateOf } from '@/features/workspace/bundle';
+import { uiStateOf } from '@/features/workspace/ui-state';
 
 /**
  * The UI state derivation, and the one place the API's three-value `state` and the row component's

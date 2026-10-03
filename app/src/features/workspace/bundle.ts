@@ -35,6 +35,7 @@ import {
 import {
   findOwnChecklistProgress,
   findVisibleChecklistItem,
+  listBriefPageText,
   listBriefSections,
   listOwnChecklistProgress,
   listPublishedSourceManifests,
@@ -191,26 +192,13 @@ function completionStateOf(items: readonly ChecklistItemResponse[]): ChecklistSt
 }
 
 /**
- * The **UI** state of an item, which is not the stored state.
+ * The **UI** state of an item lives in `ui-state.ts`.
  *
- * The API and the column have three values (`06` section 5.5.6), but the row component needs four,
- * because `07` section 4.6 rule 6 describes a state the column cannot express: "an item that has been
- * reopened shows the **first** start-to-complete elapsed time and the note `Reopened <n> time(s)`".
- *
- * Deriving `reopened` from `reopenCount` rather than adding a fourth contract value is the reading
- * recorded here: `reopen_count` IS the fact ("this item has been reopened"), the API contract is
- * `06`'s three-value `state`, and the fourth case is presentational. A component that collapsed
- * `reopened` into `in_progress` would lose the elapsed time and the count, which is exactly what D48
- * exists to preserve -- so the distinction is forced at the component's own props by its type
- * (`checklist-item-row.tsx`: `{ state: 'reopened'; elapsed; reopenedCount }`).
+ * It is re-exported here for the server-side callers that already import this module, and it is
+ * defined there because a client component needs it too and must not pull the query layer into the
+ * browser bundle.
  */
-export type ChecklistItemUiState = 'not-started' | 'in-progress' | 'complete' | 'reopened';
-
-export function uiStateOf(item: ChecklistItemResponse): ChecklistItemUiState {
-  if (item.state === 'not_started') return 'not-started';
-  if (item.state === 'in_progress') return 'in-progress';
-  return item.reopenCount > 0 ? 'reopened' : 'complete';
-}
+export { uiStateOf, type ChecklistItemUiState } from './ui-state';
 
 /**
  * `06` section 5.5.6's `ChecklistProgressResponse`, read back after a transition.
@@ -278,9 +266,10 @@ export async function buildBriefResponse(
   ex: Executor,
   scope: VisibleScope,
 ): Promise<BriefResponse> {
-  const [manifests, sections] = await Promise.all([
+  const [manifests, sections, pageText] = await Promise.all([
     listPublishedSourceManifests(ex, scope),
     listBriefSections(ex, scope),
+    listBriefPageText(ex, scope),
   ]);
 
   const sectionsBySource = new Map<string, BriefDocumentResponse['sections']>();
@@ -296,20 +285,50 @@ export async function buildBriefResponse(
     else bucket.push(entry);
   }
 
+  // Pages are assembled per source in reading order. Several chunks can share a page (a long page is
+  // split across chunks), so they are appended rather than replaced: the page's text is the
+  // concatenation of its chunks in `chunk_index` order, which `listBriefPageText` already guarantees.
+  const pagesBySource = new Map<string, Map<number, { text: string[]; chunkIds: string[] }>>();
+  for (const row of pageText) {
+    let pages = pagesBySource.get(row.sourceId);
+    if (pages === undefined) {
+      pages = new Map();
+      pagesBySource.set(row.sourceId, pages);
+    }
+    let page = pages.get(row.page);
+    if (page === undefined) {
+      page = { text: [], chunkIds: [] };
+      pages.set(row.page, page);
+    }
+    page.text.push(row.text);
+    page.chunkIds.push(row.chunkId);
+  }
+
   return {
     assignmentId: scope.assignmentId,
-    documents: manifests.map((manifest) => ({
-      id: manifest.id,
-      kind: oneOf(SOURCE_KINDS, manifest.kind, 'supplementary'),
-      mimeType: manifest.mimeType,
-      // The contract types this as a number and the column is nullable; a document with no page count
-      // has no pages to anchor to, so it reports zero rather than null (which the response cannot
-      // express). `extractionFailed` is what the UI reads in that case.
-      pageCount: manifest.pageCount ?? 0,
-      truthTier: 'T1',
-      sections: sectionsBySource.get(manifest.id) ?? [],
-      extractionFailed: manifest.extractionFailed,
-    })),
+    documents: manifests.map((manifest) => {
+      const pages = pagesBySource.get(manifest.id) ?? new Map();
+      return {
+        id: manifest.id,
+        title: manifest.title,
+        kind: oneOf(SOURCE_KINDS, manifest.kind, 'supplementary'),
+        mimeType: manifest.mimeType,
+        // The contract types this as a number and the column is nullable; a document with no page count
+        // has no pages to anchor to, so it reports zero rather than null (which the response cannot
+        // express). `extractionFailed` is what the UI reads in that case.
+        pageCount: manifest.pageCount ?? 0,
+        truthTier: 'T1',
+        sections: sectionsBySource.get(manifest.id) ?? [],
+        extractionFailed: manifest.extractionFailed,
+        pages: [...pages.entries()]
+          .sort(([a], [b]) => a - b)
+          .map(([page, entry]) => ({
+            page,
+            text: entry.text.join('\n\n'),
+            sourceChunkIds: entry.chunkIds,
+          })),
+      };
+    }),
   };
 }
 
