@@ -1165,6 +1165,33 @@ interface ModerationFlagResponse {
 
 The reporter is never named in a response (A-ID-5), and a student never sees a flag count (D30, O3).
 
+#### 5.5.15 Health (public liveness)
+
+Was referenced by the section 5.4 index and never defined (handoff I-03). Defined by **D76** in
+Phase 1, which is the phase that built the route. It reports liveness and the *presence* of a
+provider configuration, never a value (C7): `llmProvider` is the resolved provider id, and no key,
+hash, connection string or commit credential appears in the body.
+
+```ts
+interface HealthResponse {
+  ok: boolean;
+  db: 'up' | 'down';
+  llmProvider: 'gemini' | 'deepseek' | 'mock';
+  commit: string;
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `ok` | `true` only when there are no configuration problems **and** the database answered. |
+| `db` | `down` also covers "`DATABASE_URL` is not set". The process stays alive and the route returns `200` in both cases: WP-01 requires `db: "down"` without a crash, so a missing `DATABASE_URL` is a *degraded* configuration problem rather than a startup abort (**D77**). An unreachable database is likewise `down`, never a `5xx`. |
+| `llmProvider` | The configured provider id (D61). Not a model id and not a credential. |
+| `commit` | Short commit SHA of the running build, or `unknown`. Resolved from `.git` so that no new environment-variable name is introduced. |
+
+The route is public and `Cache-Control: no-store`. It adds no information an unauthenticated
+caller could use to probe a key: a present-but-invalid provider key makes `ok: false`, and the
+response says nothing about which variable is at fault.
+
 ### 5.6 Request limits
 
 | Limit | Value | Enforced where | Error |

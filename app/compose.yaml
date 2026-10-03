@@ -1,0 +1,24 @@
+# Path A fallback only -- `docs/12-OPERATIONS.md` S3.4.
+#
+# The primary development database is path C: the native PostgreSQL 18 Windows service
+# `postgresql-x64-18` on host port 5432 (D66). That port is already occupied, so this
+# compose service MUST stay on host port 5433; using it also means changing DATABASE_URL
+# to `postgresql://user:password@localhost:5433/assignment_assistant` (12 S3.4).
+#
+# Docker Desktop must be running first; the daemon is not started by default.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: assignment_assistant
+    ports: ["5433:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d assignment_assistant"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:

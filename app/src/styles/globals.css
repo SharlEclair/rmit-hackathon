@@ -1,0 +1,24 @@
+/*
+ * app/src/styles/globals.css -- the single stylesheet entry point (`17` S6.2).
+ *
+ * This is the `css` path in `components.json`. `layout.tsx` imports it once.
+ *
+ * Tailwind v4 ordering note (decision **D75**). `17` S6.2 says "imports the four files
+ * above in that order, then the three Tailwind directives". Tailwind v4 replaced the
+ * three `@tailwind` directives with one `@import "tailwindcss"`, and its `@config`
+ * directive must be declared before the engine import. The order below is therefore
+ * config -> engine -> the four token files.
+ *
+ * Precedence does not depend on that textual order. L1/L2 custom properties are
+ * declared on `:root` **outside** any `@layer`, and an unlayered rule beats every
+ * layered rule, so the meaning layer always wins over Tailwind's `theme`/`base` layers
+ * regardless of position. L3 typography utilities are declared inside `@layer
+ * components` so they are overridable by a component, which is the one direction
+ * `17` S6.1 permits.
+ */
+@config "../../tailwind.config.ts";
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./typography.css";
+@import "./texture.css";
+@import "./motion.css";

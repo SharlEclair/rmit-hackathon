@@ -1,0 +1,9 @@
+/*
+ * Duration and easing tokens, plus the `prefers-reduced-motion` block -- `17` S10.5/S6.2.
+ *
+ * OWNERSHIP / STATE: landed by the first UI phase (WP-06/WP-07); see `tokens.css`.
+ *
+ * The reduced-motion block is not optional when motion arrives: a token that animates
+ * without a `prefers-reduced-motion` escape is an accessibility defect, so it belongs in
+ * this file rather than at each call site.
+ */

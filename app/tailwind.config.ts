@@ -1,0 +1,56 @@
+// Tailwind v4 is CSS-first. This file exists because `17-DESIGN-SYSTEM.md` S6.2/S6.3
+// names it as the theme surface (and `components.json` points at it), so the paths in
+// that spec hold; it is loaded from `src/styles/globals.css` through Tailwind v4's
+// `@config` compatibility directive, which keeps v3 semantics: a key under `theme`
+// REPLACES the default namespace, and only `theme.extend` would merge.
+//
+// Decision: D75 (docs/01-DECISIONS.md section J). Constraint the value ordering
+// enforces: a utility that would produce a default-Tailwind look must not be
+// reachable by accident, so there is no default-theme spread anywhere in this file.
+//
+// The values below are CSS custom properties, not literals. The hex literals live in
+// `src/styles/tokens.css` and nowhere else (`17` S6.1 rule 2).
+/** @type {import('tailwindcss').Config} */
+const config = {
+  content: ['./src/**/*.{ts,tsx}'],
+  theme: {
+    colors: {
+      transparent: 'transparent',
+      current: 'currentColor',
+      page: 'var(--surface-page)',
+      card: 'var(--surface-card)',
+      official: 'var(--surface-official)',
+      approved: 'var(--surface-approved)',
+      interpretation: 'var(--surface-interpretation)',
+      peer: 'var(--surface-peer)',
+      'document-mat': 'var(--surface-document-mat)',
+      ink: 'var(--text-primary)',
+      muted: 'var(--text-secondary)',
+      inverse: 'var(--text-inverse)',
+      default: 'var(--border-default)',
+      'border-official': 'var(--border-official)',
+      'border-approved': 'var(--border-approved)',
+      'border-interpretation': 'var(--border-interpretation)',
+      'border-peer': 'var(--border-peer)',
+      error: 'var(--state-error)',
+      warning: 'var(--state-warning)',
+      success: 'var(--state-success)',
+      info: 'var(--state-info)',
+    },
+    fontFamily: {
+      editorial: 'var(--font-editorial)',
+      ui: 'var(--font-ui)',
+      mono: 'var(--font-mono)',
+    },
+    borderRadius: { sheet: '2px', control: '4px', card: '6px', full: '9999px' },
+    boxShadow: {
+      card: 'var(--shadow-card)',
+      overlay: 'var(--shadow-overlay)',
+    },
+    spacing: { 0: '0', 1: '4px', 2: '8px', 3: '12px', 4: '16px', 6: '24px', 8: '32px', 12: '48px' },
+    screens: { sm: '640px', md: '768px', lg: '1024px', xl: '1280px' },
+  },
+  plugins: [],
+};
+
+export default config;

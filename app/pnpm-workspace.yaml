@@ -1,0 +1,16 @@
+# pnpm 12 reads build-script approval from here, not from `package.json`'s `pnpm` field.
+#
+# These are the only dependencies whose install scripts are allowed to run:
+#   esbuild        -- installs the platform binary that tsx and vitest execute;
+#   unrs-resolver  -- the native resolver behind eslint-config-next's import plugin.
+# Everything else is denied by default. Adding a name here grants arbitrary code execution
+# at install time in a PUBLIC repository, so each addition needs a reason above it.
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+
+# pnpm's release-age policy held eslint 10.12.0 back on the first resolve; `04` S2.2 pins it
+# and Phase 1 chose it deliberately (no eslint version is named in the pin table), so the
+# pin wins for this one package only.
+minimumReleaseAgeExclude:
+  - eslint@10.12.0

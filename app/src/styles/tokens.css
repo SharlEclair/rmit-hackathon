@@ -1,0 +1,22 @@
+/*
+ * L1 (system) and L2 (meaning) design tokens -- `17` S6.1/S6.2.
+ *
+ * The ONLY file in the application allowed to contain a hex literal (`17` S6.1 rule 2).
+ * Declared on `:root` outside any `@layer` so an unlayered rule outranks Tailwind's
+ * layered output; see the note in `globals.css`.
+ *
+ * OWNERSHIP / STATE: the token *values* are owned by `07-UI-UX-SPEC.md` S2.3 and
+ * `17-DESIGN-SYSTEM.md` S3, and are landed by the first UI phase (WP-06/WP-07), not by
+ * Phase 1. This file is deliberately empty of declarations rather than seeded with
+ * invented values: `17` S6.1 rule 2 forbids guessing a value, and a wrong value here
+ * would silently invalidate the token-parity gate (G4). Phase 1 exists so the *path*
+ * and the Tailwind v4 mechanism are settled (D75), not so the palette is.
+ *
+ * What the first UI phase adds here, in this order:
+ *   L1  --surface-*, --text-*, --border-*, --state-*, --shadow-*, --font-*, radii
+ *   L2  --surface-official, --surface-approved, --surface-interpretation, --surface-peer,
+ *       --surface-document-mat, --border-official, --border-approved,
+ *       --border-interpretation, --border-peer
+ *
+ * `--border-peer` is `#667085` (D65). Do not "fix" it to `#98A2B3` (trap T11).
+ */

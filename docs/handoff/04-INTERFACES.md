@@ -36,3 +36,21 @@ Some signatures cannot move without a register change, so they are effectively f
   `display_number` through the single view `discussion_author_display` (**D55**, trap **T14**).
 - **Environment variable names:** [`.env.example`](../../.env.example) is the contract; `12`
   section 2.3 reproduces it and defers to it.
+
+## 3. Frozen in Phase 1 (WP-01)
+
+Frozen at commit `phase-01-wp01`. A later phase may **add**, but changing any of these means:
+raise it in [`05-ISSUES.md`](05-ISSUES.md), record why in [`02-DECISIONS.md`](02-DECISIONS.md),
+then update this file in the same commit.
+
+| Interface | File | What it guarantees | Authority |
+|---|---|---|---|
+| `HealthResponse` | `app/src/lib/api/types.ts` | `{ ok, db: 'up'\|'down', llmProvider, commit }`; HTTP `200` always; no secret. `db: 'down'` also means "`DATABASE_URL` unset", without the process dying. | **D76**, WP-01; `06` section 5.5.15 |
+| `AppConfig`, `ConfigProblem`, `readConfig`, `getConfig`, `getConfigRead`, `ConfigError`, `EXIT_CONFIG` | `app/src/lib/config.ts` | **The only module that reads `process.env`.** Two problem severities: `fatal` (throws `ConfigError`, CLI exit `78`) and `degraded` (`/api/health` reports `ok: false`). Reports variable **names** only, never values (C7). | **D77**, WP-01; `04` sections 5.4, 11 |
+| `LlmThinkingKey`, `LlmThinkingLevels` | `app/src/lib/config.ts` | Thinking levels keyed by **env var** (`guardrail`, `assistant`, `analyst`, `moderator`, `extraction`), deliberately **not** by `AiCapability`. Do not key it by capability: that union is Phase 2's to freeze. | **D77**; `04` sections 5.3, 11; **D68** |
+| `getSql`, `getDb`, `probeDatabase`, `closeDb` | `app/src/lib/db/client.ts` | The only Postgres driver surface. Nothing outside `src/lib/db/` imports the driver (`04` section 4, property 2). `probeDatabase` never throws. | `04` sections 2.1, 4; D37 |
+| `MigrationFile`, `MigrateResult`, `migrationHead`, `listMigrations`, `migrationsDir`, `migrate` | `app/src/lib/db/migrate.ts` | Files are `NNNN_<slug>.sql` under `src/lib/db/migrations/`, forward-only, **immutable once applied** (SHA-256 in the `schema_migrations` ledger), each in its own transaction. `migrate()` is idempotent. | **D74**; `06` section 6.7; `11` WP-01 |
+| `pnpm lint` also runs the C8 endpoint gate | `app/scripts/check-c8.mjs` | Fails if a provider hostname or an inline `Authorization: Bearer` appears under `src/` outside `src/lib/llm/`. | **D78**; `04` section 5.9 check 2 |
+
+**Not frozen, deliberately.** `expectedRevision` still has no storage; do not add a PATCH route that
+silently ignores it (`05-ISSUES.md` **I-16**, owner Phase 2/4).

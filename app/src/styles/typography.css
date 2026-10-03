@@ -1,0 +1,7 @@
+/*
+ * L3 type utilities bound to the type scale in `17` S2.4 -- `17` S6.2.
+ *
+ * OWNERSHIP / STATE: landed by the first UI phase (WP-06/WP-07) together with
+ * `tokens.css`. See the note there. Declarations belong inside
+ * `@layer components` so a component may override them (`17` S6.1 rule 3).
+ */
