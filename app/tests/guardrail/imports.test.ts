@@ -105,13 +105,17 @@ describe('the guardrail is offline by construction', () => {
     }
   });
 
-  it('classifier.ts is the only file allowed to reach src/lib/llm, and at Phase 3 none does', () => {
+  it('exactly one file may reach src/lib/llm, and it is the L4 adapter', () => {
     const llmImporters = files.filter((file) =>
       importSpecifiers(sourceOf(file)).some((specifier) => specifier.startsWith('@/lib/llm')),
     );
-    // The seam is the port, deliberately: src/lib/llm/ is Phase 2's (18 section 5.1). If a later
-    // phase wires the adapter here, the assertion becomes ['classifier.ts'] -- not "any file".
-    expect(llmImporters).toEqual([]);
+    // The seam is the port, deliberately: src/lib/llm/ is Phase 2's (18 section 5.1). Phase 5 wires
+    // the adapter, and the file that does it is named here rather than relaxed to "any file":
+    // `05` section 12.1's rule is *one* file, and this assertion is what keeps it one. Phase 3's
+    // comment on this test anticipated exactly this edit: "If a later phase wires the adapter here,
+    // the assertion becomes ['classifier.ts'] -- not 'any file'." The wiring landed in
+    // `classifier-port.ts` so that the frozen `classifier.ts` was not edited.
+    expect(llmImporters).toEqual(['classifier-port.ts']);
     expect(sourceOf('classifier.ts')).toContain('GuardrailClassifierPort');
   });
 

@@ -1,22 +1,127 @@
 /*
- * L1 (system) and L2 (meaning) design tokens -- `17` S6.1/S6.2.
+ * L1 (primitive) and L2 (semantic) design tokens -- `17` S6.1/S6.2.
  *
  * The ONLY file in the application allowed to contain a hex literal (`17` S6.1 rule 2).
- * Declared on `:root` outside any `@layer` so an unlayered rule outranks Tailwind's
- * layered output; see the note in `globals.css`.
+ * Declared on `:root` outside any `@layer` (decision D75): an unlayered rule outranks
+ * Tailwind's layered output, so the meaning layer wins regardless of import order.
  *
- * OWNERSHIP / STATE: the token *values* are owned by `07-UI-UX-SPEC.md` S2.3 and
- * `17-DESIGN-SYSTEM.md` S3, and are landed by the first UI phase (WP-06/WP-07), not by
- * Phase 1. This file is deliberately empty of declarations rather than seeded with
- * invented values: `17` S6.1 rule 2 forbids guessing a value, and a wrong value here
- * would silently invalidate the token-parity gate (G4). Phase 1 exists so the *path*
- * and the Tailwind v4 mechanism are settled (D75), not so the palette is.
+ * L1 is `17` S3.2, value for value. L2 is `07-UI-UX-SPEC.md` S2.3, name for name and value
+ * for value, expressed as a reference to the L1 primitive `17` S3.2 provides for it: L1
+ * never references L2, L2 may reference L1 (`17` S6.1 rule 1). The gate in
+ * `scripts/check-design.mjs` resolves every reference and fails if a name, a resolved
+ * value, or the primitive ramp differs from the docs (`G4`).
  *
- * What the first UI phase adds here, in this order:
- *   L1  --surface-*, --text-*, --border-*, --state-*, --shadow-*, --font-*, radii
- *   L2  --surface-official, --surface-approved, --surface-interpretation, --surface-peer,
- *       --surface-document-mat, --border-official, --border-approved,
- *       --border-interpretation, --border-peer
+ * `--border-peer` is `#667085` (D65, trap T11) via `--p-slate-500`. `17` S3.2/S3.6/S11.5
+ * still describe `#98A2B3` as the current value; that reading is stale. Do not "fix" this
+ * back to `#98A2B3`.
  *
- * `--border-peer` is `#667085` (D65). Do not "fix" it to `#98A2B3` (trap T11).
+ * FONTS -- degradation path (`17` S2.2/S2.3, I-44 step 3, recorded as D106 in `17` S15).
+ * `17` S2.3 wants seven committed woff2 files under `app/src/styles/fonts/` and one
+ * `next/font/local` declaration per family. Those binaries are NOT in this repository and
+ * are not invented, so the three `next/font` CSS variables (`--font-newsreader`,
+ * `--font-plex-sans`, `--font-plex-mono`) do not exist and each stack below starts at the
+ * metric-compatible fallbacks `17` S2.2 rule 2 lists. Adding the binaries later is a
+ * one-line change per family: declare the variable in `fonts.ts` with `localFont` and
+ * prepend `var(--font-<family>)` to the matching stack here. Nothing is fetched at build
+ * time or run time (`G5`), and no stack contains Inter, Roboto, Arial or `system-ui`
+ * (`17` S2.2 rule 1). The stacks are duplicated in `fonts.ts` -- which is the module that
+ * exports them -- and the gate asserts the two copies agree.
  */
+:root {
+  /* ---- L1 primitives (`17` S3.2). No component reads this layer (S6.1 rule 1). ---- */
+
+  /* ink - the institutional navy family, anchored on `07`'s --accent-official */
+  --p-ink-950: #0B1F33;
+  --p-ink-800: #1F4E79;
+  --p-ink-700: #2C6499;
+  --p-ink-200: #B9CFE3;
+  --p-ink-100: #DCE7F1;
+
+  /* paper - neutral application surface plus the warm substrate reserved for T1 */
+  --p-paper-000: #FFFFFF;
+  --p-paper-050: #FAF9F7;
+  --p-paper-100: #F5F3EF;
+  --p-paper-200: #ECE8E1;
+  --p-page-050: #F7F8FA;
+
+  /* amber - attention, meaning "AI interpretation" */
+  --p-amber-050: #FFFBF0;
+  --p-amber-200: #F7E3C8;
+  --p-amber-700: #B54708;
+
+  /* green - tutor authority */
+  --p-green-050: #F6FEF9;
+  --p-green-700: #027A48;
+
+  /* slate - text and structural greys */
+  --p-slate-900: #101828;
+  --p-slate-600: #475467;
+  --p-slate-500: #667085;
+  --p-slate-400: #98A2B3;
+  --p-slate-300: #D0D5DD;
+
+  /* states */
+  --p-red-700: #B42318;
+  --p-blue-700: #175CD3;
+
+  /* ---- L2 semantic: `07` S2.3, name for name and value for value ---- */
+
+  /* Surfaces */
+  --surface-page: var(--p-page-050);
+  --surface-card: var(--p-paper-000);
+  --surface-official: var(--p-paper-000);
+  --surface-approved: var(--p-green-050);
+  --surface-interpretation: var(--p-amber-050);
+  --surface-peer: var(--p-paper-000);
+
+  /* Borders. The style carries the tier as much as the hue (`07` S2.2). */
+  --border-default: var(--p-slate-300);
+  --border-official: var(--p-ink-800);
+  --border-approved: var(--p-green-700);
+  --border-interpretation: var(--p-amber-700);
+  --border-peer: var(--p-slate-500);
+
+  /* Accents */
+  --accent-official: var(--p-ink-800);
+  --accent-approved: var(--p-green-700);
+  --accent-interpretation: var(--p-amber-700);
+  --accent-peer: var(--p-slate-600);
+
+  /* States */
+  --state-error: var(--p-red-700);
+  --state-warning: var(--p-amber-700);
+  --state-success: var(--p-green-700);
+  --state-info: var(--p-blue-700);
+
+  /* Text */
+  --text-primary: var(--p-slate-900);
+  --text-secondary: var(--p-slate-600);
+  --text-inverse: var(--p-paper-000);
+
+  /* Shadow. `07` S2.3 states the value itself; there is no primitive for a shadow. */
+  --shadow-card: 0 1px 2px rgba(16,24,40,0.06);
+
+  /* Focus. `07` S2.3's row is a sentence ("2px solid --state-info with 2px offset, always
+     visible"), so `17` S3.3 splits it: the ring below plus --focus-ring-width and
+     --focus-ring-offset in the additions block. The gate checks all three against the doc
+     and against `17` S11.1, which is the rule that consumes them. */
+  --focus-ring: 2px solid var(--state-info);
+
+  /* ---- L2 additions named by `17` rather than by `07` ---- */
+
+  /* `17` S3.3: the four added semantic tokens. */
+  --surface-document-mat: var(--p-paper-050);
+  --surface-document-edge: var(--p-paper-200);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* `17` S3.5 calls --shadow-overlay a new semantic token, and `17` S6.3's Tailwind
+     boxShadow map (already committed in app/tailwind.config.ts) reads it. Without the
+     declaration that theme key resolves to nothing, which is the I-44 defect class. */
+  --shadow-overlay: 0 8px 24px rgba(16,24,40,0.12), 0 1px 2px rgba(16,24,40,0.08);
+
+  /* `17` S2.2/S2.3 font stacks in the degradation path described in this file's header. */
+  --font-editorial: Georgia, "Times New Roman", serif;
+  --font-ui: "DejaVu Sans", Verdana, sans-serif;
+  --font-mono: "DejaVu Sans Mono", Consolas, monospace;
+}

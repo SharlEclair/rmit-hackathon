@@ -1,9 +1,47 @@
 /*
- * Duration and easing tokens, plus the `prefers-reduced-motion` block -- `17` S10.5/S6.2.
+ * Duration and easing tokens, plus the `prefers-reduced-motion` block -- `17` S6.2, S10.4,
+ * S10.5.
  *
- * OWNERSHIP / STATE: landed by the first UI phase (WP-06/WP-07); see `tokens.css`.
+ * `07` S2.7 caps motion at 150ms opacity and transform transitions, and `17` S10.4 defers
+ * to that ceiling: 150ms is a hard limit, not a preference. `scripts/check-design.mjs`
+ * fails on any longer duration anywhere in `src/`, and on any `@keyframes` block outside
+ * this file and `src/components/ui/skeleton.tsx` (`G8`).
  *
- * The reduced-motion block is not optional when motion arrives: a token that animates
- * without a `prefers-reduced-motion` escape is an accessibility defect, so it belongs in
- * this file rather than at each call site.
+ * Declared on `:root` outside any `@layer`, like the L1/L2 tokens, for the reason recorded
+ * in `globals.css` (decision D75): an unlayered custom property outranks Tailwind's layered
+ * output. The reduced-motion block overrides the same names, so a component reads one
+ * token and never branches on the media query (`17` S10.5 rule 1).
+ *
+ * Two easings only. No spring, no bounce, no overshoot, no `steps()`, and no easing with a
+ * control point outside [0, 1] (`17` S10.4 rule 2).
  */
+:root {
+  --motion-fast: 90ms;   /* hover, focus-adjacent colour changes */
+  --motion-base: 120ms;  /* the entrance sequence, toast entry */
+  --motion-slow: 150ms;  /* accordion disclosure, progress fill. HARD CEILING */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/*
+ * Under reduced motion every duration collapses to zero rather than being skipped, so no
+ * state change is lost (`17` S10.5 rule 1). The `!important` declarations are deliberate:
+ * they must beat an inline animation a component sets, and the alternative -- a
+ * per-component branch -- is exactly what S10.5 rule 1 forbids.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+
+  [data-content-class] {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  [data-skeleton] {
+    animation: none !important;
+  }
+}

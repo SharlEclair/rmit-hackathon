@@ -1,7 +1,37 @@
 /*
- * The single paper-grain selector -- `17` S3.4/S6.2.
+ * The single paper-grain selector -- `17` S3.4/S6.2, gated by G9.
  *
- * There is exactly one texture rule in the product. A second one is a defect.
+ * There is exactly one texture rule in the product, and it applies to the T1 content class
+ * only: an official brief should read as a document that was uploaded, not as a page that
+ * was generated (`17` S1.3 rule 1). `scripts/check-design.mjs` counts grain-applying
+ * selectors across `src/` and fails on a second one, so this rule must not be copied into
+ * a component, a module stylesheet, or an inline `<style>`.
  *
- * OWNERSHIP / STATE: landed by the first UI phase (WP-06/WP-07); see `tokens.css`.
+ * Performance notes that are part of the rule (`17` S3.4): the SVG is a data URI (one
+ * cached resource, decoded once), the layer is absolutely positioned with
+ * `pointer-events: none` so it never affects layout or hit testing, opacity is capped at
+ * 0.035, and there is no `filter`/`backdrop-filter` on the panel or any ancestor, which
+ * would turn a static tile into per-frame compositing.
  */
+[data-content-class="official"] {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-content-class="official"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-repeat: repeat;
+  background-size: 120px 120px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* The grain is a screen affordance, not part of the document. */
+@media print {
+  [data-content-class="official"]::before { display: none; }
+}

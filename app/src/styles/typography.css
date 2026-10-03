@@ -1,7 +1,171 @@
 /*
- * L3 type utilities bound to the type scale in `17` S2.4 -- `17` S6.2.
+ * L3 type utilities bound to the scale in `17` S2.4 -- `17` S6.2, and the layer `17`
+ * S2.4's rules (measure, casing, figures) refer to.
  *
- * OWNERSHIP / STATE: landed by the first UI phase (WP-06/WP-07) together with
- * `tokens.css`. See the note there. Declarations belong inside
- * `@layer components` so a component may override them (`17` S6.1 rule 3).
+ * Declared inside `@layer components` so a component may override them with a Tailwind
+ * utility, which is the one override direction `17` S6.1 rule 3 permits. Every class name
+ * is exactly the `17` S2.4 "Token" column, so a component can be read against the table:
+ *
+ *   display-1 display-2 heading-1 heading-2 heading-3 doc-body doc-caption body tight
+ *   ui-sm badge mono mono-sm metric
+ *
+ * plus tnum (S2.4 rule 3), measure-serif / measure-sans / measure-quote (S2.4 rule 2).
+ *
+ * Families resolve through the L2 tokens in `tokens.css`; nothing here hard-codes a family
+ * name or a colour. The serif role is bound to --font-editorial and is allowed only where
+ * `17` S2.4 rule 6 permits it (`G10`: never AI interpretation prose, peer prose, or a
+ * control label).
+ *
+ * `17` S2.4 rule 1: weights are 400 and 600 only. Weight 500 must not appear here.
  */
+@layer components {
+  /* Publication masthead, sign-in wordmark. */
+  .display-1 {
+    font-family: var(--font-editorial);
+    font-size: 40px;
+    line-height: 1.10;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  /* Screen masthead. */
+  .display-2 {
+    font-family: var(--font-editorial);
+    font-size: 30px;
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.010em;
+  }
+
+  /* Page heading. */
+  .heading-1 {
+    font-family: var(--font-editorial);
+    font-size: 28px;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  /* Section heading, including a content-class panel header. */
+  .heading-2 {
+    font-family: var(--font-editorial);
+    font-size: 20px;
+    line-height: 1.30;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  /* Panel and card heading, Milestone group header. */
+  .heading-3 {
+    font-family: var(--font-ui);
+    font-size: 16px;
+    line-height: 1.40;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  /* Verbatim excerpt inside AuthorityQuote only. Serif prose stays out of T5 bodies. */
+  .doc-body {
+    font-family: var(--font-editorial);
+    font-size: 17px;
+    line-height: 1.60;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  /* Source caption beneath an official page. */
+  .doc-caption {
+    font-family: var(--font-editorial);
+    font-size: 15px;
+    line-height: 1.50;
+    font-weight: 400;
+    font-style: italic;
+    letter-spacing: 0;
+  }
+
+  /* Default reading size: post bodies, assistant turns. */
+  .body {
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.50;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  /* Dense rows, helper text, Query row metadata. */
+  .tight {
+    font-family: var(--font-ui);
+    font-size: 14px;
+    line-height: 1.45;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  /* Tutor table cells, secondary metadata, filter labels. */
+  .ui-sm {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  /* All badges, uppercase. The floor for badge size: 11px at weight 600 (`17` S3.6).
+     The markup keeps `07` S2.5's sentence-case string and this utility supplies the
+     uppercase presentation, so the fixed string is never retyped. */
+  .badge {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    line-height: 1.20;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Request ids, source filenames, Source: labels, page references. */
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.50;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  /* Anonymous Student #N, timestamps, elapsed time. */
+  .mono-sm {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.40;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  /* Assignment Health headline figures. Never animated (`17` S10.6). */
+  .metric {
+    font-family: var(--font-ui);
+    font-size: 24px;
+    line-height: 1.20;
+    font-weight: 600;
+    letter-spacing: -0.010em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Any column of numbers, the resolution rate, the Checklist count (`17` S2.4 rule 3).
+     Numbers in prose stay proportional. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Measure caps (`17` S2.4 rule 2). The AuthorityQuote block is the 60 one. */
+  .measure-serif {
+    max-width: 68ch;
+  }
+
+  .measure-sans {
+    max-width: 72ch;
+  }
+
+  .measure-quote {
+    max-width: 60ch;
+  }
+}

@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "tsx --env-file-if-exists=.env src/lib/db/migrate.ts --check && next start",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . && node scripts/check-c8.mjs",
+    "lint": "eslint . && node scripts/check-c8.mjs && node scripts/check-design.mjs",
     "test": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run",
     "db:migrate": "tsx --env-file-if-exists=.env src/lib/db/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env scripts/seed.ts"
