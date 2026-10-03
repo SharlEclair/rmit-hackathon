@@ -114,8 +114,29 @@ async function call(
   }
 }
 
-function bodyPath(body: unknown, path: string): unknown {
-  let current: unknown = body;
+/**
+ * A page as HTML, with the session cookie.
+ *
+ * Distinct from `call` because a page is not JSON: `call` parses the body and returns `null` for HTML,
+ * so a page assertion needs the text. It also asserts the rendered markup rather than a payload, which
+ * is the only way to check that a badge a payload carries actually reaches a screen (C3).
+ */
+async function page(path: string, cookie: string): Promise<{ status: number; html: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${BASE_URL}${path}`, {
+      headers: { accept: 'text/html', cookie },
+      signal: controller.signal,
+      redirect: 'manual',
+    });
+    return { status: response.status, html: await response.text() };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function bodyPath(body: unknown, path: string): unknown {  let current: unknown = body;
   for (const key of path.split('.')) {
     if (typeof current !== 'object' || current === null) return undefined;
     current = (current as Record<string, unknown>)[key];
@@ -360,6 +381,32 @@ async function main(): Promise<void> {
     `canPublish=${String(bodyPath(review.body, 'gates.canPublish'))} blockers=${JSON.stringify(blockers)}`,
     bodyPath(review.body, 'gates.canPublish') === false &&
       (blockers ?? []).includes('NO_POLICY_RULE_APPROVED'),
+  );
+
+  // --- the review page renders, and C3's badge is on it ---------------------
+  //
+  // This is the page Phase 4 deliberately did not build (I-44: `tokens.css` declared no token, so no
+  // screen could render correctly). Phase 5 built the token layer and then the page, so the check that
+  // was impossible here is now the one that matters: **C3's marker is on screen for an unapproved AI
+  // artifact**. The assertion is on the rendered HTML, not on the bundle, because the bundle could be
+  // correct while the page showed an unmarked artifact -- which is precisely the failure C3 forbids.
+  const reviewPage = await page(`/tutor/assignments/${ids.assignment}/review`, tutorCookie);
+  record(
+    '4b. the review page renders, and every unapproved AI artifact carries the C3 marker (C3, I-44)',
+    '200 with "Review queue", "Approve", and the fixed pre-approval string',
+    `status ${String(reviewPage.status)}, hasQueue ${String(reviewPage.html.includes('Review queue'))}, ` +
+      `hasApprove ${String(reviewPage.html.includes('Approve'))}, ` +
+      `hasMarker ${String(reviewPage.html.includes('AI generated - requires tutor approval'))}`,
+    reviewPage.status === 200 &&
+      reviewPage.html.includes('Review queue') &&
+      reviewPage.html.includes('Approve') &&
+      reviewPage.html.includes('AI generated - requires tutor approval'),
+  );
+  record(
+    '4c. the page states that approving is not publishing (D99)',
+    'the sentence is present, so the two controls cannot be confused for one',
+    `present ${String(reviewPage.html.includes('only publishing makes it student-visible'))}`,
+    reviewPage.html.includes('only publishing makes it student-visible'),
   );
 
   const artifacts = (bodyPath(review.body, 'artifacts') ?? []) as Array<{
