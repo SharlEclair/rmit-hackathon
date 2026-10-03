@@ -3,9 +3,9 @@
 **Purpose.** What is actually built, what is not, and the command that proves each claim. **This
 file is rewritten every session.** It records commands and observed output, never adjectives.
 
-**Tag:** `phase-04-complete` -- the Phase 4 exit commit. Phase 4's three code commits are `a509dbd`
+**Tag:** `phase-04-complete` -- the Phase 4 exit commit `0a72123`. Phase 4's three commits are `a509dbd`
 (the approval boundary, the revision token and gate rule G1), `1077faa` (the Analyst output ceiling
-and the live-path evidence) and the exit commit that carries this file. **Pushed:** see section 7;
+and the live-path evidence) and `0a72123` (the exit documents). **Pushed:** see section 7;
 the tag order is `phase-00-complete` -> `phase-01-complete` -> `phase-03-complete` -> `phase-02-complete`
 -> `phase-04-complete`, and it is **not** the commit order (Phases 2 and 3 ran concurrently).
 **Last session:** 04.
@@ -167,7 +167,11 @@ Regenerate rather than trust any of it; where a file and `docs/**` disagree, the
 
 ## 7. Push state
 
-`git push origin main` and `git push origin phase-04-complete` were run at the Phase 4 exit; the
-observed result is in the Session 04 entry. `git rev-list --left-right --count origin/main...HEAD`
-should read `0  0`. **If it does not, the push is the first thing to re-run** -- the hackathon's
-submission evidence is the public repository, not this checkout (**I-08**).
+`git push origin main` -> `36a3598..0a72123  main -> main`; `git push origin phase-04-complete` ->
+`* [new tag]  phase-04-complete -> phase-04-complete`. `git ls-remote` confirms `refs/heads/main` and
+`refs/tags/phase-04-complete` both at `0a72123`, and an anonymous
+`GET https://api.github.com/repos/SharlEclair/rmit-hackathon` returns `private: false`,
+`visibility: public`, `default_branch: main` (**I-07** stays resolved).
+`git rev-list --left-right --count origin/main...HEAD` reads `0  0`. **If it does not, the push is the
+first thing to re-run** -- the hackathon's submission evidence is the public repository, not this
+checkout (**I-08**).

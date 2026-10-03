@@ -694,7 +694,7 @@ command under a full-access file sandbox produced `52 passed (52)`. Recorded in 
 
 **Phase:** 4   **Status:** complete, with WP-06's review page and provenance badge **not delivered**
 (recorded in `11` WP-06's status note and `05-ISSUES.md` I-44, with the reason)
-**Commit range:** `36a3598..<exit>` -- `a509dbd` (the approval boundary), `1077faa` (the live path)
+**Commit range:** `36a3598..0a72123` -- `a509dbd` (the approval boundary), `1077faa` (the live path), `0a72123` (the exit documents)
 **Tag:** `phase-04-complete`
 **Spec docs read:** `AGENTS.md`, `00-INDEX`, `handoff/00-README`, `handoff/01`-`06`, `18` S5/S5.1,
 `11` WP-06 (and S6.2's file-ownership table), `01-DECISIONS.md` (full), `06`
