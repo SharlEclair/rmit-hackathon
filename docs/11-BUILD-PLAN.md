@@ -4,6 +4,14 @@
 
 **Status of the repository at the time of writing.** Documentation only. `app/` does not exist. The repository **is** under version control: `origin` is `https://github.com/SharlEclair/rmit-hackathon.git` and history stands at 7 commits (HEAD `da00f71`). What remains genuinely unstarted in WP-01 is the application skeleton, the package manifest and the typecheck/lint configuration -- not `git init`. Public visibility of the remote is not verified (an anonymous fetch returns HTTP 404).
 
+> **Superseded at the Phase 7 freeze (`24bdf64`'s successor).** The paragraph above is the state at the
+> time of writing and is kept as history. What is true now: `app/` **exists and is built** through Phase 6,
+> the repository is **public** (an anonymous GitHub API fetch returns `private=false,
+> visibility=public`) which resolves the doubt above, and **every commit is dated `2026-10-04`**
+> (`git log --format=%ad --date=short | sort -u` returns one date). The commit count is deliberately not
+> restated -- see `handoff/03-INVARIANTS.md` **T42** for why. WP-01 through WP-11 are complete and WP-12 is
+> partly done; the per-packet state is in [`14-HACKATHON-SUBMISSION.md`](14-HACKATHON-SUBMISSION.md) S5.2.
+
 **Rules this plan obeys.** `AGENTS.md` S2 (C1-C8), S4.3 (verify before claiming), S7 (hackathon obligations); `CONTRIBUTING.md` S2 (commit conventions) and S4 (definition of done).
 
 ---
@@ -814,7 +822,7 @@ Likelihood and impact are H / M / L. "Trigger" is the observable event that mean
 | R4 | **No working end-to-end path** -- every part is nearly done and nothing connects | M | H | The walking skeleton in WP-01 makes the first connection on Friday night. `pnpm demo:smoke` in WP-12 becomes a daily check from Saturday noon onward. Integration is never deferred to the last packet. | WP-06 is not done by Saturday 18:00, or `pnpm demo:smoke` has not passed once by Saturday 22:00. |
 | R5 | **Requirement paraphrase leaks into the UI** -- a model-authored summary of the brief appears where the brief should be (C2, D17) | M | H | The document viewer is the only student-facing surface for requirement text; anywhere else quotes verbatim with a page reference. Add a grep to the smoke script for known brief sentences appearing outside the viewer. | Any screen shows requirement prose that does not exist in the PDF. |
 | R6 | **Approval bypass** -- content reaches students before a tutor approves it | M | H | The transition state machine is one module (WP-06). Every student-facing read filters on `APPROVED`. An integration test requests unapproved content with a student session and expects 403/404. | One item is found student-visible while `NEEDS_REVIEW`. Stop and fix before anything else. |
-| R7 | **The repository is not publicly readable**, and the commit history does not yet span the event window -- the "commit often" evidence requirement is only partly met | M | H | The repository and remote already exist (7 commits, HEAD `da00f71`), so WP-01's `git init` and remote steps are done. Confirm the GitHub visibility setting, then commit per logical change using `CONTRIBUTING.md` S2 conventions. | The repo URL still returns 404 anonymously at Sunday 09:00, or every commit falls inside one hour. |
+| R7 | **The repository is not publicly readable**, and the commit history does not yet span the event window -- the "commit often" evidence requirement is only partly met | M | H | The repository and remote already exist, so WP-01's `git init` and remote steps are done. Confirm the GitHub visibility setting, then commit per logical change using `CONTRIBUTING.md` S2 conventions. **Closed at the Phase 7 freeze: public visibility is verified** (`private=false, visibility=public`) and every commit is dated `2026-10-04`. | The repo URL still returns 404 anonymously at Sunday 09:00, or every commit falls inside one hour. **Neither held.** |
 | R8 | **The demo cannot be deployed** -- it only runs on one laptop | M | M | One documented deploy path ([`12-OPERATIONS.md`](12-OPERATIONS.md) S5), rehearsed once on Saturday evening. A long-lived Node server with local storage is the default; a serverless target requires the S3 driver, because local files do not survive between invocations. | Deployment is not verified by Saturday 20:00. Fall back to the local demo and stop spending time on it. |
 | R9 | **A secret is committed** -- `.env`, a cookie file, or a key reaches the public repository | M | H | `.gitignore` is verified in WP-01. `.env.example` is the only tracked template and contains no real value. Review `git status` before every `git add -A`. | A secret is found in the working tree or in history. Rotate the credential first, then clean history; never the other way round. |
 | R10 | **Key teammate unavailable** -- illness, a lab, an exam, a dead laptop | M | M | Disjoint file ownership by track (S6.2). Every track commits and pushes at least hourly so work is recoverable. The two critical-path packets (WP-05, WP-06) have a named secondary. | A teammate is unreachable for more than two hours during a critical window. Reassign their open packet explicitly and say so on the task board. |
@@ -902,7 +910,7 @@ From `AGENTS.md` S4.3 and `CONTRIBUTING.md` S4, restated so no packet can be clo
 
 ## 9. What this plan does not do
 
-- It does not claim any of it is built. At the time of writing, `app/` does not exist; the repository is under version control (7 commits, HEAD `da00f71`) but contains documentation only.
+- It does not claim any of it is built. At the time of writing, `app/` did not exist. **It now exists and is built through Phase 6** -- see the superseding note at the top of this file and S5.2 of [`14-HACKATHON-SUBMISSION.md`](14-HACKATHON-SUBMISSION.md) for the per-packet state.
 - It does not estimate the demo narrative, the Devpost text, or the presentation build; those are [`13-DEMO-STORY.md`](13-DEMO-STORY.md) and [`14-HACKATHON-SUBMISSION.md`](14-HACKATHON-SUBMISSION.md).
 - It does not guarantee the hour estimates. They are engineering judgement against a codebase that does not exist yet, stated as a range by their inclusion in S1.4's cut list.
 - It does not resolve the open questions. O1-O12 remain the working defaults in [`01-DECISIONS.md`](01-DECISIONS.md); if a packet proves a default wrong, amend that table first.

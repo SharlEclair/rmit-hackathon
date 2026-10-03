@@ -51,7 +51,7 @@ Internal deadlines, set 30 minutes ahead of every official one so a failure has 
 | R3 | **Team registration form** completed by one member | Info: What to Submit | `NOT STARTED` | Lead | Submission confirmation; deadline Sat 2:00 PM |
 | R4 | Register on **Devpost** | Info: Get Started | `NOT STARTED` | Lead | Devpost account(s) |
 | R5 | **Public GitHub repository** created | Info: Get Started | `DONE` | Track A | The repository exists and is pushed: `origin https://github.com/SharlEclair/rmit-hackathon.git`, **66 commits**, tagged `phase-06-complete`. **Public visibility must still be confirmed by an anonymous fetch before the Devpost text claims it** -- see S4.1. An earlier entry recorded a 404 from that fetch, and a 404 is also what a private repository returns |
-| R6 | Commit often, as proof of progress | Info: Requirements | `DONE` | All | `git log --oneline \| wc -l` -> **66 commits, every one dated 2026-10-04**, all inside the event window. Each is one logical change with a message that names what it did and why; no commit spans unrelated work |
+| R6 | Commit often, as proof of progress | Info: Requirements | `DONE` | All | `git log --format=%ad --date=short \| sort -u` -> **exactly one date, `2026-10-04`**, so every commit falls inside the event window. The **count** is deliberately not quoted here: it changes with every commit including the one that edits this line (`T42`). Each commit is one logical change whose message names what it did and why |
 | R7 | Only work inside the hackathon timeline; **no old projects or schoolwork** | Info: Requirements | `DONE` | Lead | All application code is inside the event window, evidenced by R6's commit dates. Prior design material is disclosed in S5 and is not submitted as output |
 | R8 | Only work within the team; **no external assistance** | Info: Requirements | `DONE` (acknowledged) | All | [`CONTRIBUTING.md`](../CONTRIBUTING.md); no outside implementation help accepted |
 | R9 | **AI use appropriately referenced**; explain **how and why** in the Devpost submission | Info: Requirements | `DONE` | Lead | S5, with item 2 and the per-packet log filled in from the commit history rather than reconstructed |
@@ -105,28 +105,44 @@ This section exists so the disclosure in S5 can be checked against it. Verified 
 
 | Artefact | Location | What it demonstrates |
 |---|---|---|
+| **The built application** | `app/` | A Next.js App Router implementation of the whole MVP: **48 API route files** (26 student, 18 tutor, plus auth and the public health route) and the student and tutor UIs |
+| **Four acceptance runs, all green** | `app/scripts/verify-*.ts` | `verify-student` 18/18, `verify-review` 20/20, `verify-analytics` 13/13, `verify-discussion` 20/20 -- all over HTTP against a live server and the seeded database |
+| **A unit and integration suite** | `app/tests/` | **757 tests in 48 files**, passing with no network and no database (`12` section 3.7) |
+| **A scripted demo check** | `app/scripts/smoke.ts` | `pnpm demo:smoke`: 12 checks of the demo machine, from the database through all four acceptance runs. Currently **11/12** -- the twelfth is the fallback recordings, which need a human |
+| **The schema, as committed migrations** | `app/src/lib/db/migrations/` | 13 forward-only migrations, 35 tables and 2 views, with a drift guard (`verify-schema.ts` reports none) |
 | Normative working agreement for AI agents | [`AGENTS.md`](../AGENTS.md) | Constraints C1-C8, including that the AI must never do the assignment for the student |
-| Team working agreement | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | Commit discipline, definition of done, and the list of rules not traded away under time pressure |
-| Project README | [`README.md`](../README.md) | Product model, the refusal excerpt, and an explicit statement that this is the documentation phase |
-| Restructured documentation set | `docs/00-INDEX.md` ... `docs/18-IMPLEMENTATION-PLAN.md` | The implementation contract: decisions, scope, PRD, architecture, guardrails, data model, UI spec, analytics, build plan, demo story |
-| Decisions register | [`docs/01-DECISIONS.md`](01-DECISIONS.md) | D1-D73, open questions O1-O12 with working defaults, and an explicitly rejected list |
+| Team working agreement | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | Commit discipline, definition of done, and the rules not traded away under time pressure |
+| Project README | [`README.md`](../README.md) | Product model and the refusal excerpt |
+| Restructured documentation set | `docs/00-INDEX.md` ... `docs/18-IMPLEMENTATION-PLAN.md` | The implementation contract the build was held to |
+| Decisions register | [`docs/01-DECISIONS.md`](01-DECISIONS.md) | **D1-D109** (`Select-String -Pattern '^\| D\d+ \|'` counts them), open questions with working defaults, and an explicitly rejected list |
+| Trap register | [`docs/handoff/03-INVARIANTS.md`](handoff/03-INVARIANTS.md) | **T1-T43**: things that looked right, failed, and would fail again for the next person |
+| **The commit history** | `git log` | **Every commit dated `2026-10-04`** -- verified: `git log --format=%ad --date=short \| sort -u` returns exactly one date, so the history demonstrably falls inside the event window |
 | Canonical vocabulary | [`docs/15-GLOSSARY.md`](15-GLOSSARY.md) | One term, one meaning, and a do-not-use list |
 | Environment contract | [`.env.example`](../.env.example) | Includes the offline `mock` provider and the per-assignment anonymity key |
 | Frozen originals, unmodified | `docs/project idea.md`, `docs/assignment_assistant_project_handoff.md`, `hackathon info/info.md` | The prior product thinking, preserved verbatim ([`docs/originals/README.md`](originals/README.md)) |
-| Canvas discussion research (retired) | `archive/canvas-scraper/` | A read-only scraper with 28 offline tests, an 8-check integrity gate, and one measured discussion topic (33 posts, 12 root questions) used as a design input. Retired prior work -- not required by, and not used by, the app |
+| Canvas discussion research (retired) | `archive/canvas-scraper/` | A read-only scraper with 28 offline tests and one measured discussion topic (33 posts, 12 root questions) used as a design input. Retired prior work -- not required by, and not used by, the app |
+
+**Sizes are given, not counts, wherever a count would expire.** `T42` records why: a claim about the
+repository, written into a file the repository contains, is stale on commit -- the first version of this
+table said "7 commits" and the disclosure said "66", and both were wrong within the hour. Where a total
+genuinely matters, the command that counts it is given instead.
 
 ### 4.2 What does not exist today, and must not be claimed
 
 | Absent | Consequence for the disclosure |
 |---|---|
-| Application code (`app/` does not exist) | The disclosure must not describe application implementation as done |
-| A commit history that spans the event window | The repository and remote exist (7 commits, HEAD `da00f71`), but all 7 fall inside a 38-minute window on 2026-10-04, so the history does not yet demonstrate sustained progress (S8) |
-| Public visibility of the repository | The remote is configured and pushed, but an anonymous fetch returns HTTP 404, so public access is unconfirmed and must not be claimed |
-| A Devpost submission | `TBD` until Sunday |
-| Team registration | `TBD` until Saturday 2:00 PM |
+| **The complete presentation** | `13-DEMO-STORY.md` section 6.2a records that **beat 5's second half cannot be performed live**: the Attachment UI is unbuilt (I-48), so there is no `+` picker. The server-side modality refusal and the guardrail scan gate both work; the interface does not offer them |
+| **The four fallback recordings** | `demo/fallback/` holds only a README listing them. `pnpm demo:smoke` reports this as a failing check. The image-refusal recording is the priority, because it is what makes the un-performable beat survivable |
+| **`demo/assets/failing-code-screenshot.png`** | `demo/assets/` does not exist. It must extract successfully for the classifier to see it -- a placeholder produces `extractionStatus: failed` and the turn is refused *before* classification |
+| A Devpost submission | `TBD`; the form is not filed and the project URL is unset |
+| Team registration | Recorded as `TBD` in S2's fields |
+| Rehearsals | None performed; the run sheet requires three, one with the network off |
+| Team name and member roster | `TBD`; S5.3's per-member disclosure is unfilled and only each member can state their own tools |
 | Any deployed instance | Not a requirement, and not claimed |
 
-**Rule.** If a sentence in S5 cannot be checked against S4.1, it does not go in S5.
+**Rule.** If a sentence in S5 cannot be checked against S4.1, it does not go in S5. **S4.2 is the mirror
+of that rule**: if a sentence claims more than S4.1 supports, it does not go in S5 either, and a claim
+about something in S4.2 does not go in the presentation.
 
 ---
 
@@ -143,8 +159,9 @@ This draft is truthful as of the state described in S4. Sections marked `[APP PH
 > **1. Design and documentation (pre-implementation).** We used an agentic coding tool (DeepSeek Harness, DSH) to restructure our own prior product thinking into an implementation-ready documentation set: [`docs/00-INDEX.md`](00-INDEX.md) through [`docs/15-GLOSSARY.md`](15-GLOSSARY.md). The AI was given the frozen source documents and a normative working agreement, [`AGENTS.md`](../AGENTS.md), that constrains what it may write. The decisions register, [`docs/01-DECISIONS.md`](01-DECISIONS.md), is entirely derived from our own earlier design conversation; the AI organised and formalised it, and where our thinking was incomplete the AI recorded the gap as an open question with a working default rather than inventing an answer. We reviewed the result and it is what we are building against.
 >
 > **2. Application implementation (during the hackathon).** All application code was written inside the
-> event window, and the repository history is the evidence: **66 commits, every one dated 2026-10-04**,
-> from `a52be10` to the Phase 6 exit. The work was done with an agentic coding tool (DeepSeek Harness,
+> event window, and the repository history is the evidence: **every commit is dated `2026-10-04`**,
+> verified with `git log --format=%ad --date=short | sort -u`, which returns exactly one date. The work was
+> done with an agentic coding tool (DeepSeek Harness,
 > DSH) working against the frozen contract from item 1. What made that work auditable rather than
 > trust-based is the working agreement, which requires each session to do four things we can point at:
 >

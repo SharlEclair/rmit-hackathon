@@ -161,6 +161,12 @@ Three consequences that shape everything below:
 
 The repository **is** under version control: `origin` is `https://github.com/SharlEclair/rmit-hackathon.git`, history stands at 7 commits (HEAD `da00f71`), and `origin/main` is pushed. Steps 1 and 2 in the block below are **already executed**; do not re-run `git init` or re-add `origin`. **Public visibility of the remote is not verified** -- an anonymous fetch of the repository URL returns HTTP 404 -- so confirming the GitHub visibility setting is a live to-do. The deadline attached to this section is unchanged: the hackathon scores visible progress, and the AI-use disclosure must be reconstructable from history (`AGENTS.md` S7).
 
+> **Superseded at the Phase 7 freeze.** **Public visibility is now verified**: an anonymous GitHub API
+> fetch returns `private=false, visibility=public, default_branch=main`, so the to-do above is closed and
+> the 404 it records was the private-repository response rather than a misconfigured remote. The commit
+> count and HEAD in the paragraph above are also stale; `git log --format=%ad --date=short | sort -u`
+> returning a single date is the durable form of the claim, not a count (`handoff/03-INVARIANTS.md` T42).
+
 ```bash
 # 1. Already executed in WP-01 -- verify, do not re-run.
 git log --oneline -1             # expect da00f71

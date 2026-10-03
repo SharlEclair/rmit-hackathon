@@ -67,6 +67,14 @@ instead**, not as a list of topics.
 
 Confirmed by inspection during planning. These correct premises that other docs still assert.
 
+**Superseded at the Phase 7 freeze.** This table records the state confirmed by inspection *during planning*,
+before any code existed. It is kept because the premises it corrected are still the reason several docs read
+as they do. What is true now: `app/` **exists and is built** through Phase 6; `docs/fixtures/` **exists**;
+the repository is **public** (an anonymous GitHub API fetch returns `private=false, visibility=public`),
+which closes the "was NOT verified" row below. The live per-area state is
+[`handoff/01-STATE.md`](handoff/01-STATE.md) section 3. Commit counts and HEAD shas in this table are
+deliberately **not** restated -- see `handoff/03-INVARIANTS.md` **T42**.
+
 | Fact | Evidence | Consequence |
 |---|---|---|
 | The repository **is** a git repo with a remote and 7 commits (pre-Phase-0 HEAD `da00f71`) | `.git` present; `origin https://github.com/SharlEclair/rmit-hackathon.git`; `git log` -> `da00f71 feat(analytics): make the insight engine deterministic-only`. **Public visibility was NOT verified:** an anonymous fetch of the repository URL returns HTTP 404 | WP-01's `git init` and remote steps are done, so `11` and `12` were corrected in Phase 0. What is *not* done is public readability, which is now a submission risk (`14` S8) |
