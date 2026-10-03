@@ -395,25 +395,43 @@ export interface AssignmentMapResponse {
 // `AssignmentListResponse`; the doc gives the list shape only, so the element is named here.
 // ---------------------------------------------------------------------------------------------
 
-/** `06` section 5.5.2. One assignment card in a course or dashboard list. */
-export interface AssignmentCardResponse {
-  id: string;
-  title: string;
-  courseId: string;
-  courseCode: string;
-  status: AssignmentStatusApi;
-  dueAt: string | null;
-  publishedAt: string | null;
-  /** Published Checklist items, for the card's `n/m` chip. `0` when nothing is published yet. */
-  checklistCompleted: number;
-  checklistTotal: number;
+/**
+ * `06` section 5.5.2. The list envelope is `{ items }`, not `{ courses }`/`{ assignments }`.
+ *
+ * The field names and the nullability are the doc's, not a naming preference: this doc's
+ * `checklistCompleted`/`checklistTotal` are `number | null` ("null for tutors, and for students
+ * before publish"), and `openQueryCount`/`needsReviewCount` are role-exclusive and therefore null
+ * for the other role. A field the contract carries must be present and null, never omitted.
+ */
+export interface CourseListResponse {
+  items: CourseResponse[];
 }
 
 export interface AssignmentListResponse {
-  courseId: string;
-  assignments: AssignmentCardResponse[];
+  items: AssignmentListCard[];
 }
 
+/** `06` section 5.5.2's inline element type, named here because the doc gives the list shape only. */
+export interface AssignmentListCard {
+  id: string;
+  title: string;
+  status: AssignmentStatusApi;
+  dueAt: string | null;
+  publishedAt: string | null;
+  /** `null` for a tutor, and for a student before publish. */
+  checklistCompleted: number | null;
+  checklistTotal: number | null;
+  /** Students only; `null` for a tutor. */
+  openQueryCount: number | null;
+  /** Tutors only; `null` for a student. */
+  needsReviewCount: number | null;
+}
+
+/**
+ * `06` section 5.4 names `CourseResponse` twice (as the return of `GET /api/courses/{courseId}` and
+ * `GET /api/courses`) and section 5.5.2 defines neither it nor a field list, so this is the I-03
+ * case: the shape is defined when the route that returns it is built.
+ */
 export interface CourseResponse {
   id: string;
   code: string;
@@ -421,10 +439,6 @@ export interface CourseResponse {
   term: string;
   roleInCourse: 'student' | 'tutor';
   assignmentCount: number;
-}
-
-export interface CourseListResponse {
-  courses: CourseResponse[];
 }
 
 /** `06` section 5.5.4. `truthTier` is `'T1'` at the document level; the viewer never rewrites text. */
