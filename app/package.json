@@ -17,7 +17,8 @@
     "db:seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
     "demo:smoke": "tsx --env-file-if-exists=.env scripts/smoke.ts",
     "demo:reset": "tsx --env-file-if-exists=.env src/lib/db/migrate.ts && tsx --env-file-if-exists=.env scripts/seed.ts",
-    "demo:beats": "tsx --env-file-if-exists=.env scripts/verify-demo-beats.ts"
+    "demo:beats": "tsx --env-file-if-exists=.env scripts/verify-demo-beats.ts",
+    "demo:state": "tsx --env-file-if-exists=.env scripts/demo-state.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "2.2.1",

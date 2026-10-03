@@ -74,6 +74,21 @@ Beat 5 is 48 seconds and splits internally: 22 seconds for the text refusal, 26 
 
 **Setup requirement.** Both demo states are pre-seeded ([`02-SCOPE.md`](02-SCOPE.md) S5): `state-1-before-ingest` and `state-2-after-ingest`. The narration above runs over whichever state is live.
 
+> **Where those two states come from, and what was broken at the Phase 7 rehearsal.** D81 assigns them to
+> WP-12 rather than to the seed: "**the demo's pre-approval states are not this seed's job** ... WP-12's
+> `demo/reset.sh` is what produces them". **`demo/reset.ps1` was not producing them**, so this beat had
+> almost nothing to show: the seeded assignment carries **54 `PUBLISHED` artifacts against 1
+> `NEEDS_REVIEW`**, and the badge that is this beat's whole point rendered for almost nothing (**I-56**).
+>
+> `pnpm demo:state` now creates both states beside the seeded one, and it is step 4 of `demo/reset.ps1`.
+> Verified: state 2 renders **55 `NEEDS_REVIEW` artifacts with the `AI generated - requires tutor approval`
+> badge present**, where the seeded assignment still fails that check; state 1 is a `draft` with no current
+> structure, so gate rule G1 hides it and a student request returns `404`.
+>
+> **Which assignment to open depends on the beat.** Beats 2 and 3 open `Demo state 2 -- after ingest
+> (proposal awaiting review)`. Beats 4-8 open the seeded cohort assignment, `Case Analysis and Design
+> Proposal Report`, because gate rule G1 makes `PUBLISHED` the only student-visible status.
+
 **Fallback.** See S9, scenario 2 and scenario 3. The pre-seeded after-ingest state is the fallback, and the narration adapts to it with one changed sentence: *"this was generated a moment ago; here is the proposal."*
 
 ---

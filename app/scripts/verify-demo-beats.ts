@@ -108,15 +108,41 @@ async function main(): Promise<void> {
 
   // The badge is only honest if the page renders it -- asserted on HTML, as `verify-review.ts` does, because
   // a bundle can be right while the screen shows an unmarked artifact.
-  const page = await call('GET', `/tutor/assignments/${A}/review`, tutor, undefined, true);
-  check(
-    'Beat 2 -- the badge is on the screen, not only in the payload',
-    'the rendered page carries the fixed pre-approval string for unreviewed artifacts',
-    page.text.includes('AI generated - requires tutor approval')
-      ? 'present in the rendered HTML'
-      : 'ABSENT from the rendered HTML',
-    page.text.includes('AI generated - requires tutor approval'),
-  );
+  //
+  // **Asserted against the after-ingest demo state, not the seeded assignment.** D81 makes the seeded
+  // assignment fully `PUBLISHED` on purpose (beats 4-8 need gate rule G1 to admit it), and assigns the
+  // pre-approval states to `demo/reset.ps1` -- which did not produce them until **I-56** was fixed. So the
+  // badge check belongs on `Demo state 2 -- after ingest (proposal awaiting review)`, which is the
+  // assignment beats 2 and 3 actually open.
+  const afterIngest = await withTransaction(async (tx) => {
+    const rows = await tx<{ id: string }[]>`
+      select id from assignments
+       where title = 'Demo state 2 -- after ingest (proposal awaiting review)'
+       limit 1
+    `;
+    return rows[0]?.id ?? null;
+  });
+  if (afterIngest === null) {
+    check(
+      'Beat 2 -- the badge is on the screen',
+      'the after-ingest demo state exists (pnpm demo:state)',
+      'MISSING: run "pnpm demo:state" or "demo/reset.ps1"',
+      false,
+    );
+  } else {
+    const page = await call('GET', `/tutor/assignments/${afterIngest}/review`, tutor, undefined, true);
+    const afterBundle = await call('GET', `/api/tutor/assignments/${afterIngest}/review`, tutor);
+    const afterArtifacts = (bodyPath(afterBundle.body, 'artifacts') ?? []) as Array<{
+      publicationStatus?: string;
+    }>;
+    const unreviewed = afterArtifacts.filter((a) => a.publicationStatus === 'NEEDS_REVIEW').length;
+    check(
+      'Beat 2 -- the badge is on the screen, not only in the payload',
+      'the rendered page carries the fixed pre-approval string for unreviewed artifacts',
+      `state-2 artifacts=${String(afterArtifacts.length)} NEEDS_REVIEW=${String(unreviewed)} badge=${page.text.includes('AI generated - requires tutor approval') ? 'present' : 'ABSENT'}`,
+      page.status === 200 && page.text.includes('AI generated - requires tutor approval'),
+    );
+  }
 
   // --- Beat 3: approving is not publishing -------------------------------------------------------
   check(
