@@ -2,7 +2,7 @@
 
 > **Audience:** any AI agent (DSH, Claude Code, Cursor, Codex) working in this repository.
 > **Status:** normative. If code, comments, or another doc contradicts this file, this file wins -- or the contradiction is a bug to report.
-> **Read next, in order:** `docs/00-INDEX.md` -> `docs/01-DECISIONS.md` -> whichever doc the task names.
+> **Read next, in order:** `docs/00-INDEX.md` -> `docs/01-DECISIONS.md` -> [`docs/handoff/00-README.md`](docs/handoff/00-README.md) -> whichever doc the task names.
 
 ---
 
@@ -48,7 +48,7 @@ If a task appears to require breaking one of these, **stop and ask** -- do not r
 | `docs/project idea.md` | Original source. **Frozen.** | [x] never |
 | `docs/assignment_assistant_project_handoff.md` | Original source. **Frozen.** | [x] never |
 | `hackathon info/info.md` | Original brief + rubric. **Frozen.** | [x] never |
-| `docs/00-INDEX.md` ... `docs/15-GLOSSARY.md` | Restructured, implementation-ready docs | [ok] update, keep in sync |
+| `docs/00-INDEX.md` ... `docs/18-IMPLEMENTATION-PLAN.md`, plus `docs/handoff/**` | Restructured, implementation-ready docs | [ok] update, keep in sync |
 | `archive/canvas-scraper/**` | **Retired prior work.** Read-only Canvas discussion scraper, kept for historical reference only. Not required by, and not used by, the app (D44, D45). | ! only if the task names it |
 | `app/**` | Does not exist yet | created by first build task |
 
@@ -57,6 +57,10 @@ Do not "tidy" the frozen files. Do not reflow, rename, or reformat them. Their v
 ---
 
 ## 4. How to work in this repo
+
+> **Read [docs/handoff/00-README.md](docs/handoff/00-README.md) first, and update it last.** It is
+> the session-start contract: the read order, the live state of the build, and the protocol for
+> recording what this session did. Do not begin work, or end a turn, without it.
 
 ### 4.1 Before writing code
 

@@ -104,7 +104,7 @@ Scope is the Tier 1 list of handoff S67 with **no Tier 1 item dropped**, plus on
 
 | Handoff Tier 2 item | Decision | Reason |
 |---|---|---|
-| Multimodal student uploads (text/image/audio/video/PDF) | **Narrowed, not dropped** (**O11**) | Student uploads for **PNG/JPEG, PDF and plain text are IN**; **audio and video are OUT**. The original cut dropped the capability entirely; it was reverted because the expensive part is transcode-and-process for audio and video, not the picker, and the default model handles images and PDFs natively (D40). Dropping audio and video removes the whole cost centre while keeping what students actually reach for. Constraint C6 is unchanged and binds every modality: an upload is input to *understanding*, never a request to perform work (`05` S6.4). |
+| Multimodal student uploads (text/image/audio/video/PDF) | **Narrowed, not dropped** (**O11**) | Student uploads for **PNG/JPEG, PDF and plain text are IN**; **audio and video are OUT**. The original cut dropped the capability entirely; it was reverted because the expensive part is transcode-and-process for audio and video, not the picker, and the default model handles images and PDFs natively (D40; the default provider and model are now `gemini` / `gemini-3.8-flash`, **D61, D62**). Dropping audio and video removes the whole cost centre while keeping what students actually reach for. Constraint C6 is unchanged and binds every modality: an upload is input to *understanding*, never a request to perform work (`05` S6.4). |
 | Automatic difficulty detection | **IN**, at S2.1 T10 | The aggregation is roughly twenty lines over data S5 already records. It stays in S2 rather than S3: T10 already carries the "plus one potential difficulty area" signal, and the CHEAP-AND-VISIBLE list (S3, CV-1 to CV-5) does not contain it. It was only listed as Tier 2 because the handoff had not yet separated "aggregate" from "rich distributions". |
 
 ### 2.4 Simplifications that are in scope as simplifications
@@ -237,7 +237,7 @@ A judge who is told "this is the offline provider, so the structure you see was 
 
 | Doc | Relationship |
 |---|---|
-| [`01-DECISIONS.md`](01-DECISIONS.md) | Source of D1-D58 and O1-O12. Wins over this file on conflict. |
+| [`01-DECISIONS.md`](01-DECISIONS.md) | Source of D1-D73 and O1-O12. Wins over this file on conflict. |
 | [`11-BUILD-PLAN.md`](11-BUILD-PLAN.md) | The work packets that deliver S2 and S3. |
 | [`10-RUBRIC-ALIGNMENT.md`](10-RUBRIC-ALIGNMENT.md) | What each in-scope feature is worth to a judge. |
 | [`13-DEMO-STORY.md`](13-DEMO-STORY.md) | The 5-minute path through this scope, with fallbacks. |

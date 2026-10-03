@@ -576,7 +576,7 @@ Owner of D20 and O1. The checklist is the most likely place for a solution plan 
 
 ### 6.4 Multimodal upload sub-guard
 
-Owner of C6 and D10. **MVP scope note (O11):** images (PNG/JPEG), PDF, and plain text are **in**; audio and video are **out**. `deepseek-flash` handles images and PDFs natively (D40), so the shipped path needs no transcode step; the dropped modalities are the expensive transcode-and-process cost centre, not the picker. Three consequences for the shipped product:
+Owner of C6 and D10. **MVP scope note (O11):** images (PNG/JPEG), PDF, and plain text are **in**; audio and video are **out**. `gemini-3.8-flash` handles images and PDFs natively (**D61**, **D62**), so the shipped path needs no transcode step; the dropped modalities are the expensive transcode-and-process cost centre, not the picker. Three consequences for the shipped product:
 
 1. **The shipped set is PNG/JPEG, PDF, and plain text.** Audio (MP3/WAV) and video (MP4) are refused **at the picker**, with a clear message, before any upload begins. Accepting a file and failing later is a defect: it wastes the student's time and puts an unusable object in storage.
 2. **C6 binds every modality, shipped or not.** An upload is input to *understanding*, never a request to perform work. Pasted code, a pasted error message, or a pasted block of the student's draft is the text modality, and every rule in this doc applies to it unchanged. Adding or removing a modality changes what can arrive, never what may be done with it.

@@ -6,7 +6,7 @@
 
 **Status convention.** `NOT STARTED` / `IN PROGRESS` / `DONE` / `AT RISK`. Update the status column the moment it changes.
 
-**Warning about this document.** At the time of writing, **no application code exists** and the repository is not yet under version control. Nothing in this file may claim otherwise. Where a field depends on something that does not exist yet, it is marked `TBD` rather than filled with an optimistic guess.
+**Warning about this document.** At the time of writing, **no application code exists** (`app/` is absent) and the repository **is** under version control -- it carries 7 commits, HEAD `da00f71`, remote `origin https://github.com/SharlEclair/rmit-hackathon.git`. Public visibility of that remote is **not verified**: an anonymous fetch of the repository URL returns HTTP 404. Nothing in this file may claim otherwise. Where a field depends on something that does not exist yet, it is marked `TBD` rather than filled with an optimistic guess.
 
 ---
 
@@ -44,8 +44,8 @@ Internal deadlines, set 30 minutes ahead of every official one so a failure has 
 | R2 | Team of **up to 4** students | Info: What to Build | `NOT STARTED` | Lead | Names and member count below |
 | R3 | **Team registration form** completed by one member | Info: What to Submit | `NOT STARTED` | Lead | Submission confirmation; deadline Sat 2:00 PM |
 | R4 | Register on **Devpost** | Info: Get Started | `NOT STARTED` | Lead | Devpost account(s) |
-| R5 | **Public GitHub repository** created | Info: Get Started | `NOT STARTED` | Track A | The repo is **not yet a git repository**; this is WP-01 in [`11-BUILD-PLAN.md`](11-BUILD-PLAN.md) |
-| R6 | Commit often, as proof of progress | Info: Requirements | `NOT STARTED` | All | `git log --format="%cI %s"`; commit-per-logical-change from the first commit |
+| R5 | **Public GitHub repository** created | Info: Get Started | `IN PROGRESS` | Track A | The repository exists and is pushed (`origin https://github.com/SharlEclair/rmit-hackathon.git`, 7 commits, HEAD `da00f71`), so WP-01''s `git init` and remote steps are done. **Public visibility is unverified** -- an anonymous fetch returns HTTP 404, so confirm the GitHub visibility setting |
+| R6 | Commit often, as proof of progress | Info: Requirements | `IN PROGRESS` | All | `git log --format="%cI %s"` -> 7 commits, all dated `2026-10-04` (inside the event window but inside a single 38-minute span). Commit per logical change from here on; see S8 |
 | R7 | Only work inside the hackathon timeline; **no old projects or schoolwork** | Info: Requirements | `DONE` (by construction) | Lead | `app/` does not exist yet, so nothing in it can predate the event. Prior design material is disclosed in S5. |
 | R8 | Only work within the team; **no external assistance** | Info: Requirements | `DONE` (acknowledged) | All | [`CONTRIBUTING.md`](../CONTRIBUTING.md); no outside implementation help accepted |
 | R9 | **AI use appropriately referenced**; explain **how and why** in the Devpost submission | Info: Requirements | `IN PROGRESS` | Lead | S5 of this document |
@@ -60,7 +60,7 @@ Internal deadlines, set 30 minutes ahead of every official one so a failure has 
 |---|---|
 | Team name | `TBD` |
 | Team members (names, student numbers if required) | `TBD` |
-| Public repository URL | `TBD` (created in WP-01) |
+| Public repository URL | https://github.com/SharlEclair/rmit-hackathon.git (**public visibility unverified**) |
 | Devpost project URL | `TBD` |
 | Demo/presentation slot | From the schedule: Sun 4 Oct, 1:00 PM |
 | Registration form submitted by / at | `TBD` |
@@ -102,8 +102,8 @@ This section exists so the disclosure in S5 can be checked against it. Verified 
 | Normative working agreement for AI agents | [`AGENTS.md`](../AGENTS.md) | Constraints C1-C8, including that the AI must never do the assignment for the student |
 | Team working agreement | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | Commit discipline, definition of done, and the list of rules not traded away under time pressure |
 | Project README | [`README.md`](../README.md) | Product model, the refusal excerpt, and an explicit statement that this is the documentation phase |
-| Restructured documentation set | `docs/00-INDEX.md` ... `docs/15-GLOSSARY.md` | The implementation contract: decisions, scope, PRD, architecture, guardrails, data model, UI spec, analytics, build plan, demo story |
-| Decisions register | [`docs/01-DECISIONS.md`](01-DECISIONS.md) | D1-D58, open questions O1-O12 with working defaults, and an explicitly rejected list |
+| Restructured documentation set | `docs/00-INDEX.md` ... `docs/18-IMPLEMENTATION-PLAN.md` | The implementation contract: decisions, scope, PRD, architecture, guardrails, data model, UI spec, analytics, build plan, demo story |
+| Decisions register | [`docs/01-DECISIONS.md`](01-DECISIONS.md) | D1-D73, open questions O1-O12 with working defaults, and an explicitly rejected list |
 | Canonical vocabulary | [`docs/15-GLOSSARY.md`](15-GLOSSARY.md) | One term, one meaning, and a do-not-use list |
 | Environment contract | [`.env.example`](../.env.example) | Includes the offline `mock` provider and the per-assignment anonymity key |
 | Frozen originals, unmodified | `docs/project idea.md`, `docs/assignment_assistant_project_handoff.md`, `hackathon info/info.md` | The prior product thinking, preserved verbatim ([`docs/originals/README.md`](originals/README.md)) |
@@ -114,8 +114,8 @@ This section exists so the disclosure in S5 can be checked against it. Verified 
 | Absent | Consequence for the disclosure |
 |---|---|
 | Application code (`app/` does not exist) | The disclosure must not describe application implementation as done |
-| A git repository (no `.git` directory) | No commit history exists yet. "Commit often" is unearned until WP-01 runs. |
-| A public repository URL | `TBD` until WP-01 |
+| A commit history that spans the event window | The repository and remote exist (7 commits, HEAD `da00f71`), but all 7 fall inside a 38-minute window on 2026-10-04, so the history does not yet demonstrate sustained progress (S8) |
+| Public visibility of the repository | The remote is configured and pushed, but an anonymous fetch returns HTTP 404, so public access is unconfirmed and must not be claimed |
 | A Devpost submission | `TBD` until Sunday |
 | Team registration | `TBD` until Saturday 2:00 PM |
 | Any deployed instance | Not a requirement, and not claimed |
@@ -154,7 +154,7 @@ This draft is truthful as of the state described in S4. Sections marked `[APP PH
 > - The Canvas discussion research scraper. That is ordinary deterministic Python with an offline test suite.
 > - Any judgement about what to submit or how to present it.
 >
-> **Prior work, disclosed.** The frozen design documents (`docs/project idea.md`, `docs/assignment_assistant_project_handoff.md`) and the retired Canvas discussion research (`archive/canvas-scraper/`) predate the hackathon. They are design inputs and research evidence, and they are not submitted as hackathon output. All application code will be written during the event window, and the commit history in the public repository will be the evidence.
+> **Prior work, disclosed.** The frozen design documents (`docs/project idea.md`, `docs/assignment_assistant_project_handoff.md`) and the retired Canvas discussion research (`archive/canvas-scraper/`) predate the hackathon. They are design inputs and research evidence, and they are not submitted as hackathon output. All application code will be written during the event window, and the commit history in the repository will be the evidence (confirm the repository is publicly readable before the Devpost text claims it).
 
 ### 5.2 Per-packet disclosure log
 
@@ -223,7 +223,7 @@ The submission needs a repository link plus a written description. Draft, to be 
 
 **What we are proud of.** The refusal. A student asks the assistant to debug their code, and it declines, cites that assignment's policy, and offers what it can help with instead. Building that boundary well is the whole point of the product. **At freeze time, confirm on the running system before claiming it, and reword to the past tense.**
 
-**What is next.** Student audio and video uploads, refused at the picker today because transcode-and-process is the expensive half of multimodal intake; and richer analytics distributions over real cohort data rather than a seeded demo cohort.
+**What is next.** Richer analytics distributions over real cohort data rather than a seeded demo cohort. Student audio and video uploads are **not** next: [`02-SCOPE.md`](02-SCOPE.md) rules them OUT (O11), refused at the picker because transcode-and-process is the expensive half of multimodal intake. (The previous wording listed them here; corrected in Phase 0.)
 
 Canvas/LMS integration is **not** on this list and is not planned. It is excluded by decision (D45, D59), not deferred: no Canvas API call, no Canvas SSO, no live LMS sync, and no stub for any of them.
 
@@ -260,8 +260,8 @@ Requirements: explain the **problem, solution, demo and impact**, and state the 
 
 | Risk | Impact | Mitigation | Trigger |
 |---|---|---|---|
-| The public repository is never created | No submission at all | WP-01 is the first packet and it begins with `git init` and the remote | Sat 09:00 with no remote |
-| The commit history does not span the event window | The "commit often" evidence is missing, and the honesty of R7 comes into question | Commit per logical change from the first commit, using `CONTRIBUTING.md` S2 conventions | Sunday with fewer than ten commits, or all commits in a single hour |
+| The repository is never made publicly readable | No submission at all | The repository and remote already exist (WP-01''s `git init` and remote are done); confirm the GitHub visibility setting and that `origin/main` is pushed | Sat 09:00 and the repo URL still returns 404 anonymously |
+| The commit history does not span the event window | The "commit often" evidence is missing, and the honesty of R7 comes into question | Commit per logical change from here on, using `CONTRIBUTING.md` S2 conventions | **Already firing:** 7 commits, all inside a 38-minute span on 2026-10-04. Also fires on Sunday with fewer than ten commits, or all commits in a single hour |
 | A secret is pushed to a public repository | Immediate exposure, credential rotation, history cleanup | `.gitignore` verified in WP-01; `git status --porcelain` before every `git add -A` | Any secret appears in `git status` |
 | The disclosure is written on Sunday morning | It is vague, and it does not match the history | S5.2 is filled in per packet as the work happens | Saturday 18:00 with an empty S5.2 |
 | Submission is filed late | Disqualified or unjudged; "late exceptions cannot be guaranteed" | Internal deadline 11:30 AM, 30 minutes early | 11:15 AM and the submission is not open in a browser tab, filled in |

@@ -392,7 +392,7 @@ Implements C2, D17, D43. This is the anchor of the product's honesty claim: what
 +---------------------------------------------------------------------------+
 ```
 
-Layout order inside the tab, top to bottom: official documents (viewer), then the Assignment Map (4.3), then the published AI Usage Policy card (4.4.4). The Map never appears above the viewer, and the viewer is never inside a collapsible that a student could miss.
+Layout order inside the tab, top to bottom: official documents (viewer), then the Assignment Map (4.3), then the published AI Usage Policy card (4.2.1). The Map never appears above the viewer, and the viewer is never inside a collapsible that a student could miss.
 
 Behaviour:
 
@@ -415,6 +415,24 @@ Behaviour:
 | Error | Document list failed | `We could not load the assignment documents.` plus request id | `Try again` |
 | Insufficient data | Not applicable | - | - |
 | Refused request | Not applicable: the viewer never calls a model | - | - |
+
+#### 4.2.1 Published AI Usage Policy card
+
+Implements D9, D47, C1. One card, below the Assignment Map, rendering the assignment's approved AI Usage Policy rules (T2 treatment, 2.2).
+
+1. The card is present only when at least one policy rule is `PUBLISHED`. Before that the card is absent and the Assistant is in the unavailable state (4.7.2 rule 6, 4.7.3 rule 2).
+2. Each rule is shown verbatim, exactly as the tutor approved it. The interface never summarises, merges, or rewords a rule, and never presents a policy rule as an assignment requirement (C2).
+3. The card carries the T2 treatment and the `Published by your tutor` label (2.2, 2.5). The word "official" appears only on T1 and T2 elements (2.2 rule 5).
+4. The card has no edit, approve, or dismiss control. Policy authorship is a tutor surface (7.3).
+5. The card is not part of the Assistant's transcript and the Assistant never cites itself as the policy's author.
+
+| State | Trigger | What the student sees | Controls |
+|---|---|---|---|
+| Loading | Policy fetch in flight | Two skeleton rule rows | - |
+| Empty | No policy rule is `PUBLISHED` | The card is absent, and the Assistant shows the unavailable state (2.5) | `Ask your tutor privately` |
+| Error | Policy fetch failed | `We could not load this assignment's AI usage policy.` plus request id | `Try again` |
+| Insufficient data | Not applicable | - | - |
+| Refused request | Not applicable: the card renders a published document and makes no model call | - | - |
 
 ### 4.3 Assignment Map
 
@@ -658,7 +676,7 @@ Panel rules:
 2. Each assistant turn renders its citations as `Sources: <label> | <label>`, each a `SourceLink`. An answer with no source renders the fixed no-grounding line (2.5) and an `Ask your tutor privately` control instead of citations.
 3. A student turn with a refusal verdict renders the refusal panel described below. The transcript keeps the refusal, so a student can reread what was refused and why.
 4. Streaming: text appears progressively. The `guardrail` event arrives first; when the verdict is a refusal, no text streams at all and the refusal panel appears at once. A client that receives text before a verdict treats the stream as corrupt and shows the error state.
-5. Uploads: the `+` control opens a file picker for images (PNG, JPEG), PDF, and plain text (O11). Audio and video are not selectable, and the picker says so in the fixed line from 2.5 rather than accepting the file and failing afterwards. Each upload shows a chip with its kind, extraction status, and guardrail scan status. A chip in `blocked` state shows the blocked-upload string and cannot be sent. Sending with a blocked upload selected is refused client-side with the reason, and the server refuses it again (C6). The blocked and refused paths apply to all three surviving modalities: an image of a problem, a PDF of student work, and a text file asking for a solution each reach the same guard.
+5. Uploads: the `+` control opens a file picker for images (PNG, JPEG), PDF, and plain text (O11). Audio and video are not selectable: the picker refuses them with rule `UP5` ([`05-AI-GUARDRAILS.md`](05-AI-GUARDRAILS.md) section 6.4) before storage and before any guardrail or model call, and says so in the fixed line from 2.5 rather than accepting the file and failing afterwards. Each upload shows a chip with its kind, extraction status, and guardrail scan status. A chip in `blocked` state shows the blocked-upload string and cannot be sent. Sending with a blocked upload selected is refused client-side with the reason, and the server refuses it again (C6). The blocked and refused paths apply to all three surviving modalities: an image of a problem, a PDF of student work, and a text file asking for a solution each reach the same guard.
 6. Policy gate (D47): when `policy.available = false`, the composer is replaced by the unavailable state and `Ask your tutor privately`. The Assistant does not open as an empty but usable box, because no approved policy means no assistance.
 7. The composer is capped at 4000 characters with a counter appearing in the last 200.
 8. `Clear` clears the student's own transcript after a confirmation that says the transcript will be removed from their view. It never deletes audit or guardrail records.
@@ -693,8 +711,8 @@ Rules:
 4. `Ask your tutor privately` opens the Query composer with the student's original request copied into the body, and the student must send it. The system never creates a Query on the student's behalf (D24).
 5. The panel variant is selected by the Guardrail's `refusalTemplateId`, owned by [`05-AI-GUARDRAILS.md`](05-AI-GUARDRAILS.md) section 7.2: `T-REFUSE` renders the boundary panel above, `T-SCOPE` renders the same panel with the permitted scope named, `T-CLARIFY` renders the clarification question with its two interpretations, and `T-ESCALATE` renders the panel with the escalation control emphasised. The interface maps four templates to four layouts and invents no codes.
 6. A refusal is never red-badged as an error, is never labelled "Blocked", and never says the student did something wrong. It states the boundary.
-6. `CLARIFY` uses the same panel with a question in place of a statement: `I need to check what you are asking before I answer. Do you mean <interpretation A> or <interpretation B>?` and offers the two interpretations as buttons. It still does not answer.
-7. A refusal never disables the composer, and the same session can immediately ask a permitted question (US-S-12). The one exception is `POL_ABSENT`, where the composer stays replaced by the unavailable state (D47).
+7. `CLARIFY` uses the same panel with a question in place of a statement: `I need to check what you are asking before I answer. Do you mean <interpretation A> or <interpretation B>?` and offers the two interpretations as buttons. It still does not answer: `CLARIFY` produces no model answer, makes no provider call for the answer, and counts as a refusal in the golden set (D69).
+8. A refusal never disables the composer, and the same session can immediately ask a permitted question (US-S-12). The one exception is `POL_ABSENT`, where the composer stays replaced by the unavailable state (D47).
 
 | State | Trigger | What the student sees | Controls |
 |---|---|---|---|
@@ -1131,7 +1149,7 @@ Route: `/tutor/assignments/{assignmentId}/review`.
 |                             | | Verbatim: "Submit one file only."        | |
 |                             | | From: assignment-brief.pdf p.4  [ Open ] | |
 |                             | | Summary: ...            [ Edit ]         | |
-|                             | | Provenance: deepseek-flash, ingest-v3    | |
+|                             | | Provenance: gemini-3.8-flash, ingest-v3  | |
 |                             | | [ Approve ]  [ Reject ]                  | |
 |                             | +------------------------------------------+ |
 |                             | | Milestone 2 - Design                     | |
@@ -1404,7 +1422,7 @@ Every screen in the required list, with its section, its primary interfaces, and
 | Student dashboard | `/student` | 3.4 | `GET /api/courses` | D1, D3 | Loading, empty, error, insufficient data (n/a), refused (n/a) |
 | Student assignments | `/student/courses/{courseId}` | 3.5 | `GET /api/courses/{courseId}/assignments` | D1, D3 | Loading, empty, error, insufficient data (n/a), refused (n/a) |
 | Workspace shell | `/student/assignments/{id}` | 4.1 | `GET /api/student/assignments/{id}` | D1, D36 | Loading, empty, error, insufficient data (n/a), refused (n/a) |
-| Assignment/Info tab - official brief viewer | `...?tab=info` | 4.2 | `GET .../brief`, document stream | C2, D17, D43 | Loading, empty, error, insufficient data (n/a), refused (n/a) |
+| Assignment/Info tab - official brief viewer | `...?tab=info` | 4.2 | `GET .../brief` | C2, D17, D43 | Loading, empty, error, insufficient data (n/a), refused (n/a) |
 | Assignment/Info tab - Assignment Map | `...?tab=info` | 4.3 | `GET .../structure` | D18, D19, D43 | Loading, empty, error, insufficient data (n/a), refused (n/a) |
 | My Queries tab | `...?tab=queries` | 4.4, 5.1 | `GET/POST .../queries`, `GET /api/student/queries/{id}`, `POST .../messages`, `POST .../resolve` | D24, O9 | Loading, empty, error, insufficient data (n/a), refused (n/a) |
 | Discussions tab (student) | `...?tab=discussions` | 4.5, 6.1-6.5 | `GET .../discussions`, `GET .../faq-entries`, thread and post writes, flag | D25, D26, D28, D30 | Loading, empty, error, insufficient data (n/a), refused (n/a) |
@@ -1434,7 +1452,7 @@ Every screen in the required list, with its section, its primary interfaces, and
 | C4 (tutor cannot see the identity behind an anonymous post) | 6.3 anonymity table; 2.4 anti-patterns 11, 12 |
 | C5 (aggregate-only analytics) | 8 rules 5 and 6; 8.2 Insufficient data; 2.4 anti-patterns 9, 13 |
 | C6 (uploads are not a route around C1) | 4.7.2 rule 5, which now covers the three surviving modalities (image, PDF, text) and the blocked-upload chip path those three can reach; 2.5 blocked-upload and audio/video-boundary strings; 2.1 refused-request state |
-| C7 (no secret in a response or a log) | 4.2 rule 10 (download served through an authorized route); 9.4 errors carry a request id and no internals |
+| C7 (no secret in a response or a log) | 4.2 rules 7 and 10 (the viewer exposes no download, print, or byte-serving control, so no document URL is minted for a client to hold); 9.4 errors carry a request id and no internals |
 | C8 (adapter-only model calls) | No interface consequence; verified by lint (test T-14 in [`06-DATA-MODEL.md`](06-DATA-MODEL.md) section 9.2) |
 
 ### 10.3 Open interface questions

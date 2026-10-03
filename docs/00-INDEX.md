@@ -44,6 +44,32 @@ Never start coding from a single doc. `01-DECISIONS.md` is the canonical answer 
 | 15 | [15-GLOSSARY.md](15-GLOSSARY.md) | Canonical vocabulary. One term, one meaning. | Lead |
 | 16 | [16-VERIFICATION-REPORT.md](16-VERIFICATION-REPORT.md) | Point-in-time adversarial audit of this doc set, plus the Lead's resolution addendum. Local-only; not committed. | Verifier |
 | 17 | [17-DESIGN-SYSTEM.md](17-DESIGN-SYSTEM.md) | Aesthetic direction, typography, token architecture, component governance, shadcn policy, quality gates. | Design |
+| 18 | [18-IMPLEMENTATION-PLAN.md](18-IMPLEMENTATION-PLAN.md) | The phase-by-phase build, the session-handoff protocol, and the cross-phase trap register. | Lead |
+
+### The handoff set -- `docs/handoff/`
+
+Each phase is implemented in a **separate chat session**, so project state lives on disk rather
+than in a conversation. Every session reads these **before** doing anything else; the entry point
+is [handoff/00-README.md](handoff/00-README.md), which carries the session protocol and the
+handoff template.
+
+> **Created in Phase 0.** `docs/handoff/` exists as of the `phase-00-complete` tag, so every link
+> in this section resolves. The directory is maintained by the session protocol in
+> [`handoff/00-README.md`](handoff/00-README.md), not by the phase plan.
+
+| Path | Answers | Rewritten or appended |
+|---|---|---|
+| [handoff/00-README.md](handoff/00-README.md) | Where do I start, and what is the protocol? | Rarely |
+| [handoff/01-STATE.md](handoff/01-STATE.md) | What is actually built, and how do I prove it? | **Rewritten every session** |
+| [handoff/02-DECISIONS.md](handoff/02-DECISIONS.md) | Why is this the way it is? | Append-only |
+| [handoff/03-INVARIANTS.md](handoff/03-INVARIANTS.md) | What must I not break, and what must I not re-derive? | Append-only |
+| [handoff/04-INTERFACES.md](handoff/04-INTERFACES.md) | What signatures may I not change? | Append-only |
+| [handoff/05-ISSUES.md](handoff/05-ISSUES.md) | What is known-broken right now? | Append-only |
+| [handoff/06-SESSION-LOG.md](handoff/06-SESSION-LOG.md) | What happened last time, and what failed? | Append-only |
+| [handoff/07-ARCHIVE/](handoff/07-ARCHIVE/README.md) | What did the log look like at each phase end? | Append-only |
+
+**Precedence.** These files sit **below** `AGENTS.md`, `01-DECISIONS.md` and `02-SCOPE.md`. Where a
+handoff file contradicts the register, the register wins and the handoff file is the bug.
 
 ---
 

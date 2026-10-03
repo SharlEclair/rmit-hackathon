@@ -2,7 +2,7 @@
 
 **Purpose.** What the product must do, for whom, and how we know it does it. This doc states requirements; it does not restate the schema ([`06-DATA-MODEL.md`](06-DATA-MODEL.md)), the screens ([`07-UI-UX-SPEC.md`](07-UI-UX-SPEC.md)), or the guardrail procedure ([`05-AI-GUARDRAILS.md`](05-AI-GUARDRAILS.md)).
 
-**Normative parents.** [`../AGENTS.md`](../AGENTS.md) (constraints C1-C8), [`01-DECISIONS.md`](01-DECISIONS.md) (D1-D58, O1-O12), [`15-GLOSSARY.md`](15-GLOSSARY.md) (vocabulary). Scope is decided in [`02-SCOPE.md`](02-SCOPE.md); where this doc appears to enlarge scope, 02 wins.
+**Normative parents.** [`../AGENTS.md`](../AGENTS.md) (constraints C1-C8), [`01-DECISIONS.md`](01-DECISIONS.md) (D1-D73, O1-O12), [`15-GLOSSARY.md`](15-GLOSSARY.md) (vocabulary). Scope is decided in [`02-SCOPE.md`](02-SCOPE.md); where this doc appears to enlarge scope, 02 wins.
 
 **One-sentence product model.** Tutors upload an assignment and its supporting documents; the system turns them into a tutor-approved assignment structure (Assignment Map, Milestones, Checklist, FAQ entries, AI Usage Policy, ambiguity findings); students work through the assignment using the original brief, that structure, anonymous Discussions, private Queries, and a strictly constrained Assignment Assistant; tutors receive aggregate insight into where the cohort is spending time and asking questions.
 
@@ -836,8 +836,8 @@ Reproduced from [`01-DECISIONS.md`](01-DECISIONS.md) section G where the product
 | O11 | Which student upload modalities ship in the MVP | Images (PNG, JPEG), PDF, and plain text are IN; audio and video are OUT and refused at the picker. C6 still binds every modality that ships (reversed from the original scope cut; see [`02-SCOPE.md`](02-SCOPE.md) section 2.2 S6a) | US-S-13 |
 | O12 | Whether there is a per-assignment AI Usage Policy editor | IN and non-negotiable; D9 cannot be demonstrated without it. Scope may not grow elsewhere to compensate | US-T-9, NFR-S-6, [`06-DATA-MODEL.md`](06-DATA-MODEL.md) section 7.2.11 |
 
-Two product questions this doc raises and cannot settle alone, carried into [`06-DATA-MODEL.md`](06-DATA-MODEL.md) section 10:
+Two product questions this doc raised and could not settle alone, carried into [`06-DATA-MODEL.md`](06-DATA-MODEL.md) section 10 and **now settled**:
 
-1. **Are private Queries ever anonymous?** This PRD assumes not: a Query is attributed (US-S-14) and anonymity belongs to Discussions (US-S-16). If the answer changes, US-S-14, US-S-16, and the Query payload contract change together.
-2. **Is the Assignment Health headline also k-anonymity floored?** This PRD assumes yes (US-T-19, NFR-P-2). [`08-ANALYTICS-SPEC.md`](08-ANALYTICS-SPEC.md) owns the final wording.
+1. **Are private Queries ever anonymous?** No -- a private Query is always attributed (**D50**, `06` section 10 item 6). A Query is attributed (US-S-14) and anonymity belongs to Discussions (US-S-16), so both assumptions hold and no payload contract changes.
+2. **Is the Assignment Health headline also k-anonymity floored?** Yes (**D52**, `06` section 10 item 5). This matches the PRD assumption (US-T-19, NFR-P-2). [`08-ANALYTICS-SPEC.md`](08-ANALYTICS-SPEC.md) owns the final wording.
 

@@ -94,3 +94,11 @@ Thumbs.db
 desktop.ini
 .idea/
 .vscode/
+
+# ---------------------------------------------------------------------------
+# Exception: docs/handoff/ is a COMMITTED deliverable (18 section 3), not the
+# ad-hoc session notes the rules above target. Without this exception the
+# session log and its archive are silently dropped from every clone (trap T17).
+# ---------------------------------------------------------------------------
+!docs/handoff/*.md
+!docs/handoff/07-ARCHIVE/**

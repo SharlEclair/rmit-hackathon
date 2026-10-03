@@ -62,6 +62,7 @@ Rotating `ANON_ID_SECRET` mid-assignment does not change the label of any post t
 | `LLM_THINKING_ASSISTANT` | Only when `LLM_PROVIDER=gemini` | `medium` | Thinking level for grounded assistant answers. |
 | `LLM_THINKING_ANALYST` | Only when `LLM_PROVIDER=gemini` | `high` | Thinking level for assignment ingestion; highest because quality there bounds everything downstream. |
 | `LLM_THINKING_MODERATOR` | Only when `LLM_PROVIDER=gemini` | `low` | Thinking level for discussion moderation (advisory only, **D28**). |
+| `LLM_THINKING_EXTRACTION` | Only when `LLM_PROVIDER=gemini` | `low` | Thinking level for attachment extraction, which runs once per upload as a classification-controlled call (**D68**). Floor setting for the same reason as the guardrail. |
 | `DEEPSEEK_API_KEY` | Only when `LLM_PROVIDER=deepseek` | *(empty)* | Set only the key matching the selected provider. |
 | `GEMINI_API_KEY` | Only when `LLM_PROVIDER=gemini` | *(empty)* | Set only the key matching the selected provider. |
 | `LLM_BASE_URL` | No | *(empty)* | Overrides the provider base URL for proxies or self-hosted gateways. |
@@ -135,22 +136,19 @@ Three consequences that shape everything below:
 2. **Path A must not map host port 5432.** The native service owns that port, so the original `"5432:5432"` mapping fails with "port is already allocated". The compose file in S3.4 maps `"5433:5432"` instead, and using path A therefore also changes `DATABASE_URL`.
 3. **`gh` and `vercel` do not exist.** Do not run `gh repo create` or `vercel deploy`. Use git remotes and the web UI (S3.2, S5).
 
-### 3.2 Repository bootstrap (WP-01, do this first)
+### 3.2 Repository bootstrap (WP-01 -- already done; verify, do not re-run)
 
-The repository is **not yet a git repository** -- there is no `.git` directory. Creating it is a real task with a deadline attached: the hackathon scores visible progress, and the AI-use disclosure must be reconstructable from history (`AGENTS.md` S7).
+The repository **is** under version control: `origin` is `https://github.com/SharlEclair/rmit-hackathon.git`, history stands at 7 commits (HEAD `da00f71`), and `origin/main` is pushed. Steps 1 and 2 in the block below are **already executed**; do not re-run `git init` or re-add `origin`. **Public visibility of the remote is not verified** -- an anonymous fetch of the repository URL returns HTTP 404 -- so confirming the GitHub visibility setting is a live to-do. The deadline attached to this section is unchanged: the hackathon scores visible progress, and the AI-use disclosure must be reconstructable from history (`AGENTS.md` S7).
 
 ```bash
-# 1. From the repository root
-git init
+# 1. Already executed in WP-01 -- verify, do not re-run.
+git log --oneline -1             # expect da00f71
 git add .gitignore .env.example AGENTS.md CONTRIBUTING.md README.md docs "hackathon info" archive
 git status --porcelain          # MUST NOT list .env, cookies.txt, .storage/, archive/canvas-scraper/out/
 git commit -m "chore(repo): initial commit of the design doc set and frozen inputs"
 
-# 2. Create the public repository in the GitHub web UI (no gh CLI available).
-#    Then, with the URL GitHub shows you:
-git remote add origin https://github.com/<owner>/<repo>.git
-git branch -M main
-git push -u origin main
+# 2. The remote already exists (anonymous fetch returns 404, so confirm it is public):
+git remote -v                    # origin https://github.com/SharlEclair/rmit-hackathon.git
 
 # 3. Verify
 git remote -v
@@ -296,7 +294,7 @@ pnpm test              # vitest run, including the guardrail golden set
 | Guardrail | Unchanged. The deterministic policy layer runs the same real rules and the same golden set in both modes (D7). Only the optional model-assisted classification is absent. |
 | Schema discipline | `mock` output is validated against the same schemas as live output. A mock that bypasses validation would hide the failures it exists to prevent (D16). |
 
-**`mock` is the default in `.env.example` for two reasons:** it lets a new teammate walk the entire product loop in under five minutes with no accounts, and it is the demo's offline safety net.
+**`gemini` is the default in `.env.example` (D61); `mock` is the offline fallback for two reasons:** it lets a new teammate walk the entire product loop in under five minutes with no accounts, and it is the demo''s safety net when the network is hostile.
 
 ---
 

@@ -1,6 +1,6 @@
 # 04 - Technical Architecture
 
-**Purpose.** Fix the technical shape of Assignment Assistant so that any agent can build it without re-deciding the stack. This doc owns the detail for D7, D12, D13, D36-D45 and the enforcement points for C1, C6, C7 and C8.
+**Purpose.** Fix the technical shape of Assignment Assistant so that any agent can build it without re-deciding the stack. This doc owns the detail for D7, D12, D13, D36-D51, D58 and D60-D73, and the enforcement points for C1, C6, C7 and C8.
 
 **Read with.** `AGENTS.md` (constraints) -> `01-DECISIONS.md` (what is settled) -> `05-AI-GUARDRAILS.md` (the policy layer this doc wires in) -> `06-DATA-MODEL.md` (the authoritative schema; table names here are the interface expectation, not the schema of record).
 
@@ -10,7 +10,7 @@
 
 ## 1. One-paragraph shape
 
-A single Next.js (App Router) deployable serves both the UI and the JSON API. Postgres holds all state and all retrieval state: there is no separate vector database (D38). Every model call goes through one adapter at `src/lib/llm/` (C8, D39), which resolves a configured provider (`deepseek`, `gemini`, or `mock`) at startup and validates the configured model id before serving any request. The guardrail is a pure, network-free layer at `src/lib/guardrail/` (D7) that decides before any model call and post-checks after any model call. Student uploads pass through the same guard as text (C6, D10). Nothing AI-generated reaches a student before tutor approval (C3, D21).
+A single Next.js (App Router) deployable serves both the UI and the JSON API. Postgres holds all state and all retrieval state: there is no separate vector database (D38). Every model call goes through one adapter at `src/lib/llm/` (C8, D39), which resolves a configured provider (`deepseek`, `gemini`, or `mock`) at startup and validates the configured model id before serving any request. The guardrail is a pure, network-free layer at `src/lib/guardrail/` (D7) whose L0-L3 decisions run before any generation call and which post-checks after any model call; the only model call that precedes them is attachment extraction, which is classification-controlled and counted separately (C6, D10, D68). Student uploads pass through the same guard as text (C6, D10). Nothing AI-generated reaches a student before tutor approval (C3, D21).
 
 ---
 
@@ -26,14 +26,14 @@ A single Next.js (App Router) deployable serves both the UI and the JSON API. Po
 | Retrieval | Postgres full-text search (`tsvector`) over source chunks | D38 | Embeddings, if ever added, live in the same Postgres instance behind the same interface. |
 | Vector database | **None** | D38 | Explicitly rejected. Do not scaffold one. |
 | LLM access | Provider adapter at `src/lib/llm/` | D39 | No vendor SDK imported outside that folder. Enforced in CI (section 5.9). |
-| Default provider | DeepSeek `deepseek-flash` | D40 | See section 5.3. `gemini` is an alternative adapter; `mock` is required. |
+| Default provider | Gemini `gemini-3.8-flash` | D61, D62 | See section 5.3. `deepseek` is the documented alternative adapter; `mock` is required and offline. |
 | Object storage | Local filesystem driver by default, S3-compatible behind the same interface | D41 | See section 8. |
 | Auth | Email + password, httpOnly session cookie, role claim `tutor` \| `student` | D42 | No SSO, no Canvas OAuth, no email verification. |
 | Assignment viewer | Original PDF with page-mapped viewer; map nodes deep-link to a page | D43 | Page mapping is captured at ingestion (section 7, stage S4). |
 | Repo layout | `app/` self-contained at repo root | D44 | `archive/canvas-scraper/` is retired prior work, stays independent, and is never imported by the app. |
 | Canvas integration | None, at any point | D45, D59 | Excluded by decision, not deferred, and not to be stubbed. The app must run with all `CANVAS_*` variables unset. |
 
-Deliberately absent, and not to be scaffolded: vector database, message queue, separate worker service, second deployable, SSO, LMS sync, streaming responses (section 5.7 explains why streaming is excluded).
+Deliberately absent, and not to be scaffolded: vector database, message queue, separate worker service, second deployable, SSO, LMS sync, streaming for any route other than the Assistant message route (section 5.7).
 
 ### 2.1 Query layer: Drizzle, explicitly
 
@@ -168,15 +168,15 @@ app/
    +-------+--------------+--------------+---------------+-----------+
            |              |              |               |
            v              v              v               v
-      Postgres      DeepSeek API    local FS or     (nothing else:
-      tables +      or gemini       S3 bucket       no vector DB,
+      Postgres      Gemini API      local FS or     (nothing else:
+      tables +      or deepseek     S3 bucket       no vector DB,
       tsvector      or mock         (originals,     no queue,
       FTS index     adapter          uploads)       no second service)
 ```
 
 Two properties of this diagram are normative rather than descriptive:
 
-1. **The guardrail sits between every student turn and the model.** There is no code path from a student message to `src/lib/llm/` that does not pass through `src/lib/guardrail/`. Section 9.2 is the only place this is wired.
+1. **L0-L3 decisions run before any generation call.** There is no code path from a student turn to a generation call at `src/lib/llm/` that does not pass through `src/lib/guardrail/`. Attachment extraction is a classification-controlled call that the guardrail orders but does not authorise: it runs before the L0-L3 decision, is counted separately in budget accounting, and is never used to ground another student's answer (C6, D10, D68). Section 9.2 is the only place this is wired.
 2. **Nothing writes to Postgres except `src/lib/db/`.** Features call repository functions, not the driver.
 
 ---
@@ -199,7 +199,8 @@ export type AiCapability =
   | 'policy_guard'
   | 'student_assistant'
   | 'discussion_moderator'
-  | 'insight_engine';
+  | 'insight_engine'
+  | 'attachment_extraction';   // classification-controlled; never grounds another student's answer
 
 export type LlmRole = 'system' | 'user' | 'assistant';
 
@@ -246,7 +247,7 @@ export interface LlmRequest {
   temperature: number;        // 0 for every classifying capability
   maxOutputTokens: number;
   timeoutMs: number;
-  /** Budget accounting unit. One assistant session, one ingestion run, one moderation batch. */
+  /** Budget accounting unit. One assistant session, one ingestion run, one moderation batch, one attachment-extraction scope (counted separately, 9.2 step 12). */
   sessionId: string;
 }
 
@@ -319,7 +320,7 @@ export class LlmError extends Error {
 
 ### 5.3 Default provider: Gemini (D61)
 
-**D61 makes `gemini` the project default and D62 fixes the model.** D40's reasoning still holds (one model, one key, one failure mode); its DeepSeek specifics remain accurate below as the *alternative* adapter.
+**D61 makes `gemini` the project default and D62 fixes the model.** D40's reasoning still holds (one model, one key, one failure mode); the Gemini specifics follow immediately below, and the `deepseek` adapter remains the documented alternative (5.3, last bullet).
 
 | Fact | Value |
 |---|---|
@@ -336,9 +337,9 @@ export class LlmError extends Error {
 
 Consequences the build must honour:
 
-- **One model covers all five capabilities.** `gemini-3.8-flash` is natively multimodal, so `LLM_MODEL_REASONING` and `LLM_MODEL_MULTIMODAL` both resolve to it when `LLM_MODEL_MULTIMODAL` is empty. No second model is needed for image- or PDF-bearing uploads.
-- **Attachment resolution uses the same rule as any other provider.** With the shipped modalities (PNG/JPEG, PDF, plain text - O11), image and PDF extraction resolves `modelId` from `LLM_MODEL_MULTIMODAL` if non-empty, else `LLM_MODEL_REASONING`. Audio and video never reach this resolution because the picker refuses them.
-- **Thinking level is per capability, not global** (D62), because thinking is billed and adds latency: guardrail `low`, assistant `medium`, analyst `high`, moderator `low`, insight `low`. The env contract carries these as `LLM_THINKING_*`. Note that `minimal` is not a valid value for this model, so `low` is the floor rather than an off switch - which is consistent with the guardrail being deterministic-first (D7) rather than model-dependent.
+- **One model covers every capability that makes a call.** `gemini-3.8-flash` is natively multimodal, so `LLM_MODEL_REASONING` and `LLM_MODEL_MULTIMODAL` both resolve to it when `LLM_MODEL_MULTIMODAL` is empty. No second model is needed for image- or PDF-bearing uploads.
+- **Attachment resolution uses the same rule as any other provider.** With the shipped modalities (PNG/JPEG, PDF, plain text - O11), image and PDF extraction resolves `modelId` from `LLM_MODEL_MULTIMODAL` if non-empty, else `LLM_MODEL_REASONING`. Audio and video never reach this resolution because the picker refuses them. The call the rule resolves is capability `attachment_extraction`: it uses `LLM_THINKING_EXTRACTION` and its own budget counter, and its result is never used to ground another student's answer (D68, 9.2 step 12).
+- **Thinking level is per capability, not global** (D62), because thinking is billed and adds latency: guardrail `low`, assistant `medium`, analyst `high`, moderator `low`, and attachment extraction `low` (D68). The Insight Engine has no level because it makes no model call (D67). The env contract carries these as `LLM_THINKING_*`. Note that `minimal` is not a valid value for this model, so `low` is the floor rather than an off switch - which is consistent with the guardrail being deterministic-first (D7) rather than model-dependent.
 - **The single known-good id is `gemini-3.8-flash`.** Configure it in `LLM_MODEL_REASONING`. There is no automatic fallback to another provider or model: the adapter never silently switches ids, because a silent switch changes the prompt-cache prefix behaviour, the cost profile, and the behaviour under test. If the configured id fails, that is a loud startup failure (5.4), not a fallback.
 - **Model ids are never invented or composed.** The id string comes from `LLM_MODEL_REASONING` (or `LLM_MODEL_MULTIMODAL` when set) and is passed through unchanged. Do not append date suffixes, aliases, or `-latest`.
 - **A 1M window is not a licence to send everything.** Retrieval still selects the smallest sufficient set of T1-T3 source chunks (section 6). Context is a cost and an accuracy risk, not a feature.
@@ -353,7 +354,7 @@ Procedure, run once per process before the server accepts a request:
 1. Read `LLM_PROVIDER`. Missing or not one of `gemini` | `deepseek` | `mock` -> `CONFIG_INVALID`, abort. `gemini` is the default (D61).
 2. For `gemini` and `deepseek`, require the matching key (`GEMINI_API_KEY`, `DEEPSEEK_API_KEY`) to be non-empty -> else `CONFIG_INVALID`, abort.
 3. Resolve `modelId` from `LLM_MODEL_MULTIMODAL` if non-empty, else `LLM_MODEL_REASONING`.
-4. For `gemini`, also validate the five `LLM_THINKING_*` values against `low` | `medium` | `high`. `minimal` is not supported by `gemini-3.8-flash` and returns an error at call time, so it is rejected here rather than discovered mid-demo (D62).
+4. For `gemini`, also validate the five `LLM_THINKING_*` values (`GUARDRAIL`, `ASSISTANT`, `ANALYST`, `MODERATOR`, `EXTRACTION`) against `low` | `medium` | `high`. There is no insight-engine level because the Insight Engine makes no model call (D67); `EXTRACTION` is the fifth (D68). `minimal` is not supported by `gemini-3.8-flash` and returns an error at call time, so it is rejected here rather than discovered mid-demo (D62).
 5. Issue one minimal probe completion with that `modelId`: one short input token, `max_tokens: 1`, no tools.
 6. Map the outcome:
 
@@ -418,7 +419,7 @@ Rules:
 | `CONTENT_FILTERED` from the provider | Never | Refusal-equivalent; the guardrail logs its own rule, not the provider's. |
 | `BUDGET_EXCEEDED` | Never | Assistant unavailable state. |
 
-**Streaming is excluded from the MVP.** A streamed response is displayed before it is validated, which makes the schema-validated contract unenforceable and the post-check (05 section 3.2.3) too late. The assistant returns one complete, validated payload.
+**Exactly one route streams, and it is the Assistant.** `POST /api/student/assignments/{assignmentId}/assistant/messages` returns `text/event-stream` (`06` section 5.4). Event order is fixed by `06` section 5.5.9: `guardrail` is always the first event, then `token` events, then `citations`, `message`, `done` (or `error`). A refusal emits zero `token` events, so the schema-validated contract is never bypassed: the guardrail decision and the post-check (05 section 3.2.3) gate the first `token`, not the connection. Every other route returns one complete, validated payload. No other route may stream.
 
 ### 5.8 The `mock` provider (required)
 
@@ -427,9 +428,9 @@ Rules:
 1. **Offline and deterministic.** No network. Same input, same output, byte for byte, across processes and machines.
 2. **Same interface, same types.** The mock implements `LlmProvider` exactly; no capability may special-case it.
 3. **Fixture-driven.** Responses are keyed by a hash of `(capability, systemPrefixId, canonicalised request body)`. Unknown keys return a deterministic refusal-shaped response, never an invented success.
-4. **Whole loop walkable.** With `mock`, a tutor can upload a document, the Analyst can produce candidates, the tutor can approve them, a student can send a message, receive an allowed answer, and receive a refusal for a prohibited request. All four capabilities, no key.
+4. **Whole loop walkable.** With `mock`, a tutor can upload a document, the Analyst can produce candidates, the tutor can approve them, a student can send a message, receive an allowed answer, and receive a refusal for a prohibited request. Every capability, no key.
 5. **Golden-set capable.** The mock can be forced to return a valid `guardrail_decision` for any requested verdict so the golden set exercises the model-enhanced path (05 section 11.4).
-6. **Identity of last resort.** The demo runs on `deepseek`; `mock` is the fallback when the network is hostile. Switching is one environment variable and no code change.
+6. **Identity of last resort.** The demo runs on the configured provider - `gemini` by default (D61) - and `mock` is the fallback when the network is hostile. Switching is one environment variable and no code change.
 
 ### 5.9 Enforcing C8 (no vendor SDK outside `src/lib/llm/`)
 
@@ -603,7 +604,7 @@ C7 applies to storage: no key, credential, cookie file or `.env` value is ever l
 ### 9.2 The assistant request path (the path that matters most)
 
 ```text
- 1. Client POST /api/assignments/:id/assistant/messages
+ 1. Client POST /api/student/assignments/{assignmentId}/assistant/messages
       body: { text, uploadIds[] , clientTurnId }
  2. Auth + enrolment scope check. Reject 401/403. (No model call.)
  3. Load the approved AI Usage Policy for this assignment (T2). Absent or
@@ -628,15 +629,23 @@ C7 applies to storage: no key, credential, cookie file or `.env` value is ever l
 11. Log the decision fields (section 10). Never log student content.
 12. Attachments: the request contract accepts text plus optional attachment ids whose
       stored objects are the shipped modalities - PNG/JPEG, PDF, and plain text (O11).
-      Extraction runs BEFORE step 4 in the same request; the extracted content
-      (vision/OCR text for an image, the text layer for a PDF, the text itself) is
-      inserted as student content and re-enters the guard at step 4. An upload is
-      input to understanding, never a request to perform work (C6, D10).
+      Extraction itself happens at upload, as capability `attachment_extraction`.
+      By the time this request arrives the upload is already terminal: its
+      extractionStatus is `extracted` and its guardrailScanStatus is `clear`, and an
+      upload that is not `clear` is rejected with `VALIDATION_FAILED` (06 section 5.5.9
+      stream rule 5). The extracted content (vision/OCR text for an image, the text
+      layer for a PDF, the text itself) is inserted as student content and re-enters
+      the guard at step 4. The extraction call resolves modelId by the attachment
+      rule in 5.3, uses LLM_THINKING_EXTRACTION, and is counted separately - its own
+      budget counter, never the assistant session counter (5.6, D68). One extraction
+      call per upload, zero for the text modality, and its output is never used to
+      ground another student's answer. An upload is input to understanding, never a
+      request to perform work (C6, D10).
       Audio (MP3/WAV) and video (MP4) never reach the adapter: the upload endpoint
       refuses them at the picker with rule UP5, before storage and before the guard,
       so there is no transcription path to guard. Pasted code or a pasted error
       message is the text modality and is covered by the same guard unchanged.
-13. Return: { messageId, text, policyNote, citations[], decisionId }.
+13. Respond over SSE for this one route (`06` section 5.5.9): validate against the schema and run the post-check before the first `token` event, then emit `token` events, `citations`, and the terminal `message` + `done` events carrying `{ messageId, createdAt }` and the usage totals.
 ```
 
 Steps 4, 8 and 9 are the guardrail. None of them may be reordered, skipped, or made optional by a feature flag.
@@ -715,12 +724,13 @@ This table matches `.env.example` exactly, variable for variable. Copy `.env.exa
 | `AUTH_SECRET` | `replace-me-with-32-bytes-of-randomness` | Always | Yes | `src/lib/auth/` | Session signing secret (`openssl rand -base64 32`). |
 | `ANON_ID_SECRET` | `replace-me-with-32-bytes-of-randomness` | Always | Yes | `src/lib/auth/`, discussion feature | HMAC key for per-(student, assignment) pseudonyms. Distinct from `AUTH_SECRET`. Because the pseudonym number is persisted, changing it does **not** re-label existing posts: labels of existing identity rows do not change, and only identities created after the rotation get different numbers. Treat it as permanent for the life of an assignment (**D55**, `06` S4.2). |
 | `LLM_PROVIDER` | `gemini` | Always | No | `src/lib/llm/index.ts` | One of `gemini` \| `deepseek` \| `mock`. `gemini` is the default (D61). Selected at runtime, never hard-coded. |
-| `LLM_MODEL_REASONING` | `gemini-3.8-flash` | Always | No | `src/lib/llm/` | Default model id for every capability (D62). One model serves all five capabilities and is natively multimodal. Valid ids per adapter: Gemini `gemini-3.8-flash`; DeepSeek `deepseek-flash`, `deepseek-v4-pro`. An unknown id is caught at startup validation (5.4). |
+| `LLM_MODEL_REASONING` | `gemini-3.8-flash` | Always | No | `src/lib/llm/` | Default model id for every capability (D62). One model serves every capability that makes a call and is natively multimodal. Valid ids per adapter: Gemini `gemini-3.8-flash`; DeepSeek `deepseek-flash`, `deepseek-v4-pro`. An unknown id is caught at startup validation (5.4). |
 | `LLM_MODEL_MULTIMODAL` | `` (empty) | Never; optional | No | `src/lib/llm/` | Optional separate model for image and PDF attachments (O11). Empty means reuse `LLM_MODEL_REASONING`, which is correct for `gemini-3.8-flash` because it accepts image and PDF input natively. Never consulted for audio or video, which the picker refuses before the adapter. |
 | `LLM_THINKING_GUARDRAIL` | `low` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for the policy guard: `low` \| `medium` \| `high`. Lowest setting because the guardrail runs on every student turn and is deterministic-first (D7, D62). |
 | `LLM_THINKING_ASSISTANT` | `medium` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for the student assistant's grounded answers. |
 | `LLM_THINKING_ANALYST` | `high` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for assignment ingestion. Highest setting because it runs once per document and the extraction quality is what everything downstream depends on. |
 | `LLM_THINKING_MODERATOR` | `low` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for discussion moderation. Advisory only (D28), so speed matters more than depth. |
+| `LLM_THINKING_EXTRACTION` | `low` | `LLM_PROVIDER=gemini` | No | `src/lib/llm/` | Thinking level for attachment extraction, which runs once per upload as a classification-controlled call (D68). Floor setting for the same reason as the guardrail: the call exists only to make the L0-L3 decision possible. |
 | `DEEPSEEK_API_KEY` | `` (empty) | `LLM_PROVIDER=deepseek` | Yes | `src/lib/llm/deepseek.ts` | DeepSeek credential. Never logged, never returned. |
 | `GEMINI_API_KEY` | `` (empty) | `LLM_PROVIDER=gemini` | Yes | `src/lib/llm/gemini.ts` | Gemini credential. Never logged, never returned. |
 | `LLM_BASE_URL` | `` (empty) | Never; optional | No | `src/lib/llm/` | Override provider base URL (proxy, self-hosted gateway). Empty means the provider default. |

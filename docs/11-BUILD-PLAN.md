@@ -2,7 +2,7 @@
 
 **Purpose.** Turn the committed scope in [`02-SCOPE.md`](02-SCOPE.md) into sequenced, verifiable work that four people can finish in one hackathon weekend.
 
-**Status of the repository at the time of writing.** Documentation only. `app/` does not exist. The repository is **not yet a git repository** (no `.git` directory), so creating it is a real, unstarted task, not an assumption -- that is why WP-01 exists.
+**Status of the repository at the time of writing.** Documentation only. `app/` does not exist. The repository **is** under version control: `origin` is `https://github.com/SharlEclair/rmit-hackathon.git` and history stands at 7 commits (HEAD `da00f71`). What remains genuinely unstarted in WP-01 is the application skeleton, the package manifest and the typecheck/lint configuration -- not `git init`. Public visibility of the remote is not verified (an anonymous fetch returns HTTP 404).
 
 **Rules this plan obeys.** `AGENTS.md` S2 (C1-C8), S4.3 (verify before claiming), S7 (hackathon obligations); `CONTRIBUTING.md` S2 (commit conventions) and S4 (definition of done).
 
@@ -52,7 +52,7 @@ Cut from the top of this list downward, and amend [`02-SCOPE.md`](02-SCOPE.md) S
 
 Twelve packets, WP-01 to WP-12. Each is independently verifiable. "Owner" is the track, not a person (S6.2).
 
-**Route paths in this plan are illustrative. `06-DATA-MODEL.md` S5 is the single source of truth (D51).** The corpus in this doc is deliberately flatter than the contract: it says "the upload endpoint" where the contract says `POST /api/tutor/assignments/{assignmentId}/sources`, and "the assistant endpoint" where the contract says `POST /api/student/assignments/{assignmentId}/assistant/messages`. Before implementing any route, read the endpoint index in `06` S5.4 and use its path, method, role and failure codes; where a directory sketch here and a path there disagree, `06` governs and this doc is the bug. Nothing here should be copied into a route handler as-is.
+**Route paths in this plan are illustrative. `06-DATA-MODEL.md` S5 is the single source of truth (D51).** The corpus in this doc is deliberately flatter than the contract: it says "the upload endpoint" where the contract says `POST /api/tutor/assignments/{assignmentId}/sources`, and "the assistant endpoint" where the contract says `POST /api/student/assignments/{assignmentId}/assistant/messages`. Before implementing any route, read the endpoint index in `06` S5.4 and use its path, method, role and failure codes; where a directory sketch here and a path there disagree, `06` governs and this doc is the bug. Nothing here should be copied into a route handler as-is. Every divergent sketch in this plan, and the one in `04` section 9.2 step 1, is mapped to its section 5.4 target in `06` section 10 item 17 (**D70**); that mapping is the authority for reconciliation.
 
 Primitives used by the gates:
 
@@ -68,6 +68,11 @@ pnpm demo:smoke         scripted end-to-end check of the demo loop (created in W
 ---
 
 ### WP-01 -- Repository, toolchain and walking skeleton
+
+**Status (Phase 0 reconciliation).** WP-01 is **partially done and must not be marked complete.**
+- Done and independently verified: `git init`; remote `origin` = `https://github.com/SharlEclair/rmit-hackathon.git`; 7 commits, HEAD `da00f71`; root `.gitignore` covers `.env`, `cookies.txt`, `.storage/`, `out/`, `node_modules/` and `.next/`; root `.env.example` exists.
+- Unstarted: the entire `app/` tree (no manifest, no `tsconfig.json`, no Next/Tailwind/PostCSS config, no `/api/health` handler, no `config.ts`, no DB client or migration runner, no `compose.yaml`, no `app/README.md`). `docs/fixtures/` does not exist, so WP-04's gate input is missing.
+- Consequently the verification gate below is not runnable and the acceptance criteria are unverified. Do not check them off. Re-run the gate only after the skeleton lands.
 
 **Goal.** A public GitHub repository with commit history, and an `app/` that boots, serves one page, reads its configuration, and can reach Postgres.
 
@@ -91,7 +96,7 @@ pnpm demo:smoke         scripted end-to-end check of the demo loop (created in W
 
 **Dependencies.** None. This is the root of the graph.
 
-**Effort.** 5 h. (The `git init` + public repo + first commit is a prerequisite step inside this packet, done first.)
+**Effort.** 5 h. (The `git init` + public repo + first commit step is **already done** and was satisfied outside this packet: `origin` is set and 7 commits exist. Do not re-initialise the repository.)
 
 **Verification gate**
 
@@ -106,10 +111,10 @@ git remote -v              # origin -> a public GitHub URL
 ```
 
 **Acceptance criteria**
-- [ ] `git init` was run, a public GitHub remote exists, and the first commit is inside the hackathon window (`AGENTS.md` S7).
+- [x] `git init` was run, a GitHub remote exists, and the first commit is inside the hackathon window (`AGENTS.md` S7). **Done:** `origin` = `https://github.com/SharlEclair/rmit-hackathon.git`, 7 commits, HEAD `da00f71`. Public visibility still unverified (anonymous fetch returns HTTP 404).
 - [ ] `/api/health` reports `db: "up"` with `DATABASE_URL` set and `db: "down"` with it unset, without crashing the process.
 - [ ] `app/src/lib/config.ts` is the only module that reads `process.env`; every variable name matches [`.env.example`](../.env.example) exactly (see [`12-OPERATIONS.md`](12-OPERATIONS.md) S2).
-- [ ] `git remote -v` shows a public GitHub remote, and `git log --format=%cI` contains dates inside the hackathon window.
+- [x] `git remote -v` shows the GitHub remote, and `git log --format=%cI` contains dates inside the hackathon window. **Done** (verified read-only); visibility, not existence, is the open item.
 - [ ] With `LLM_PROVIDER=mock`, no API key is required and the app boots offline.
 - [ ] `pnpm typecheck` and `pnpm lint` pass with zero errors.
 - [ ] `.env`, `cookies.txt` and `.storage/` are untracked (`git status --porcelain` shows none of them).
@@ -218,13 +223,13 @@ curl -s -b /tmp/c.txt -o /dev/null -w "%{http_code}" http://localhost:3000/tutor
 | `app/src/lib/storage/s3.ts` | S3-compatible driver behind the same interface; not exercised in the MVP |
 | `app/src/lib/llm/index.ts` | The **only** module allowed to import a model SDK (C8, D39) |
 | `app/src/lib/llm/types.ts` | `LlmProvider` interface, `LlmCallLog`, `LlmError` |
-| `app/src/lib/llm/deepseek.ts` | DeepSeek adapter (`deepseek-flash`) |
-| `app/src/lib/llm/gemini.ts` | Gemini adapter (supported alternative) |
+| `app/src/lib/llm/gemini.ts` | Gemini adapter (**the project default provider**, D61; model `gemini-3.8-flash`, D62) |
+| `app/src/lib/llm/deepseek.ts` | DeepSeek adapter (`deepseek-flash`); **supported alternative**, not the default (D61) |
 | `app/src/lib/llm/mock.ts` | Deterministic offline provider; returns the fixture proposal with a fixed seed |
 | `app/src/lib/llm/schema.ts` | Zod (or equivalent) schemas for every structured LLM response; a validation failure is a refusal, not a retry (D16) |
 | `app/src/features/ingest/extract.ts` | PDF text-layer extraction plus page boundaries; DOCX/PPTX accepted and extracted per `04` S6 (**O5**, **D57**); a scanned PDF with no text layer is flagged for tutor attention rather than guessed at. The rehearsed demo uses a text-layer PDF only (`02` S2.4). Reused unchanged for PDFs attached to an Assistant turn |
 | `app/src/features/uploads/attachments.ts` | Student attachment intake: type and size check against the three supported modalities (PNG/JPEG, PDF, plain text), audio and video refused with a clear message at the picker, storage under a server-generated key, and a guardrail scan before the content joins the turn (**O11**, C6) |
-| `app/src/features/ingest/extract-image.ts` | Image path: send the image to the multimodal model call via the adapter rather than a local OCR pipeline; `LLM_MODEL_MULTIMODAL` empty means reuse `LLM_MODEL_REASONING`, which is correct for `deepseek-flash` (D40) |
+| `app/src/features/ingest/extract-image.ts` | Image path: send the image to the multimodal model call via the adapter rather than a local OCR pipeline; `LLM_MODEL_MULTIMODAL` empty means reuse `LLM_MODEL_REASONING`, which is correct for `gemini-3.8-flash` because it is natively multimodal (**D62**; see `12` S2.3) |
 | `app/src/features/ingest/chunk.ts` | Page-anchored source chunks |
 | `app/src/features/ingest/pipeline.ts` | Upload -> store -> extract -> chunk -> propose structure -> persist as `AI_GENERATED` |
 | `app/src/app/(tutor)/assignments/new/page.tsx` | Upload screen with per-file status |
@@ -285,7 +290,7 @@ Also verified without a network connection: unplug the network, repeat the uploa
 
 ```bash
 cd app
-LLM_PROVIDER=deepseek DEEPSEEK_API_KEY=... pnpm tsx scripts/ingest-once.ts --fixture demo
+LLM_PROVIDER=gemini GEMINI_API_KEY=... pnpm tsx scripts/ingest-once.ts --fixture demo
 # Expected: a proposal JSON written to app/.scratch/proposal.json and rows persisted
 pnpm test -- tests/ingest/prompt-constraints
 ```
@@ -330,7 +335,7 @@ Observable behaviour, checked by a human, not a script: open the proposal and re
 cd app && pnpm test -- tests/review
 pnpm db:seed && pnpm dev
 # With a student session cookie, request an unapproved artifact:
-curl -s -b /tmp/student.txt http://localhost:3000/api/milestones/<unapproved-id>   # 404 or 403, never 200
+curl -s -b /tmp/student.txt http://localhost:3000/api/student/assignments/<unapproved-id>/structure   # 404 or 403, never 200; there is no /api/milestones/* route (06 S5.4, D70)
 # Approve in the tutor UI, repeat: 200
 ```
 
@@ -421,7 +426,7 @@ psql "$DATABASE_URL" -c "select started_at, completed_at from checklist_progress
 
 ```bash
 cd app
-pnpm test -- tests/guardrail          # runs offline; no DEEPSEEK_API_KEY set
+pnpm test -- tests/guardrail          # runs offline; no provider key set
 # Expected: all golden cases pass, including the laundering cases
 pnpm test -- tests/guardrail --coverage
 ```
@@ -689,7 +694,7 @@ Likelihood and impact are H / M / L. "Trigger" is the observable event that mean
 | R4 | **No working end-to-end path** -- every part is nearly done and nothing connects | M | H | The walking skeleton in WP-01 makes the first connection on Friday night. `pnpm demo:smoke` in WP-12 becomes a daily check from Saturday noon onward. Integration is never deferred to the last packet. | WP-06 is not done by Saturday 18:00, or `pnpm demo:smoke` has not passed once by Saturday 22:00. |
 | R5 | **Requirement paraphrase leaks into the UI** -- a model-authored summary of the brief appears where the brief should be (C2, D17) | M | H | The document viewer is the only student-facing surface for requirement text; anywhere else quotes verbatim with a page reference. Add a grep to the smoke script for known brief sentences appearing outside the viewer. | Any screen shows requirement prose that does not exist in the PDF. |
 | R6 | **Approval bypass** -- content reaches students before a tutor approves it | M | H | The transition state machine is one module (WP-06). Every student-facing read filters on `APPROVED`. An integration test requests unapproved content with a student session and expects 403/404. | One item is found student-visible while `NEEDS_REVIEW`. Stop and fix before anything else. |
-| R7 | **No git repository and no public remote yet** -- the "commit often" evidence requirement is unmet and there is nothing to submit | H | H | WP-01 begins with `git init`, a public GitHub remote, and the first commit. Commit per logical change using `CONTRIBUTING.md` S2 conventions from that moment on. | Sunday 09:00 arrives with no public remote, or the commit history does not span the event window. |
+| R7 | **The repository is not publicly readable**, and the commit history does not yet span the event window -- the "commit often" evidence requirement is only partly met | M | H | The repository and remote already exist (7 commits, HEAD `da00f71`), so WP-01's `git init` and remote steps are done. Confirm the GitHub visibility setting, then commit per logical change using `CONTRIBUTING.md` S2 conventions. | The repo URL still returns 404 anonymously at Sunday 09:00, or every commit falls inside one hour. |
 | R8 | **The demo cannot be deployed** -- it only runs on one laptop | M | M | One documented deploy path ([`12-OPERATIONS.md`](12-OPERATIONS.md) S5), rehearsed once on Saturday evening. A long-lived Node server with local storage is the default; a serverless target requires the S3 driver, because local files do not survive between invocations. | Deployment is not verified by Saturday 20:00. Fall back to the local demo and stop spending time on it. |
 | R9 | **A secret is committed** -- `.env`, a cookie file, or a key reaches the public repository | M | H | `.gitignore` is verified in WP-01. `.env.example` is the only tracked template and contains no real value. Review `git status` before every `git add -A`. | A secret is found in the working tree or in history. Rotate the credential first, then clean history; never the other way round. |
 | R10 | **Key teammate unavailable** -- illness, a lab, an exam, a dead laptop | M | M | Disjoint file ownership by track (S6.2). Every track commits and pushes at least hourly so work is recoverable. The two critical-path packets (WP-05, WP-06) have a named secondary. | A teammate is unreachable for more than two hours during a critical window. Reassign their open packet explicitly and say so on the task board. |
@@ -777,7 +782,7 @@ From `AGENTS.md` S4.3 and `CONTRIBUTING.md` S4, restated so no packet can be clo
 
 ## 9. What this plan does not do
 
-- It does not claim any of it is built. At the time of writing, `app/` does not exist and the repository is not yet under version control.
+- It does not claim any of it is built. At the time of writing, `app/` does not exist; the repository is under version control (7 commits, HEAD `da00f71`) but contains documentation only.
 - It does not estimate the demo narrative, the Devpost text, or the presentation build; those are [`13-DEMO-STORY.md`](13-DEMO-STORY.md) and [`14-HACKATHON-SUBMISSION.md`](14-HACKATHON-SUBMISSION.md).
 - It does not guarantee the hour estimates. They are engineering judgement against a codebase that does not exist yet, stated as a range by their inclusion in S1.4's cut list.
 - It does not resolve the open questions. O1-O12 remain the working defaults in [`01-DECISIONS.md`](01-DECISIONS.md); if a packet proves a default wrong, amend that table first.
