@@ -50,5 +50,8 @@
 *.sqlite binary
 *.db    binary
 
-# The lockfile is generated; a diff of it is noise, and a merge conflict in it is unreadable.
-pnpm-lock.yaml -diff linguist-generated
+# The lockfile is generated, so keep it out of language statistics. NOT `-diff`: a diff
+# suppressed is a diff nobody reviews, and `git diff --cached` is how this repository checks
+# for a leaked secret before every commit (C7). A 150 KB generated file is not a reason to
+# blind the one check that matters most.
+pnpm-lock.yaml linguist-generated

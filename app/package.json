@@ -20,6 +20,7 @@
     "@node-rs/argon2": "2.2.1",
     "drizzle-orm": "0.45.3",
     "next": "16.3.8",
+    "pdfjs-dist": "6.3.289",
     "postgres": "3.4.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
