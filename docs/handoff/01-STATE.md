@@ -11,11 +11,19 @@ lifecycle), `743ceaa` (assignment health analytics), `7fdd1d8` (the Discussion M
 `bf47b88` and `aa2c386` (the trap register and two route fixes), `087f9c2` (the `06`/`05` doc corrections)
 and `194e69e` (Phase 6's acceptance run).
 **Pushed:** see section 7. Tags run `phase-00` -> `phase-01` -> `phase-03` -> `phase-02` -> `phase-04` ->
-`phase-05` -> `phase-06`, which is **not** the commit order (Phases 2 and 3 ran concurrently).
-**Last session:** 06.
-**Next phase:** **7 -- smoke test, fallbacks, freeze and submission.** Phases 0-6 are complete; Phase 7 is
-unstarted. Phase 6 delivered **WP-10 and WP-11 in full**, including the moderation surface; what it
-deliberately did **not** build is in section 4 and `05-ISSUES.md`.
+`phase-05` -> `phase-06` -> `phase-07-freeze`, which is **not** the commit order (Phases 2 and 3 ran
+concurrently).
+**Last session:** 07.
+**Next phase:** **none -- Phase 7 is the last phase in `18-IMPLEMENTATION-PLAN.md`.** Phases 0-7 are code-complete
+and the feature set is frozen at `phase-07-freeze`. Phase 7 is a non-code phase and **four of its deliverables
+need a human at a keyboard** and are not done: the fallback recordings, the screenshot asset, the three
+rehearsals, and the Devpost filing. See section 3's Phase 7 rows for the exact state rather than a summary,
+because "Phase 7 complete" would overstate it.
+
+**Phase 7 note on `/compact`, carried from Phases 5 and 6:** the objective text asks for a `/compact` after
+each of those phases. There is no compact tool available in this environment, so it was never run; the
+handoff artefacts are written and pushed, which is what it was for. Recorded here so a later session does
+not read the omission as a skipped step.
 
 **Authority:** below `AGENTS.md`, [`../01-DECISIONS.md`](../01-DECISIONS.md) and
 [`../02-SCOPE.md`](../02-SCOPE.md). If this file contradicts the register, this file is the bug.
@@ -103,7 +111,14 @@ Node or `tsx` probe).
 | Phase 6: the proactive notice wiring | **NOT STARTED** | route and builder exist; no milestone focus is supplied, so the panel receives `proactive: null` |
 | **A mock fixture for `discussion_moderator`** | **NOT PRESENT, deliberately** | the mock's refusal is what makes binding rule 5's failure path exercisable offline |
 | Anything mocked | **the `mock` provider is a first-class mode** | D90 |
-| Phase 7 | **NOT STARTED** | this file's next-phase line |
+| **Phase 7: the smoke test and the reset script** | **built and run** | `pnpm demo:smoke` -> **11/12**; `demo/reset.ps1` exists |
+| **Phase 7: the AI-use disclosure** | **written, and the spoken version reconciled to it** | `14-HACKATHON-SUBMISSION.md` S5, with the per-packet log filled from the commit history |
+| **Phase 7: the feature freeze** | **tagged** | `phase-07-freeze`, pushed, pointing at the current HEAD |
+| Phase 7: the four fallback recordings | **NOT DONE -- needs a human** | `demo/fallback/` holds only a README; the smoke test reports the gap as a failing check |
+| Phase 7: `demo/assets/failing-code-screenshot.png` | **NOT DONE -- needs a human** | `Test-Path demo/assets` -> False |
+| Phase 7: the three rehearsals (one offline) | **NOT DONE -- needs a human** | `14-HACKATHON-SUBMISSION.md` S3's run sheet |
+| Phase 7: the Devpost submission filed | **NOT DONE -- the team's** | S2's project URL is `TBD`; S5.3's per-member disclosure is unfilled |
+| Phase 7: beat 5's second half performable live | **NOT POSSIBLE as built** | `13-DEMO-STORY.md` S6.2a: the attachment picker is I-48; the server-side refusal works, the UI does not offer it |
 
 **48 route files** under `src/app/api` (26 student, 18 tutor, plus the public health and auth routes).
 
