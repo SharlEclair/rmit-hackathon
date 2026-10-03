@@ -859,3 +859,40 @@ No stale claim was found that changes what this session may rely on.
 - **The full acceptance-criteria checklist of `11` WP-06.** The gate and the six criteria were walked;
   the two that are genuinely not satisfied (the badge, the page) are named in its status note rather
   than left implied.
+
+---
+
+## Session 05 - Phase 5 (student workspace, Map, checklist, AI Usage Policy and the Assistant) - 2026-10-04
+
+**Phase:** 5   **Status:** in progress (entry written **before** the first commit, per `00-README.md`
+section 1 step 6)
+**Spec docs read:** `AGENTS.md`; `00-INDEX`; `01-DECISIONS`; `02-SCOPE`; `18-IMPLEMENTATION-PLAN`
+(all); `06-DATA-MODEL` sections 3.4, 5.1-5.7, 5.5.3-5.5.10, 6, 7.3, 7.6; `07-UI-UX-SPEC` sections
+2, 3.4-3.7, 4.1-4.7; `05-AI-GUARDRAILS` sections 1-3, 5-8, 12; `17-DESIGN-SYSTEM` sections 2, 3,
+6, 11-13; `11-BUILD-PLAN` WP-07 and WP-09; `12-OPERATIONS`; all of `docs/handoff/**`
+**Commit range:** `cd502a8`..**Tag:** `phase-05-complete` (planned)
+
+### Environment divergence found at session start (reported before any work)
+
+`00-README.md` step 5 requires this and it caught something real, so it is recorded first.
+
+| Divergence | Observed | Expected by `01-STATE.md` |
+|---|---|---|
+| **Phase 5 is not unstarted.** The working tree carries an interrupted prior session's Phase 5 work | `git status --porcelain` -> 7 modified (`src/lib/api/types.ts`, the five `src/styles/*.css`, `tests/guardrail/imports.test.ts`) + 8 untracked (`src/components/ui/{badge,content-class-panel,empty-state,fixed-strings,theme-scope}.tsx`, `src/lib/guardrail/classifier-port.ts`, `src/lib/utils.ts`, `src/styles/fonts.ts`) | `01-STATE.md` section 3 line "Phase 5 ... **NOT STARTED**" |
+| The handoff names no such work anywhere | grep of `docs/handoff/**` for the new filenames returns nothing | `00-README.md` section 4 expects the exit protocol to have recorded it |
+
+**The baseline is nonetheless green with that work in place**, which is why it is being rescued rather
+than reverted: `pnpm typecheck` -> 0 errors; `pnpm lint` -> `C8 import/endpoint gate: ok`, exit 0;
+`pnpm test` -> **24 files passed, 521 tests passed**, exit 0, no network and no provider key.
+
+### Session intent (recorded before the first commit)
+
+1. Append this entry, so a session that dies mid-task still left its intent on disk.
+2. Audit the rescured uncommitted work against its specs, correct it, and commit it as the **first**
+   Phase 5 commit, labelled as rescured work rather than presenting it as this session's own.
+3. `I-44`'s ordered design work: finish L1/L2 in `tokens.css`, keep the **D106** font degradation path
+   (the seven woff2 binaries are absent and are not invented), and write `scripts/check-design.mjs`
+   implementing `17` section 12's static gates.
+4. Then the phase proper: the student query layer, `features/assistant/`, the student routes
+   including the SSE assistant stream, and the student UI.
+5. Exit with all seven handoff artefacts, `git tag phase-05-complete`, and a push.
