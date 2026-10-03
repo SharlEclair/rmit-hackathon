@@ -425,6 +425,29 @@ psql "$DATABASE_URL" -c "select started_at, completed_at from checklist_progress
 
 ### WP-08 -- Guardrail: the policy layer and the golden set
 
+**Status (Phase 3, complete).** `app/src/lib/guardrail/` exists with the twelve modules of `05`
+section 12.1 (plus `policy-source.ts`, `refusal-copy.ts` and `log.ts`), and the gate was **run**, not
+read: `pnpm test -- tests/guardrail` -> **232 tests in 9 files, all passing, 1.44 s, with no network
+and no provider key**. All **53** cases of the golden set (`05` section 11.6, G01-G53) execute with
+no `MODALITY` skip marker and no excluded case: 30 `REFUSE`, 15 `ALLOW`, 2 `ALLOW_WITH_SCOPE`,
+3 `CLARIFY`, 3 `ESCALATE_TO_TUTOR`, asserted against section 11.5's own distribution table in
+`tests/guardrail/golden-set.test.ts`. The layer semantics of section 11.4 are asserted as **call
+counts**: a `DET` refusal consults no adapter at all, a `DET+EXTRACT` case makes exactly one
+extraction call against a real attachment, a `MODEL` case makes exactly one classifier call, and a
+`PICKER` case makes none of either. `R1`, `R2`, `R3`, `R9`, `R11` and `R13` are checked over every
+refusal-shaped rendering, and `G01`'s `T-REFUSE` text is byte-pinned.
+
+**What is deliberately not verified here.** (a) The six upload attachments are real PNG/PDF/MP3/MP4
+files whose `UP1`-`UP4` codes are **recorded in `docs/fixtures/attachments/manifest.json`** and
+verified by hash, not produced by a live vision model (**I-30**): the modality cases execute, but the
+live classification path they exist to exercise is Phase 2's. (b) The L4 classifier is reached
+through a **port** (`GuardrailClassifierPort`, **D87**) because `src/lib/llm/` was Phase 2's and did
+not exist when this phase ran; wiring the adapter is a later phase's change. (c)
+`pnpm test --coverage`, this packet's second gate line, could not run: no coverage provider is
+installed (**I-31**). (d) `pnpm lint` and `pnpm typecheck` were red at the phase boundary because of
+files a concurrent Phase 2 session owns (**I-34**); the scoped commands
+(`pnpm exec eslint src/lib/guardrail tests/guardrail`, `node scripts/check-c8.mjs`) are clean.
+
 **Goal.** A student request is classified by deterministic code into one of five verdicts, with the rule cited, before any model call. Prohibited and derived-effort requests are refused with a safe alternative offered. The behaviour is covered by a golden set that includes laundering attempts.
 
 **Deliverables**

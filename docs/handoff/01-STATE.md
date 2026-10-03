@@ -3,16 +3,20 @@
 **Purpose.** What is actually built, what is not, and the command that proves each claim. **This
 file is rewritten every session.** It records commands and observed output, never adjectives.
 
-**Tag:** `phase-01-complete` -- Phase 1's final commit, which adds `07-ARCHIVE/phase-01/`. The
-packet commits it contains are `9c84ef8` (WP-01 skeleton), `9d4c16d` (fixtures), `f5360a5` (schema),
-`e16cfa5` (auth), `0ba949f` (the `pdfjs-dist` pin), `3a47eaf` (seed) and `593499a` (these exit
-documents). **Pushed:** `git push origin main` -> `9dccd0f..49c10e1  main -> main`, and the tag
-`phase-01-complete` was pushed with it, so `origin/main` equals `main` at the tag. (The push happened
-*after* this file was first written; the one-line correction is commit `HEAD` and is the only change
-after the tag. Phase 0 had the same shape -- a follow-up commit after `phase-00-complete`.)
-**Last session:** 01
-**Next phase:** **2 -- NOT STARTED.** `src/lib/llm/`, `src/lib/storage/`, extraction and the
-ingestion job are Phase 2's; the guardrail (WP-08, Phase 3) is file-disjoint and must not wait.
+**Tag:** `phase-03-complete` -- the Phase 3 exit commit, which adds `07-ARCHIVE/phase-03/`. The
+packet commits it contains are `d9008e8` (the frozen contract, reason codes and L0), `7f4dd5a`
+(L1-L5, the policy overlay and `decide()`) and `bf12a3e` (the 53-case golden set, the unit suites
+and the upload fixtures). **Not pushed** at the time of writing: `origin/main` is still at the
+Phase 1 push (`9dccd0f..49c10e1`), so a later session must push -- see section 8.
+
+**Last session:** 03
+**Concurrent session detected:** yes. A second session implementing **Phase 2** (WP-04/WP-05:
+`src/lib/llm/`, `src/lib/storage/`, `src/lib/extract/`, `src/features/ingest/`, migration
+`0011_ingestion_jobs.sql`, and the `I-19` relocation of the error envelope) was writing in the same
+working directory throughout this session, exactly as `18` section 5.1 plans. Its files are
+**uncommitted in the working tree** as this file is written and its own exit documents are not yet
+written. Phase 3 therefore claims nothing about Phase 2's completeness, and neither session's
+repo-wide gates were green at the same moment (**I-34**, trap **T26**).
 
 **Authority:** below `AGENTS.md`, [`../01-DECISIONS.md`](../01-DECISIONS.md) and
 [`../02-SCOPE.md`](../02-SCOPE.md). If this file contradicts the register, this file is the bug.
@@ -22,151 +26,140 @@ ingestion job are Phase 2's; the guardrail (WP-08, Phase 3) is file-disjoint and
 ## 1. Re-verify before trusting this file
 
 ```powershell
-git log --oneline -1                 # expect 3a47eaf (phase-01 wp-A..wp-C)
-git status --porcelain               # expect clean
-git tag                              # expect phase-00-complete and phase-01-complete
-Test-Path app                        # expect True
-Test-Path docs/fixtures/demo-brief.pdf   # expect True
-cd app; pnpm typecheck               # expect no output
-pnpm lint                            # expect "C8 import/endpoint gate: ok"
-pnpm test                            # expect 52 passed in 3 files
-pnpm db:migrate                      # expect "no pending migrations (10 already applied)"
-pnpm exec tsx --env-file-if-exists=.env scripts/verify-schema.ts   # expect "schema drift: none (33 tables, 444 columns)"
-$PSVersionTable.PSVersion            # expect 5.1 (see 05-ISSUES I-09)
-node -v; pnpm -v                     # expect v24.x / 12.x
-Get-Service postgresql-x64-18 | Select-Object Status   # expect Running
+git log --oneline -1                 # expect a commit after bf12a3e (the exit documents)
+git status --porcelain               # expect modified files from the concurrent Phase 2 session
+git tag                              # expect phase-00-complete, phase-01-complete, phase-03-complete
+Test-Path app/src/lib/guardrail/index.ts   # expect True
+cd app
+pnpm test -- tests/guardrail         # expect 232 passed in 9 files, no network, no provider key
+pnpm exec eslint src/lib/guardrail tests/guardrail scripts/make-guardrail-fixtures.mjs
+                                     # expect exit 0, no output
+node scripts/check-c8.mjs            # expect "C8 import/endpoint gate: ok"
 ```
 
-The database assertions need `PGPASSWORD` and the local role:
+The guardrail's own gate is the first command. The second and third are the **scoped** lint and C8
+checks: `pnpm lint` and `pnpm typecheck` are repo-wide, and at the Phase 3 boundary both were red
+because of files the concurrent Phase 2 session owns (**I-34**). Run them, but read the filenames:
+`src/features/ingest/chunk.ts` (`no-control-regex`, `no-misleading-character-class`) and
+`src/features/ingest/analyst.ts` (`TS1354`, `TS2353`, `TS2339`) are **not** Phase 3's.
+
+The Phase 1 fixtures and database assertions still hold and are unchanged:
 
 ```powershell
+cd app; pnpm db:migrate              # expect "no pending migrations (10 already applied)"
 $env:PGPASSWORD='password'
 psql -U user -h localhost -p 5432 -d assignment_assistant -tAc "select count(*) from users where role='student'"
 # expect 37
-psql -U user -h localhost -p 5432 -d assignment_assistant -tAc "select count(*) from milestones where publication_status in ('APPROVED','PUBLISHED')"
-# expect 5
+psql -U user -h localhost -p 5432 -d assignment_assistant -tAc "select count(*) from ai_policy_rules"
+# expect 9
 Remove-Item Env:PGPASSWORD
 ```
 
-## 2. Environment fingerprint (observed, Session 01)
+## 2. Environment fingerprint (observed, Session 03)
 
 | Fact | Observed value | How |
 |---|---|---|
 | Shell | **Windows PowerShell 5.1.26100.9549** -- not `pwsh` 7 | `$PSVersionTable` |
 | Node | `v24.15.0` | `node -v` |
 | pnpm | `12.4.2` | `pnpm -v` |
-| psql / Postgres | `18.6`; service `postgresql-x64-18` -> `Running`, native, port 5432 (**D66**) | `psql --version`, `Get-Service` |
-| Docker | client present; **daemon not running** | not re-checked this session |
-| Git | `main` = `3a47eaf`, 16 commits; `origin` = `SharlEclair/rmit-hackathon`, public, **7 commits behind** | `git rev-list --count`, `git rev-list --left-right --count origin/main...HEAD` |
-| Tags | `phase-00-complete`, `phase-01-complete` | `git tag` |
-| Repository visibility | PUBLIC (verified in Phase 0 and Session 00b) | not re-checked this session |
-| Registry pins as installed | `next` 16.3.8, `react`/`react-dom` 19.3.0, `tailwindcss` 4.3.3, `typescript` 7.0.2, `zod` 4.6.5, `vitest` 5.0.3, `tsx` 4.23.15, `drizzle-orm` 0.45.3, `drizzle-kit` 0.31.11, `postgres` 3.4.9, `pdfjs-dist` 6.3.289, `eslint` 9.39.5, `@babel/eslint-parser` 7.29.9, `@node-rs/argon2` 2.2.1 | `app/package.json` |
-| Database | empty before Phase 1; now 34 base tables (33 project + `schema_migrations`), 2 views, 33 triggers, 8 partial indexes, 444 columns | `information_schema`, `scripts/verify-schema.ts` |
-| Seeded state | 38 users (37 students + 1 tutor), 1 course, 1 assignment, 3 sources, 69 chunks, 5 milestones, 17 checklist items, 233 progress rows, 36 queries, 503 analytics events | `pnpm db:seed` summary, `psql` |
+| Vitest | `5.0.3`; **config load needs a piped child process**, which the DSH workspace sandbox denies as `spawn EPERM` (Vite runs `net use` on Windows) | `pnpm test` |
+| Postgres | `18.6`, service `postgresql-x64-18` running, 10 migrations applied (D66) | `pnpm db:migrate` |
+| Git | `main` at `bf12a3e` **before** the exit docs; tags `phase-00`, `phase-01`, `phase-03` | `git log`, `git tag` |
+| Full suite at the boundary | `pnpm test` -> **464 passed in 22 files** (232 of them `tests/guardrail`; the rest are Phase 1's and the concurrent Phase 2 session's) | `pnpm test` |
 
 ## 3. State of the build
 
 | Area | State | Evidence |
 |---|---|---|
-| `app/` skeleton (WP-01) | **built** | `pnpm typecheck` clean; `pnpm lint` clean; `pnpm build` compiles; `/api/health` -> `{"ok":true,"db":"up",...}` |
-| `/api/health` degraded path | **built** | with `DATABASE_URL` removed from `.env`: `{"ok":false,"db":"down",...}` and `/` still 200 from the same process |
-| `docs/fixtures/` (WP-02) | **built** | 5 files; `pdfjs-dist@6.3.289` extracts 4 and 3 pages; three generator runs byte-identical |
-| Schema: 33 tables, 2 views, 33 triggers, 8 partial indexes | **built** | `pnpm db:migrate` from a dropped schema -> `10 applied`; second run -> `no pending migrations`. `verify-schema.ts` -> no drift across 33 tables / 444 columns |
-| Seed: deterministic cohort (WP-02) | **built** | `pnpm db:seed` run 1 -> `TOTAL 570 / 0`; run 2 -> `TOTAL 0 / 570`; whole-database row counts identical. T8's shape verified: 37 students, 5 milestones, M3 above both thresholds, M2 with 3 contributors |
-| Auth (WP-03) | **built** | `pnpm test -- tests/auth` -> 37 passed; live: login 200 with an `HttpOnly; SameSite=Lax; Max-Age=43200` cookie, wrong password and unknown email both identical 401, `/tutor` -> 307 without a cookie and 404 with one, logout 204 then 401, four tamper shapes -> 401, 11th attempt -> 429 |
-| `tests/db` | **built** (static) | `pnpm test -- tests/db` -> 15 passed. It asserts traps T18/T19 over the committed SQL and needs no database |
-| Design tokens | **paths only** | the five `src/styles/*.css` files and `tailwind.config.ts` exist and compile; the token **values** are `07`/`17`'s and land with the first UI phase (**D75**) |
-| `src/lib/llm/` (the adapter) | **NOT STARTED** | does not exist. No provider call has been made since Phase 0's three probes |
-| `src/lib/storage/` | **NOT STARTED** | does not exist. The seed writes fixture bytes to `STORAGE_LOCAL_DIR` directly |
-| Extraction / chunking pipeline | **NOT STARTED** | the seed chunks the PDFs with an ad-hoc path; WP-04 owns the real one |
-| Guardrail + 53 golden cases (WP-08) | **NOT STARTED** | Phase 3's, and file-disjoint from Phase 2 |
-| Review/approval state machine (WP-06) | **NOT STARTED** | no state machine exists; the seed sets statuses directly |
-| Student/tutor surfaces | **NOT STARTED** | no `(tutor)` or `(student)` page exists. `/login` is the only page |
-| Analytics computation (WP-11) | **NOT STARTED** | `milestone_metrics` and `assignment_metrics` are deliberately empty (D67, T7) |
-| Ingestion job table (I-15) | **NOT STARTED** | still absent; D60/D71 assign it to WP-04/WP-05 |
-| `expectedRevision` storage (I-16) | **NOT STARTED** | no revision column exists, deliberately (A8) |
-| Anything mocked | **nothing is mocked** | the seed is fixture data, not a mock; no adapter exists to mock |
+| Guardrail engine: `types`, `reasons`, `refusal-copy`, `normalise`, `rules`, `policy-source`, `policy`, `classifier`, `post-check`, `templates`, `log`, `index` | **built** (WP-08) | `pnpm typecheck` reports no error under `src/lib/guardrail/`; `pnpm exec eslint src/lib/guardrail` -> exit 0; `tests/guardrail/imports.test.ts` asserts the purity and single-entry import graph |
+| The 53-case golden set (G01-G53) | **built, 53/53 executing** | `pnpm test -- tests/guardrail` -> 232 passed; `tests/guardrail/golden-set.test.ts` asserts section 11.5's distribution and that no `MODALITY` marker or skip exists |
+| Layer semantics as call counts (`DET`, `DET+EXTRACT`, `MODEL`, `PICKER`) | **built** | The runner asserts zero/one extraction and classifier calls per case; `MODEL` cases run against pinned mock outputs, so the suite needs no provider |
+| Refusal rendering (`T-REFUSE`/`T-SCOPE`/`T-CLARIFY`/`T-ESCALATE`) | **built** | `templates.test.ts` byte-pins `G01`'s refusal and checks `R1`/`R2`/`R3`/`R9`/`R11`/`R13` over every refusal-shaped rendering |
+| `policy-source.ts` against the **seeded** policy rows | **built** | `policy.test.ts`: the nine `PUBLISHED` rows of `golden/policy.demo-rows.json` (read back from Postgres with `psql`) yield `POL_APPROVED` with `explain_terminology`, `interpret_rubric`, `locate_source`, `quote_source_verbatim` |
+| Upload fixtures + hash verification | **built** | 6 real attachments, byte-identical across two generator runs, and verified **from a fresh clone** (`git clone --no-hardlinks`): all 6 match `manifest.json`, and the cloned PDF reads back 364 chars through `pdfjs-dist@6.3.289` |
+| L4 provider wiring | **NOT WIRED, by design** | `GuardrailClassifierPort` is declared in `classifier.ts` and no guardrail file imports `src/lib/llm/` (**D87**). The adapter wrapper is a later phase's change; `tests/guardrail/imports.test.ts` asserts nothing imports it today |
+| Live `UP1`-`UP4` classification of real attachments | **NOT VERIFIED** | The codes are recorded in `docs/fixtures/attachments/manifest.json` and asserted by hash (**I-30**) |
+| `pnpm test --coverage` (WP-08's second gate line) | **NOT RUNNABLE** | No coverage provider installed -- `Test-Path app/node_modules/@vitest/coverage-v8` -> `False` (**I-31**) |
+| Phase 2 (`src/lib/llm/`, `storage`, `extract`, `features/ingest`, `0011_ingestion_jobs.sql`, `I-19`) | **in progress in a concurrent session; uncommitted at this boundary** | `git status --porcelain` lists those paths as modified/untracked. **Phase 3 verified none of it.** Its own tests were passing when the full suite was last run (464 total) and its lint was not (**I-34**) |
+| Phase 4+ (review/approval, G1 gate, student surfaces, Assistant route, analytics) | **NOT STARTED** | No `(tutor)`/`(student)` page, no review state machine, no Assistant route, `milestone_metrics`/`assignment_metrics` still deliberately empty |
 
-**WP-01, WP-02 and WP-03 are complete**, each against its own verification gate. Do not mark the KANBAN
-checkboxes in `11` wholesale: the gates were run, the per-item acceptance lists were not all walked
-one by one (see section 7 of [`06-SESSION-LOG.md`](06-SESSION-LOG.md) Session 01, "What I could not
-verify").
+## 4. Phase 3 evidence, condensed
 
-## 4. Phase 1 evidence, condensed
-
-Full evidence is in [`06-SESSION-LOG.md`](06-SESSION-LOG.md) Session 01. The four checks worth
+Full evidence is in [`06-SESSION-LOG.md`](06-SESSION-LOG.md) Session 03. The five checks worth
 quoting here, because each one is a claim a later phase depends on:
 
 | Claim | Command and observed result |
 |---|---|
-| Migrations apply from nothing and are idempotent | `drop schema public cascade` + `create schema public` -> `pnpm db:migrate` -> `apply 0001_baseline` ... `apply 0010_updated_at_triggers` / `10 applied, 0 already applied`; second run -> `no pending migrations (10 already applied)` |
-| The seed is idempotent database-wide | run 1 `TOTAL 570 / 0`; run 2 `TOTAL 0 / 570`; every base table's row count identical between the two |
-| Trap T1 holds in the seeded data | per-student mean then mean of means, recomputed in SQL -> `2609.067 / 2116.333 / 5755.138 / 2303.500 / 2752.833` seconds, matching `docs/fixtures/cohort-seed.json` for all five milestones |
-| Gate G1 shows a student content | `milestones` PUBLISHED joined through the current structure and the published assignment -> **5**. Before the D81 correction it was **0**, while 233 completed items sat under those milestones |
+| The golden set executes in full, offline | `pnpm test -- tests/guardrail` -> **232 passed (9 files), 1.44 s**, with no network and no provider key. The 53 cases split 30 `REFUSE` / 15 `ALLOW` / 2 `ALLOW_WITH_SCOPE` / 3 `CLARIFY` / 3 `ESCALATE_TO_TUTOR`, matching `05` section 11.5's own table |
+| No path from a student turn to a classifier call skips L1-L3 | Every `DET` case asserts **zero** classifier calls, and its assertion fails loudly if the port is consulted; the runner counts calls rather than comparing verdicts only |
+| Refusal text cannot hallucinate or leak | `templates.test.ts`: `G01`'s `T-REFUSE` output is byte-pinned, and `R1`/`R2`/`R3`/`R9`/`R11`/`R13` hold for all 36 refusal-shaped cases |
+| A policy can only restrict | `policy.test.ts` drives `decide()` twice with the same turn: a view whose `permitted` omits `explain_terminology` returns `REFUSE`/`POL_RESTRICT`; the full view returns `ALLOW`/`A5`. `FLOOR_PROHIBITED` is a subset of `effectiveProhibited` for every view tested, including one with `prohibited: []` |
+| The committed binaries survive a clone (trap T20) | `git clone --no-hardlinks` to a temp directory: all 6 attachments byte-identical to `manifest.json`, and the cloned `shared-solution.pdf` extracted 364 characters through the pinned `pdfjs-dist@6.3.289` |
 
-## 5. Phase 1 entry checklist (read this before writing a line)
+## 5. Phase 3 entry checklist -- read this before writing a line
 
-1. **`.env` is gitignored and `app/.env` is what the app reads.** Copy the root `.env.example`.
-   Scripts need `--env-file-if-exists=.env`; Next loads it itself. A fresh clone has **no** `.env`
-   and **no** seeded data.
-2. **`app/src/lib/config.ts` is the only module that reads `process.env`.** Do not add a second
-   reader. Add a variable to `.env.example` **and** `04` section 11 in the same change.
-3. **The SQL migrations are the schema of record**, not `schema.ts`. After any change to either,
-   run `pnpm exec tsx --env-file-if-exists=.env scripts/verify-schema.ts`. **Migrations are
-   immutable once applied** -- the runner stores a SHA-256 and refuses a changed file. Escape by
-   resetting the database, never by editing the ledger.
-4. **`src/lib/db/queries/**` is the only place SQL may live.** Features call repository functions.
-   Every write takes a transaction, because trap T7 requires the event and the state change it
-   describes to commit together.
-5. **`tsconfig.json` is at the future pin set**: `strict`, `noUnusedLocals`, `noUnusedParameters`,
-   `noUncheckedIndexedAccess`. `tsc --noEmit` owns unused-symbol checking, because no
-   `typescript-eslint` package can load under `typescript 7.0.2` (**D78**).
-6. **Vitest does not read `tsconfig.json` paths.** The `@/*` alias is in `app/vitest.config.ts`
-   (**D78**'s neighbour); a test that fails to resolve `@/...` transitively is this, not a bug in
-   the module under test.
-7. **`pnpm test` must pass with no network.** Keep DB-backed checks in `scripts/` (as
-   `verify-schema.ts` does), not in `tests/`, unless you are willing to make the suite
-   environment-dependent.
-8. **Do not seed `milestone_metrics` or `assignment_metrics`.** They are computed from
-   `analytics_events` by WP-11's deterministic refresh (D67); a seeded copy is a second source of
-   truth.
-9. **Phase 2 owns `src/lib/llm/types.ts` and its `AiCapability` union** (`04-INTERFACES.md` section
-   1). Phase 3 must request an enum change through `05-ISSUES.md` rather than editing it.
-10. **Phase 2 also owns `I-19`**: relocate the house error envelope from `src/lib/auth/api-errors.ts`
-    to `src/lib/api/errors.ts` before a second phase imports the wrong path.
+1. **`decide()` is the only public entry** (`src/lib/guardrail/index.ts`). `05` section 12.1's
+   purity rule is asserted by `tests/guardrail/imports.test.ts`; adding an import of the database,
+   storage, a feature or a network module to any guardrail file fails that test.
+2. **`classifier.ts` is the only file allowed to reach `src/lib/llm/`**, and at this boundary it does
+   not: the seam is `GuardrailClassifierPort` (**D87**). Wire the adapter here, keep `responseFormat`
+   `json_schema`, `temperature: 0`, and return `LlmResponse.json` as untrusted `unknown`.
+3. **Validate, then trust.** A decision that fails `validateGuardrailDecision` is `SYS_SCHEMA_INVALID`
+   and the model is **not** re-asked (`N3`, D16). `KNOWN_RULE_IDS` is the half of that check the JSON
+   Schema cannot express.
+4. **A new `ai_policy_rules.rule_code` needs a mapping** in `CAPABILITIES_BY_RULE_CODE`
+   (`policy-source.ts`) or the assignment's policy becomes `POL_INVALID` and the assistant refuses
+   everything for it (**D83**, trap **T22**). WP-05 must emit codes from that table.
+5. **Do not add content to the log row.** `GuardrailLogRecord` has `turnContentHash` and nothing else
+   content-derived; `log.test.ts` asserts it behaviourally over the refusing golden cases.
+6. **Do not invent a second refusal wording.** Phase 5 renders refusals with `renderDecision()`;
+   `R13` is a byte-equality guarantee and the canonical string is pinned in
+   `tests/guardrail/templates.test.ts` (**I-27**).
+7. **Drip detection is session-relative.** `H11`/`H12` need prior turns in `SessionState`; with an
+   empty session they never fire, which is what keeps `G09`/`G16`/`G48` out of L1 (their `Layer`
+   column requires L4). Do not "fix" that by making them content rules.
+8. **`pnpm test --coverage` is unusable** until a coverage provider is added (**I-31**), and
+   `pnpm test` needs the Vite config load to spawn a child process: under the DSH `workspace-write`
+   sandbox that fails with `spawn EPERM`. Run it with the file sandbox at full access, or expect the
+   gate to be unreadable.
+9. **The full suite includes a concurrent session's tests.** 232 of the 464 passing tests were
+   Phase 3's; a Phase 3 change that breaks `tests/extract/` or `tests/storage/` is a real conflict,
+   but a red `pnpm lint` from `src/features/ingest/` is not Phase 3's (**I-34**).
 
 ## 6. What a later phase must NOT assume
 
-1. **Do not assume the storage interface has ever been exercised.** `src/lib/storage/` does not
-   exist. The seed writes to `STORAGE_LOCAL_DIR` directly, and `assignment_sources.storage_key`
-   values are `sources/<kind>/<sha256>`, which is the seed's convention and not a driver's output.
-2. **Do not assume any provider call works.** No adapter exists; the last live call was Phase 0's.
-   `LLM_PROVIDER=gemini` is validated by config only.
-3. **Do not assume a student-visible surface exists.** There is no `(tutor)` or `(student)` page, so
-   `FORBIDDEN_ROLE` has never been returned by a live route and the middleware's pass-through was
-   observed as a `404`, not a rendered page.
-4. **Do not assume the design tokens have values.** The files exist; `tokens.css` is deliberately
-   empty of declarations (D75). Seeding a value there is a `07` amendment, not a Phase 2 shortcut.
-5. **Do not assume session revocation exists.** It does not, and there is no table to add it to
-   (**D79**, **I-20**). A token stays valid until it expires.
-6. **Do not trust a gate query's column name (T21).** `11` WP-02's gate asked for
-   `milestones.status`, which does not exist, and `.local/spec/schema.md`'s ambiguity A1 asserted a
-   classification `06` section 4.6 does not make. Run it and check the schema before concluding the
-   work is wrong.
-7. **Do not treat `.local/spec/` as normative**, and do not treat `../16-VERIFICATION-REPORT.md` as
-   current state (**I-14**).
-8. **Do not assume a fresh clone's `.storage/` is populated.** It is gitignored; the seed writes it.
-9. **Do not expect `cohort-seed.json`'s 37th student to be seeded** -- it is not (**I-23**), because
-   the interactive `student@demo.rmit` occupies that slot (**D82**).
-10. **Do not expect the fixture to discriminate trap T1** -- it numerically cannot (**I-24**).
+1. **Do not assume the L4 path has ever run against a provider.** No adapter is wired to
+   `GuardrailClassifierPort`; the `MODEL` cases run against pinned mock outputs. The first live
+   classifier call happens when Phase 5 wires it.
+2. **Do not assume the real extractor classifies the upload fixtures.** The `UP` codes are recorded
+   in a manifest and verified by hash (**I-30**). Point the harness's `UploadExtractorPort` at the
+   real extractor before claiming "the guardrail classifies attachments".
+3. **Do not assume a refusal reaches a client.** `decide()` returns a `200`-shaped decision plus
+   rendered text; no route serves it, and `I4`/`T13` (a refusal is a `200` with the boundary
+   treatment) is therefore still unexercised at the HTTP layer.
+4. **Do not assume `pnpm lint` is green.** It was red at this boundary for files Phase 2 owns
+   (**I-34**). Re-run it after both sessions stop before quoting it as evidence.
+5. **Do not treat the upload-scoped ALLOW rules in the demo policy as inert by accident.** `4.4`
+   (mechanical editing) is deliberately excluded from the assistant's permitted set, because
+   admitting it would widen the platform floor (**I-33**). Fixing that is a floor amendment, not a
+   mapping edit.
+6. **The Phase 1 cautions still stand** -- `src/lib/storage/` was exercised by Phase 2's driver but
+   nothing in `src/lib/guardrail/` touches it; `assignment_sources.storage_key` is still the seed's
+   convention; session revocation still does not exist (**D79**, **I-20**); `expectedRevision` still
+   has no storage (**I-16**).
 
-## 7. Local-only preparation for Phase 2
+## 7. Files Phase 3 added, and who may change them
 
-| Path | Contents | Survives a clone? |
-|---|---|---|
-| `.local/spec/schema.md` | SQL-ready DDL for the 33 tables, the index inventory, both views, the pseudonym derivation, and 15 ambiguities | **No** (`.local/` is gitignored). Two of its claims were wrong on re-check |
-| `.local/spec/api-contracts.md` | The 64-route index, the error table, the defined request/response interfaces, the SSE protocol | **No** |
-| `.local/spec/guardrail.md` | The rule-id table, the decision pipeline, the 53 golden cases | **No** |
-| `.local/verify-*.sql`, `.local/verify-*.mjs` | The Lead's own verification queries and extraction checks from this session | **No** |
+| Path | Owner from here |
+|---|---|
+| `app/src/lib/guardrail/**` | Phase 5 may **add** the adapter wrapper at the `classifier.ts` seam; anything else is an interface change (04-INTERFACES section 5) |
+| `app/tests/guardrail/**` | Any phase that changes guardrail behaviour must add or update a case (`N5`); case ids are never renumbered (`05` section 11.7) |
+| `app/scripts/make-guardrail-fixtures.mjs`, `docs/fixtures/attachments/**` | Phase 2/5 when the real extractor is pointed at them; regenerate rather than hand-edit |
+| `app/tests/guardrail/golden/policy.demo-rows.json` | Whoever regenerates the seeded policy. It is a **copy** of the nine `PUBLISHED` rows read with `psql`; if the seed changes, this fixture and `policy.test.ts`'s expectations change with it |
 
-Regenerate rather than trust any of it; where a file and `docs/**` disagree, the doc wins.
+## 8. Before submission
+
+`origin/main` does **not** have Phase 3: the last push was Phase 1's
+(`9dccd0f..49c10e1`). The Lead must push `main` and the `phase-03-complete` tag, and must push the
+concurrent Phase 2 session's work once that session has written its own exit documents -- the two
+sessions' commits are interleaved in one branch.

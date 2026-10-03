@@ -1201,15 +1201,27 @@ app/src/lib/guardrail/
   index.ts            # decide(turn, context): GuardrailDecision  -- the only public entry
   normalise.ts        # L0
   rules.ts            # L1: ordered heuristics, pure
+  policy-source.ts    # the approved policy as data: rows -> AiUsagePolicyView, overlay algebra
   policy.ts           # L2/L3: overlay, algebra, scope
   classifier.ts       # L4: adapter call, schema validation, confidence downgrade
   post-check.ts       # L5: deterministic trips
   templates.ts        # T-REFUSE / T-SCOPE / T-CLARIFY / T-ESCALATE rendering (R13)
-  reasons.ts          # reasonCode constants and their plain-language sentences
+  refusal-copy.ts     # the ability statement and closing line per rule class (R5, R10, R14)
+  reasons.ts          # reasonCode constants and their plain-language sentences (R6)
+  log.ts              # the section 8 decision row: decisions in full, content as a hash
   types.ts            # verdict enum + decision types
 ```
 
-Purity rules: `normalise.ts`, `rules.ts`, `policy.ts`, `post-check.ts` and `templates.ts` import nothing that performs I/O. `classifier.ts` is the only file that may import from `src/lib/llm/`. A test asserts the import graph, because "pure except for the one file" decays quickly.
+*Added by Phase 3 (WP-08), which lists `policy-source.ts` and `log.ts` as deliverables and needs a
+home for WP-08's "refusal wording, per rule class" (**D88**). `policy-source.ts` is where the
+`ai_policy_rules.rule_code` to capability mapping lives, and the fail-closed rule of section 3.3.1
+applies to it (**D83**, trap **T22**).*
+
+Purity rules: `normalise.ts`, `rules.ts`, `policy-source.ts`, `policy.ts`, `post-check.ts`,
+`templates.ts`, `refusal-copy.ts`, `reasons.ts` and `log.ts` import nothing that performs I/O
+(`node:crypto` is permitted in `normalise.ts` and `post-check.ts` for hashing, and is asserted
+separately). `classifier.ts` is the only file that may import from `src/lib/llm/`. A test asserts the
+import graph, because "pure except for the one file" decays quickly.
 
 ### 12.2 Failure behaviour summary
 

@@ -289,3 +289,39 @@ and one below-floor bucket, `M2` with 3 contributors.
 | **D34** -- difficulty needs above-average time **and** above-average questions | The seed guarantees exactly one such milestone (M3) and records the arithmetic. |
 | **D46** -- fixture material lives in `docs/fixtures/` | All four files are here, and committed. |
 | **T8, T9** | The counts in section 5, and the word-count-with-no-concurrency rule in section 2. |
+
+---
+
+## 8. `attachments/` -- the guardrail's upload fixtures *(added by Phase 3)*
+
+Trap **T9** requires the guardrail golden set to have six attachment files including audio and video.
+`docs/05-AI-GUARDRAILS.md` section 11.1 names them, and Phase 3 (WP-08) realised them here:
+
+| File | Describes | Recorded `UP` code | Consumed by |
+|---|---|---|---|
+| `code-failing.png` | A schematic of the student's own failing code (dark editor, code bars, a red error band) | `UP1` | `G38` -- upload-as-proxy (`DE5`) |
+| `brief-page-3.png` | A schematic of a page of the brief | `UP2` | `G36` -- locate-and-quote only |
+| `shared-solution.pdf` | A classmate's completed solution, as a **text-layer** PDF | `UP3` | `G50` -- third-party solution |
+| `blurred-notes.png` | A low-contrast, unreadable image | `UP4` | `G51` -- one clarifying question |
+| `lecture.mp3` | Audio, out of MVP scope (**O11**) | `UP5` | `G52` -- refused at the picker |
+| `screen-capture.mp4` | Video, out of MVP scope (**O11**) | `UP5` | `G53` -- refused at the picker |
+| `manifest.json` | Per-file `mimeType`, `byteLength`, `sha256` and the recorded code | -- | `tests/guardrail/harness.ts` |
+
+```powershell
+# from the repository root
+node app/scripts/make-guardrail-fixtures.mjs
+```
+
+**What these files are not.** The three PNGs are **schematic** depictions, not photographs and not
+screenshots: they contain no rendered glyphs, and their `UP1`/`UP2`/`UP4` codes in `manifest.json`
+are **recorded**, not produced by a vision model. The harness reads each real file, verifies its
+sha256 against the manifest and asserts the recorded code, which is what makes the modality cases
+execute rather than skip; the live classification path is Phase 2's extractor and is unverified
+(**I-30**). The `.mp3` and `.mp4` are placeholder containers (a valid ID3 + MPEG frame sequence, and
+`ftyp`/`free`/`mdat`) -- they only ever need to be refused by the picker before anything reads them.
+
+**Determinism and trap T20.** The generator uses no clock and no `Math.random` (one fixed xorshift32
+seed for the blurred image), so two runs produce byte-identical files. `*.png`, `*.pdf`, `*.mp3` and
+`*.mp4` are all pinned `binary` in `.gitattributes`; the verification that matters is a **fresh
+clone**, not a working-file hash, and it was run: all six files came back byte-identical to the
+manifest, and the cloned `shared-solution.pdf` read back 364 characters through `pdfjs-dist@6.3.289`.
