@@ -68,7 +68,7 @@ Remove-Item Env:PGPASSWORD
 | Vitest | `5.0.3`; **config load needs a piped child process**, which the DSH workspace sandbox denies as `spawn EPERM` (Vite runs `net use` on Windows) | `pnpm test` |
 | Postgres | `18.6`, service `postgresql-x64-18` running, 10 migrations applied (D66) | `pnpm db:migrate` |
 | Git | `main` at `bf12a3e` **before** the exit docs; tags `phase-00`, `phase-01`, `phase-03` | `git log`, `git tag` |
-| Full suite at the boundary | `pnpm test` -> **464 passed in 22 files** (232 of them `tests/guardrail`; the rest are Phase 1's and the concurrent Phase 2 session's) | `pnpm test` |
+| Full suite at the boundary | `pnpm test` -> **464 passed in 22 files** at one moment (232 of them `tests/guardrail`). **A later run inside the same boundary window showed `tests/llm/schema.test.ts` failing** while the concurrent Phase 2 session was editing it, so the full suite is a **moving target** here. Phase 3's own 9 files never failed: `pnpm test -- tests/guardrail` -> 232 passed on every run | `pnpm test`, `pnpm test -- tests/guardrail` |
 
 ## 3. State of the build
 
