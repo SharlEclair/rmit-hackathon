@@ -379,3 +379,281 @@ export interface AssignmentMapResponse {
   /** An edge is present only when both endpoint nodes are `PUBLISHED` (`06` section 5.5.5). */
   edges: AssignmentMapEdgeResponse[];
 }
+
+// ---------------------------------------------------------------------------------------------
+// Phase 5 (WP-07 and WP-09): the student workspace and Assistant contracts.
+//
+// The same rule as Phase 4's block: define each response type when the route that returns it is
+// built, in this one file (`06` S5.4/5.5, handoff I-03). Everything below is `06` S5.5.3, S5.5.4,
+// S5.5.6, S5.5.7 and S5.5.9 name for name. Nothing here renames a Phase 4 type and nothing adds a
+// field `06` does not list: a response type that grows a field the doc does not have is a contract
+// change, not an implementation detail.
+//
+// One deliberate naming note. `06` S5.5.2 names `AssignmentListResponse` and `CourseListResponse`
+// and defines neither, and S5.5.6's `ChecklistResponse.milestones[].publicationStatus` is typed
+// `'PUBLISHED'` exactly. Both are honoured below. `AssignmentCardResponse` is the element type of
+// `AssignmentListResponse`; the doc gives the list shape only, so the element is named here.
+// ---------------------------------------------------------------------------------------------
+
+/** `06` section 5.5.2. One assignment card in a course or dashboard list. */
+export interface AssignmentCardResponse {
+  id: string;
+  title: string;
+  courseId: string;
+  courseCode: string;
+  status: AssignmentStatusApi;
+  dueAt: string | null;
+  publishedAt: string | null;
+  /** Published Checklist items, for the card's `n/m` chip. `0` when nothing is published yet. */
+  checklistCompleted: number;
+  checklistTotal: number;
+}
+
+export interface AssignmentListResponse {
+  courseId: string;
+  assignments: AssignmentCardResponse[];
+}
+
+export interface CourseResponse {
+  id: string;
+  code: string;
+  title: string;
+  term: string;
+  roleInCourse: 'student' | 'tutor';
+  assignmentCount: number;
+}
+
+export interface CourseListResponse {
+  courses: CourseResponse[];
+}
+
+/** `06` section 5.5.4. `truthTier` is `'T1'` at the document level; the viewer never rewrites text. */
+export type SourceKindApi =
+  | 'brief'
+  | 'rubric'
+  | 'ai_policy'
+  | 'marking_guide'
+  | 'supplementary';
+
+export interface BriefDocumentSectionResponse {
+  /** The document's own heading text, verbatim. Never a label this product authored. */
+  label: string;
+  pageFrom: number;
+  pageTo: number;
+  sourceChunkIds: string[];
+}
+
+export interface BriefDocumentResponse {
+  id: string;
+  kind: SourceKindApi;
+  mimeType: string;
+  pageCount: number;
+  truthTier: 'T1';
+  sections: BriefDocumentSectionResponse[];
+  /**
+   * `07` section 4.2 rule 8's extraction warning. `05-ISSUES.md` I-06 keeps the byte-serving route
+   * unbuilt, so this response is a **manifest only**: `viewerUrl` is absent by design rather than
+   * present-but-broken (WP-07 acceptance criterion: an absent affordance beats a broken one).
+   */
+  extractionFailed: boolean;
+}
+
+export interface BriefResponse {
+  assignmentId: string;
+  documents: BriefDocumentResponse[];
+}
+
+/** `06` section 5.5.6. */
+export type ChecklistStateApi = 'not_started' | 'in_progress' | 'completed';
+
+export type PlanningLevelApi =
+  | 'understand'
+  | 'identify'
+  | 'plan'
+  | 'verify'
+  | 'review'
+  | 'note';
+
+export interface ChecklistItemResponse {
+  id: string;
+  title: string;
+  description: string | null;
+  planningLevel: PlanningLevelApi;
+  displayOrder: number;
+  state: ChecklistStateApi;
+  startedAt: string | null;
+  completedAt: string | null;
+  /** Labelled `Elapsed time` in the UI, never "time worked" (D33, `07` section 4.6 rule 5). */
+  elapsedSeconds: number | null;
+  /** D48: a reopened item keeps its first interval and reports how many times it was reopened. */
+  reopenCount: number;
+}
+
+export interface ChecklistMilestoneResponse {
+  id: string;
+  title: string;
+  summary: string | null;
+  displayOrder: number;
+  publicationStatus: 'PUBLISHED';
+  completionState: ChecklistStateApi;
+  items: ChecklistItemResponse[];
+}
+
+export interface ChecklistResponse {
+  assignmentId: string;
+  milestones: ChecklistMilestoneResponse[];
+  totals: { completed: number; total: number; resolutionRate: number };
+}
+
+export interface ChecklistProgressResponse {
+  itemId: string;
+  state: ChecklistStateApi;
+  startedAt: string | null;
+  completedAt: string | null;
+  elapsedSeconds: number | null;
+  reopenCount: number;
+  totals: { completed: number; total: number; resolutionRate: number };
+}
+
+/** `06` section 5.5.7. `available: false` is D47's fail-closed state, never a permissive default. */
+export interface AiPolicyResponse {
+  assignmentId: string;
+  available: boolean;
+  publishedAt: string | null;
+  truthTier: 'T2';
+  rules: Array<{
+    id: string;
+    ruleCode: string;
+    ruleText: string;
+    effect: 'PROHIBIT' | 'ALLOW' | 'ESCALATE_TO_TUTOR' | 'CLARIFY';
+    appliesTo: 'assistant' | 'uploads' | 'discussion' | 'all';
+  }>;
+}
+
+/** `06` section 5.5.3. `null` for `structure`/`checklist` means "not published yet", not "empty". */
+export interface StudentWorkspaceResponse {
+  assignment: {
+    id: string;
+    title: string;
+    courseCode: string;
+    courseTitle: string;
+    status: 'published';
+    dueAt: string | null;
+    publishedAt: string;
+  };
+  brief: {
+    sources: Array<{
+      id: string;
+      kind: SourceKindApi;
+      /** Derived from the filename; the document itself is verbatim (C2). */
+      title: string;
+      mimeType: string;
+      pageCount: number | null;
+    }>;
+  };
+  structure: AssignmentMapResponse | null;
+  checklist: ChecklistResponse | null;
+  policy: AiPolicyResponse;
+  officialFaqCount: number;
+  counts: {
+    openQueries: number;
+    queriesWithTutorReply: number;
+    checklistCompleted: number;
+    checklistTotal: number;
+    resolutionRate: number;
+  };
+  dataState: 'ready' | 'not_published';
+}
+
+/** `06` section 5.5.9. The stream's first event is always `guardrail` (trap T4). */
+export type GuardrailVerdictApi =
+  | 'ALLOW'
+  | 'ALLOW_WITH_SCOPE'
+  | 'CLARIFY'
+  | 'REFUSE'
+  | 'ESCALATE_TO_TUTOR';
+
+export interface AssistantCitation {
+  kind: 'source_chunk' | 'faq_entry' | 'milestone' | 'checklist_item' | 'requirement_node';
+  id: string;
+  /** e.g. `Brief p.4, section 3.2`. Built from provenance, never from a model's assertion. */
+  label: string;
+  truthTier: TruthTierApi;
+  /** `#page=<n>` on the brief manifest, or `null` when no page location exists (D43). */
+  deepLink: string | null;
+}
+
+export interface RefusalPayload {
+  verdict: 'CLARIFY' | 'REFUSE' | 'ESCALATE_TO_TUTOR';
+  refusalTemplateId: 'T-REFUSE' | 'T-SCOPE' | 'T-CLARIFY' | 'T-ESCALATE';
+  reasonCode: string;
+  policyRuleId: string | null;
+  policyRuleText: string | null;
+  /** 2..4 items, drawn from the approved policy and the fixed affordances (`07` section 4.7.3 rule 3). */
+  whatICanHelpWith: string[];
+  escalation: { queryDraftUrl: string; milestoneId: string | null } | null;
+  /** True only for `POL_ABSENT` (D47): the Assistant has no approved policy and makes no call. */
+  unavailable: boolean;
+}
+
+/** The transport projection of `GuardrailDecision` (`05` section 7.2); its field set is `05`'s. */
+export interface GuardrailEvent {
+  verdict: GuardrailVerdictApi;
+  rules: string[];
+  reasonCode: string;
+  deterministic: boolean;
+  scope: 'SCOPE_LOCATE' | 'SCOPE_TERM' | 'SCOPE_RUBRIC' | 'SCOPE_POLICY' | 'SCOPE_PROGRESS' | null;
+  clarifyingQuestion: string | null;
+  policyRef: { policyId: string; version: number } | null;
+  refusalTemplateId: 'T-REFUSE' | 'T-SCOPE' | 'T-CLARIFY' | 'T-ESCALATE' | null;
+  /** The tiers evaluated, from R4. */
+  citedTiers: TruthTierApi[];
+  refusal: RefusalPayload | null;
+}
+
+/** `POST .../assistant/messages` (`06` section 5.5.9). */
+export interface AssistantRequest {
+  /** 1..4000 characters. */
+  body: string;
+  /** Every id must have `guardrail_scan_status = 'clear'`, else 400 with `details.uploadIds` (C6). */
+  uploadIds?: string[];
+  milestoneId?: string | null;
+}
+
+export type AssistantMessageResponse =
+  | {
+      id: string;
+      role: 'student';
+      createdAt: string;
+      body: string;
+      verdict: GuardrailVerdictApi;
+      reasonCode: string | null;
+      policyRuleId: string | null;
+      uploadIds: string[];
+    }
+  | {
+      id: string;
+      role: 'assistant';
+      createdAt: string;
+      body: string;
+      isProactive: boolean;
+      citedTiers: TruthTierApi[];
+      citations: AssistantCitation[];
+    };
+
+export interface AssistantSessionResponse {
+  sessionId: string;
+  assignmentId: string;
+  messages: AssistantMessageResponse[];
+}
+
+/** `06` section 5.5.9. `null` means no proactive message is due or the last one was dismissed (O2). */
+export interface ProactiveMessageResponse {
+  noticeId: string;
+  milestoneId: string;
+  milestoneTitle: string;
+  /** At most 3 bullets, each grounded in published content (`07` section 4.7.1 rule 2). */
+  bullets: Array<{ text: string; citation: AssistantCitation }>;
+  deliveredAt: string;
+  dismissedAt: string | null;
+}

@@ -165,7 +165,7 @@ export function ContentClassPanel(props: ContentClassPanelProps): ReactElement {
         </div>
         {parts.marker}
       </header>
-      <div className="mt-3">{props.children}</div>
+      {props.children ? <div className="mt-3">{props.children}</div> : null}
     </section>
   );
 }
