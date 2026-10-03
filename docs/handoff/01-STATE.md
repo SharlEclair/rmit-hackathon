@@ -3,8 +3,10 @@
 **Purpose.** What is actually built, what is not, and the command that proves each claim. **This
 file is rewritten every session.** It records commands and observed output, never adjectives.
 
-**Tag:** `phase-01-complete` (commit `3a47eaf`, **not yet pushed** at the time of writing;
-`origin/main` is 7 commits behind)
+**Tag:** `phase-01-complete` -- Phase 1's final commit, which adds `07-ARCHIVE/phase-01/`. The
+packet commits it contains are `9c84ef8` (WP-01 skeleton), `9d4c16d` (fixtures), `f5360a5` (schema),
+`e16cfa5` (auth), `0ba949f` (the `pdfjs-dist` pin), `3a47eaf` (seed) and `593499a` (these exit
+documents). **Not pushed** at the time of writing: `origin/main` is 7 commits behind `main`.
 **Last session:** 01
 **Next phase:** **2 -- NOT STARTED.** `src/lib/llm/`, `src/lib/storage/`, extraction and the
 ingestion job are Phase 2's; the guardrail (WP-08, Phase 3) is file-disjoint and must not wait.
