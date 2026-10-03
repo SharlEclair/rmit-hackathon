@@ -496,10 +496,34 @@ export async function readWorkspaceCounts(
   };
 }
 
+/**
+ * When this assignment's AI Usage Policy was published, or `null` when no rule is published.
+ *
+ * `06` section 5.5.7 puts `publishedAt` on the policy response, and `ai_policy_rules` carries a
+ * `published_at` per rule rather than one per policy. The policy's publication moment is therefore
+ * the latest of its rules' -- the point at which the last rule became available to a student. Reading
+ * `max` rather than the first rule's is what makes the value mean "since when has this been readable
+ * in full", and it is `null` (not a fabricated timestamp) when nothing is published, which is D47's
+ * unavailable state.
+ */
+export async function readPolicyPublishedAt(
+  ex: Executor,
+  scope: VisibleScope,
+): Promise<string | null> {
+  const rows = await ex<{ published_at: Date | string | null }[]>`
+    select max(published_at) as published_at
+      from ai_policy_rules
+     where assignment_id = ${scope.assignmentId}::uuid
+       and structure_id = ${scope.structureId}::uuid
+       and publication_status = 'PUBLISHED'
+       and deleted_at is null
+  `;
+  return isoTimestamp(rows[0]?.published_at ?? null);
+}
+
 // ---------------------------------------------------------------------------------------------
 // The checklist with own progress (`06` section 5.5.6)
 // ---------------------------------------------------------------------------------------------
-
 export interface ChecklistProgressRow {
   readonly itemId: string;
   readonly state: string;
@@ -547,6 +571,30 @@ export async function listOwnChecklistProgress(
     elapsedSeconds: row.elapsed_seconds === null ? null : requiredNumber(row.elapsed_seconds),
     reopenCount: requiredNumber(row.reopen_count),
   }));
+}
+
+/**
+ * The assignment a Checklist item belongs to, or `null` when the item does not exist.
+ *
+ * **Not gated, on purpose, and it must stay that way.** A transition route addresses an item without
+ * its assignment, so it needs the assignment id *before* it can run gate rule G1 -- and it returns
+ * only that id, no item text and no assignment content. The gate then runs against it and
+ * `findVisibleChecklistItem` decides whether the item is actually visible. Returning content from this
+ * function would be the T3 bug; returning one id to feed a guard is not.
+ */
+export async function findChecklistItemAssignmentId(
+  ex: Executor,
+  itemId: string,
+): Promise<string | null> {
+  const rows = await ex<{ assignment_id: string }[]>`
+    select m.assignment_id
+      from checklist_items ci
+      join milestones m on m.id = ci.milestone_id
+     where ci.id = ${itemId}::uuid
+       and ci.deleted_at is null
+     limit 1
+  `;
+  return rows[0]?.assignment_id ?? null;
 }
 
 /**

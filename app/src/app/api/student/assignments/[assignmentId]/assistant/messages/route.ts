@@ -57,6 +57,24 @@ import { assistantStreamFrames, encodeSseFrame } from '@/features/assistant/stre
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+/**
+ * Milliseconds between `token` frames. Transport pacing only: it changes when a frame becomes
+ * readable, never its content or order.
+ *
+ * Small enough that a long answer is still fast (an answer is capped well under the 2,500-character
+ * schema bound, so at 48 characters per frame this is at most ~50 frames), and large enough that the
+ * client paints more than once. Exported so a test can assert the stream is paced rather than assert
+ * a number that would then drift.
+ */
+export const STREAM_PACING_MS = 12;
+
+/** A cancellable-by-completion delay. No timer survives the response. */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 interface ParsedBody {
   readonly body: string;
   readonly uploadIds: readonly string[];
@@ -254,10 +272,27 @@ export async function POST(
     requestId,
   });
 
+  // (8) Emit the frames as they are read, not as one buffered write.
+  //
+  // `07` section 4.7.2 rule 4 requires the answer to appear progressively ("text appears
+  // progressively") with a `Cancel` control, and `07` section 2.1 gives the student a
+  // `Checking your request...` line while the verdict is pending. Enqueuing every frame in a tight
+  // loop defeats both: the whole body lands in one chunk, so the client paints the verdict and the
+  // answer in the same frame and there is nothing to cancel.
+  //
+  // The pacing below is transport only. It changes no frame's content or order -- `stream.ts` owns
+  // those and a test asserts them -- it only decides when a frame becomes readable. The delay is
+  // applied to `token` frames alone: the `guardrail` event must reach the client immediately (T4),
+  // and `message`/`done`/`error` must not be held back behind cosmetic pacing.
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
-    start(controller): void {
-      for (const frame of frames) controller.enqueue(encoder.encode(encodeSseFrame(frame)));
+    async start(controller): Promise<void> {
+      for (const frame of frames) {
+        controller.enqueue(encoder.encode(encodeSseFrame(frame)));
+        if (frame.event === 'token' && STREAM_PACING_MS > 0) {
+          await delay(STREAM_PACING_MS);
+        }
+      }
       controller.close();
     },
   });

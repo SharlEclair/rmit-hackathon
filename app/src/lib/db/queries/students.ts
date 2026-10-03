@@ -184,9 +184,16 @@ export async function completeChecklistItem(
 }
 
 /**
- * The re-open transition (D48). Increments `reopen_count` and moves
+ * The re-open transition (D48). Sets `state = 'in_progress'`, increments `reopen_count` and moves
  * `last_state_changed_at`; it does not touch `completed_at` or `elapsed_seconds`, and no
  * `checklist_item_completed` event is emitted, because no new interval exists.
+ *
+ * **`state` is set here and that is not cosmetic.** `06` section 7.3.2 states the rule in full:
+ * "Re-opening a completed item sets `state = 'in_progress'`, increments `reopen_count`, and changes
+ * `last_state_changed_at`; it does not clear `completed_at` and does not add to `elapsed_seconds`."
+ * A reopen that left the row `completed` would report a finished item as finished while `07` section
+ * 4.6 rule 6 requires the row to offer `Complete` again. The `ck_student_checklist_progress_in_progress`
+ * CHECK is satisfied because `started_at` was set by the original start and is never cleared.
  *
  * `duration_seconds` on the `checklist_item_reopened` event is `0`: `06` section 7.6.1 says the
  * column is present on this event, and the amount of elapsed time a re-open adds is zero by D48.
@@ -198,7 +205,8 @@ export async function reopenChecklistItem(
 ): Promise<boolean> {
   const rows = await ex<{ reopen_count: number }[]>`
     update student_checklist_progress
-       set reopen_count = reopen_count + 1,
+       set state = 'in_progress',
+           reopen_count = reopen_count + 1,
            last_state_changed_at = ${params.reopenedAt.toISOString()}::timestamptz
      where student_assignment_id = ${params.studentAssignmentId}::uuid
        and checklist_item_id = ${params.checklistItemId}::uuid
