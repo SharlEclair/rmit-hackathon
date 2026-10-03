@@ -41,7 +41,9 @@ If a task appears to require breaking one of these, **stop and ask** -- do not r
 
 ## 3. Current state -- read this before assuming anything
 
-**This repository contains documentation only. There is no application code yet, and that is deliberate.**
+**The application is built and frozen.** Phases 1-6 are complete and tagged; the code is under `app/` and the feature set is frozen at `phase-07-freeze`. The status line this section used to carry -- "documentation only, there is no application code yet" -- was true when it was written and is kept in this note rather than deleted, because how the docs read is downstream of it (`docs/00-INDEX.md` carries the same note).
+
+**The live state is [`docs/handoff/01-STATE.md`](docs/handoff/01-STATE.md), rewritten every session.** It is the authoritative answer to "what exists", including the section listing what is deliberately **not** built. Do not infer the build's state from this section or from any other doc.
 
 | Path | State | Agent may modify? |
 |---|---|---|
@@ -50,7 +52,7 @@ If a task appears to require breaking one of these, **stop and ask** -- do not r
 | `hackathon info/info.md` | Original brief + rubric. **Frozen.** | [x] never |
 | `docs/00-INDEX.md` ... `docs/18-IMPLEMENTATION-PLAN.md`, plus `docs/handoff/**` | Restructured, implementation-ready docs | [ok] update, keep in sync |
 | `archive/canvas-scraper/**` | **Retired prior work.** Read-only Canvas discussion scraper, kept for historical reference only. Not required by, and not used by, the app (D44, D45). | ! only if the task names it |
-| `app/**` | Does not exist yet | created by first build task |
+| `app/**` | **Built through Phase 6, frozen at `phase-07-freeze`.** Next.js App Router implementation of the committed MVP. | [ok] update; the freeze means only a defect found in a rehearsal justifies touching it |
 
 Do not "tidy" the frozen files. Do not reflow, rename, or reformat them. Their value is that they are untouched.
 
@@ -82,8 +84,9 @@ Do not "tidy" the frozen files. Do not reflow, rename, or reformat them. Their v
 Verify, then report. A claim of completion without evidence is a defect.
 
 - [ ] The thing runs -- you executed it, and can quote the output.
-- [ ] `pnpm typecheck` and `pnpm lint` pass (once `app/` exists).
+- [ ] `pnpm typecheck` and `pnpm lint` pass.
 - [ ] `pnpm test` passes, including the guardrail golden set if you touched AI behaviour (`docs/05-AI-GUARDRAILS.md`).
+- [ ] If you touched the Assistant, uploads, moderation or any HTTP surface, the relevant acceptance run passes: `verify-student`, `verify-review`, `verify-analytics`, `verify-discussion` (all four are HTTP runs and need a live server; they are deliberately **not** in `pnpm test`, which must pass with no network and no database).
 - [ ] No absolute constraint from S2 was weakened.
 - [ ] Docs updated in the same change if behaviour or interfaces changed.
 - [ ] No secret value appears in code, logs, fixtures, or committed files.
@@ -94,7 +97,7 @@ State plainly what is **not** done, what is mocked, and what you did not verify.
 
 ## 5. Code conventions
 
-Applies once `app/` exists. Until then, these are the constraints the first build task must satisfy.
+Applies to `app/`, which now exists. These are constraints on changes to it, and the stack is fixed.
 
 ### 5.1 Stack (fixed -- see `docs/04-TECH-ARCHITECTURE.md`)
 
