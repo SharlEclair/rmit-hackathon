@@ -21,6 +21,14 @@ import { describe, expect, it } from 'vitest';
  * The token-reference check at the end exists because `check-design.mjs`'s DEF gate reads only
  * `tailwind.config.ts` and `src/styles/*.css`, so a mistyped `var(--...)` inside a component is
  * not caught there.
+ *
+ * GATE INTERACTION, when editing anything in `src/components/ui/`: those checks scan a component
+ * file VERBATIM, comments included. So a comment that restates a hex value (for example recording
+ * trap T11 by writing the rejected colour) fails `pnpm lint`'s HEX gate, and a comment naming an
+ * L1 `--p-*` primitive fails its L1 gate. Cite the trap or decision id instead of the value:
+ * "trap T11 / D65" or "`07` S2.3" is enough, and this file's own tests below read comments
+ * differently (they strip them) only because they are proving a declaration exists rather than
+ * catching a stray literal.
  */
 const UI_DIR = fileURLToPath(new URL('../../src/components/ui/', import.meta.url));
 const UTILS_PATH = fileURLToPath(new URL('../../src/lib/utils.ts', import.meta.url));
@@ -75,6 +83,14 @@ function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
 }
 
+/**
+ * CSS has block comments only, and `texture.css` carries a data URI whose `http://` would be
+ * eaten by a line-comment strip. Stripping blocks alone keeps the SVG line intact.
+ */
+function stripBlockComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, ' ');
+}
+
 function classTokens(source: string): string[] {
   const withoutComments = stripComments(source);
   const literals = [
@@ -94,6 +110,10 @@ function classTokens(source: string): string[] {
  * A declaration scan tolerant of a quoted property key, which is how a same-file L3 component
  * token is written in a style object (`'--content-frame-rule': '4px'`) and how `tokens.css`
  * writes its own names.
+ *
+ * The CALLER strips comments first. Without that, a comment spelling `--token: value` would enter
+ * the declaration set and make a `var(--token)` reference resolve with no real declaration, which
+ * is exactly the hole the same-file L3 allowance opens.
  */
 function declarationSet(source: string): Set<string> {
   return new Set(
@@ -111,7 +131,8 @@ function declarationSetInStylesheets(): Set<string> {
   const declared = new Set<string>();
   for (const file of readdirSync(STYLES_DIR)) {
     if (file.endsWith('.css')) {
-      for (const name of declarationSet(readFileSync(join(STYLES_DIR, file), 'utf8'))) {
+      const source = stripBlockComments(readFileSync(join(STYLES_DIR, file), 'utf8'));
+      for (const name of declarationSet(source)) {
         declared.add(name);
       }
     }
@@ -121,7 +142,9 @@ function declarationSetInStylesheets(): Set<string> {
 
 /** Every `var(--token)` reference, including the `var(--token, fallback)` form. */
 function tokenReferences(source: string): string[] {
-  return [...source.matchAll(/var\(\s*(--[a-z0-9-]+)\s*[,)]/g)].map((match) => match[1] ?? '');
+  return [...stripComments(source).matchAll(/var\(\s*(--[a-z0-9-]+)\s*[,)]/g)].map(
+    (match) => match[1] ?? '',
+  );
 }
 
 describe('design law over the primitive sources', () => {
@@ -264,8 +287,10 @@ describe('design law over the primitive sources', () => {
       // A reference resolves if the design-system stylesheets declare it, or if the referencing
       // component declares it beside itself: `17` S6.1 rule 3 makes an L3 component token local
       // and non-exported, so requiring it in `src/styles/` would reject a legitimate token.
+      // Comments are stripped first, so a doc comment naming `--token:` cannot stand in for a
+      // declaration.
       const declaredInAComponent = UI_FILES.some((file) =>
-        declarationSet(sourceOf(file)).has(name),
+        declarationSet(stripComments(sourceOf(file))).has(name),
       );
       expect(
         declared.has(name) || declaredInAComponent,
@@ -298,5 +323,32 @@ describe('design law over the primitive sources', () => {
     expect(declarationSet("const css = { '--content-frame-rule': '4px' };").has('--content-frame-rule')).toBe(
       true,
     );
+  });
+
+  /**
+   * The hole WS-A found in the same-file allowance, pinned so it cannot come back. `declarationSet`
+   * and `tokenReferences` are plain scanners whose caller must supply comment-free source; these
+   * assertions show why that matters and that the resolution path does supply it.
+   */
+  it('does not read a token out of a comment', () => {
+    const commentedDeclaration = "// --content-frame-rule: 4px\nconst css = {};";
+    // The scanner itself does see it, which is exactly why the caller strips comments.
+    expect(declarationSet(commentedDeclaration).has('--content-frame-rule')).toBe(true);
+    // The path the resolution check actually uses does not.
+    expect(declarationSet(stripComments(commentedDeclaration)).has('--content-frame-rule')).toBe(
+      false,
+    );
+    expect(declarationSet(stripComments('/* --content-frame-rule: 4px */')).size).toBe(0);
+
+    // A CSS block comment naming a token is not a declaration either, and a real declaration with
+    // a trailing comment still registers.
+    const stylesheetLike =
+      '/* --not-a-real-token: 1px */\n--surface-document-edge: var(--p-paper-200); /* warm hairline */';
+    const declared = declarationSet(stripBlockComments(stylesheetLike));
+    expect(declared.has('--not-a-real-token')).toBe(false);
+    expect(declared.has('--surface-document-edge')).toBe(true);
+
+    // A `var()` that appears only in a comment is not a reference.
+    expect(tokenReferences('// see var(--not-a-real-token) for the guard')).toEqual([]);
   });
 });

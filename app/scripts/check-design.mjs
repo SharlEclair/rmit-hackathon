@@ -39,6 +39,19 @@
  * `--radix-*` variables (`17` S7.2), and a check that failed on those would be a false
  * positive that a later session would have to disable.
  *
+ * Text scanning is NOT uniform, and the difference is deliberate. G5b, G5c, G8a, G9 and
+ * the font-stack walk blank block comments first, because a prose mention is not a fetch,
+ * a class string or an animation. HEX and L1 read the file verbatim, in the tradition of
+ * `scripts/check-c8.mjs` ("a cleverer matcher is a matcher someone can reason around"):
+ * that direction can only OVER-catch, never let a value through, so a hex literal or an
+ * `--p-*` name written inside a comment fails the gate and the message says why. The two
+ * cases are not symmetric with a gate that resolves declarations out of comments -- that
+ * one becomes vacuous, this one becomes louder.
+ *
+ * CSS is stripped of block comments only. CSS has no `//` comment form, and
+ * `src/styles/texture.css` carries a grain data URI containing `http://www.w3.org/2000/svg`:
+ * a line-comment strip would truncate that line and could hide whatever follows it.
+ *
  * No network, no database, no writes. Plain node, no dependency (`17` S7.6 rule 3).
  */
 
