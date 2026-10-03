@@ -321,6 +321,50 @@ export async function listVisibleFaqEntries(
 }
 
 /**
+ * Published FAQ entries for one assignment, **without requiring a `VisibleScope`**.
+ *
+ * **Why this exists beside `listVisibleFaqEntries`, and why it is safe.** A tutor's read of their own
+ * course's FAQ is authorised by their enrolment, which `guardTutorAssignment` has already resolved --
+ * gate rule G1 is about what a **student** may see before approval, so it is not the gate a tutor read
+ * needs. Requiring a `VisibleScope` here would force the tutor route to fabricate one, and a fabricated
+ * scope is exactly the kind of argument a later reader trusts and reuses on a student path (the failure
+ * `01-STATE.md` section 5 item 4 warns about).
+ *
+ * The safety comes from the call site, and it is worth stating: the **only** callers are tutor routes
+ * that have already run `guardTutorAssignment`. No student route may call this, and
+ * `tests/discussion/imports.test.ts` records the distinction. The published-only condition is the same
+ * as the gated reader's, so the projection cannot leak an unpublished entry either way.
+ */
+export async function listPublishedFaqEntries(
+  ex: Executor,
+  assignmentId: string,
+): Promise<VisibleFaqEntry[]> {
+  const rows = await ex<
+    {
+      id: string;
+      milestone_id: string | null;
+      question: string;
+      answer: string;
+      display_order: number;
+    }[]
+  >`
+    select id, milestone_id, question, answer, display_order
+      from faq_entries
+     where assignment_id = ${assignmentId}::uuid
+       and publication_status = 'PUBLISHED'
+       and deleted_at is null
+     order by display_order asc, created_at asc
+  `;
+  return rows.map((row) => ({
+    id: row.id,
+    milestoneId: row.milestone_id,
+    question: row.question,
+    answer: row.answer,
+    displayOrder: row.display_order,
+  }));
+}
+
+/**
  * The published AI Usage Policy (T2).
  *
  * `06` section 7.2.11: the guardrail reads only `PUBLISHED` rules, and with none published the

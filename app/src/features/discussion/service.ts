@@ -48,8 +48,13 @@ import {
   softDeleteOwnPost,
   type DiscussionPostRow,
   type DiscussionThreadRow,
-} from '@/lib/db/queries/discussions';
-import { listVisibleFaqEntries, type VisibleFaqEntry, type VisibleScope } from '@/lib/db/queries/student-visibility';
+} from '@/lib/db/queries/discussions';import {
+  listPublishedFaqEntries,
+  listVisibleFaqEntries,
+  type VisibleFaqEntry,
+  type VisibleScope,
+} from '@/lib/db/queries/student-visibility';
+import { insertFaqEntryIfAbsent } from '@/lib/db/queries/questions';
 import { identityFor, findIdentityFor, identityMatches } from '@/features/discussion/anon-identity';
 
 /** `06` section 5.6: 20 discussion threads per assignment per student per hour. */
@@ -196,14 +201,17 @@ export async function buildStudentDiscussion(
 /** The tutor's Discussions tab: the same threads, plus the moderation queue (`06` section 5.5.13). */
 export async function buildTutorDiscussion(
   ex: Executor,
-  scope: VisibleScope,
+  scope: { readonly assignmentId: string },
   viewer: DiscussionViewer,
 ): Promise<TutorDiscussionResponse> {
   const identity = await findIdentityFor(ex, viewer.userId, scope.assignmentId);
   const viewerIdentityId = identity?.id ?? null;
 
   const [faq, threads, queue] = await Promise.all([
-    listVisibleFaqEntries(ex, scope),
+    // `listPublishedFaqEntries`, not the gated reader: a tutor's own course's FAQ is authorised by the
+    // enrolment `guardTutorAssignment` already resolved, and requiring a `VisibleScope` would force this
+    // call site to fabricate one.
+    listPublishedFaqEntries(ex, scope.assignmentId),
     listThreads(ex, scope.assignmentId),
     listModerationQueue(ex, scope.assignmentId),
   ]);
@@ -663,6 +671,106 @@ async function editOwnPostById(
     returning id
   `;
   return rows.length > 0;
+}
+
+// ---------------------------------------------------------------------------------------------
+// FAQ promotion (O8, D29): the explicit tutor action, and nothing automatic
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Promote an approved peer answer to the official FAQ.
+ *
+ * **This function exists because the automatic version is forbidden.** `06` section 7.4.4: "There is no
+ * automatic promotion path in the API", and `03-PRD` FR-PEER-6 states the negative form ("No API route
+ * and no code path creates a FAQ entry from an approved answer without the explicit promote action").
+ * So the two guards below are the whole point of the operation rather than preliminaries, and
+ * `ck_faq_entries_peer_answer_source` is the schema refusing an unlinked peer answer even if these were
+ * removed.
+ *
+ * **Editing the original afterwards does not change the entry** (FR-PEER-10), and it is structural: the
+ * entry copies the text and keeps its own row, so a later edit to the post cannot reach it.
+ */
+export async function promoteToFaq(
+  ex: Executor,
+  input: {
+    readonly postId: string;
+    readonly tutorUserId: string;
+    readonly now: Date;
+  },
+): Promise<DiscussionOutcome<{ readonly faqEntryId: string; readonly displayOrder: number }>> {
+  const post = await findPost(ex, input.postId);
+  if (post === null || post.deletedAt !== null) {
+    return { ok: false, code: 'NOT_FOUND', message: 'That post could not be found.' };
+  }
+  if (post.parentPostId === null) {
+    // `07` section 6.2 puts the accept/reject control on answers, so a root post has no
+    // `accepted_answer_status` to check and is a question rather than an answer.
+    return {
+      ok: false,
+      code: 'INVALID_STATE_TRANSITION',
+      message: 'Only a reply can be promoted: the thread question is already public.',
+    };
+  }
+  if (post.status === 'removed') {
+    return { ok: false, code: 'INVALID_STATE_TRANSITION', message: 'A removed post cannot be promoted.' };
+  }
+  if (post.acceptedAnswerStatus !== 'approved') {
+    // FR-PEER-6: promotion is "available only after the answer is approved".
+    return {
+      ok: false,
+      code: 'INVALID_STATE_TRANSITION',
+      message: 'Approve the answer before promoting it.',
+    };
+  }
+
+  const thread = await findThread(ex, post.threadId);
+  if (thread === null) {
+    return { ok: false, code: 'NOT_FOUND', message: 'That discussion could not be found.' };
+  }
+
+  const entryId = randomUUID();
+  const nextOrder = await readNextFaqDisplayOrder(ex, post.assignmentId);
+  const inserted = await insertFaqEntryIfAbsent(ex, {
+    id: entryId,
+    assignmentId: post.assignmentId,
+    // The thread's milestone, which may be null: `06` section 7.4.4 makes the FAQ's milestone optional.
+    milestoneId: thread.milestoneId,
+    // FR-PEER-7 and `07` section 5.4: "the student's original question will be shown as the FAQ
+    // question", which for a Discussion answer is the thread's title.
+    question: thread.title,
+    answer: post.body,
+    sourceKind: 'peer_answer',
+    sourceQueryId: null,
+    sourceQueryMessageId: null,
+    sourceDiscussionPostId: post.id,
+    publishedByUserId: input.tutorUserId,
+    displayOrder: nextOrder,
+    // Promoting publishes: that is what "Publish to the official FAQ" means and what makes the entry T2.
+    publicationStatus: 'PUBLISHED',
+    origin: 'tutor',
+    provenance: null,
+    groundingChunkIds: [],
+    approvedByUserId: input.tutorUserId,
+    approvedAt: input.now.toISOString(),
+    publishedAt: input.now.toISOString(),
+  });
+
+  if (!inserted) {
+    return { ok: false, code: 'INVALID_STATE_TRANSITION', message: 'That entry already exists.' };
+  }
+  return { ok: true, value: { faqEntryId: entryId, displayOrder: nextOrder } };
+}
+
+/** One past the highest published entry's order, so a promotion lands at the end of the list. */
+async function readNextFaqDisplayOrder(ex: Executor, assignmentId: string): Promise<number> {
+  const rows = await ex<{ next: string | number }[]>`
+    select coalesce(max(display_order), -1) + 1 as next
+      from faq_entries
+     where assignment_id = ${assignmentId}::uuid
+       and deleted_at is null
+       and publication_status = 'PUBLISHED'
+  `;
+  return Number(rows[0]?.next ?? 0);
 }
 
 /** Re-exported so the type-only consumers do not reach into the query layer. */

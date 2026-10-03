@@ -67,6 +67,17 @@ export interface NewFaqEntry {
   readonly sourceQueryId: string | null;
   readonly sourceQueryMessageId: string | null;
   /**
+   * `faq_entries.source_discussion_post_id` (`06` section 7.4.4).
+   *
+   * Required by `ck_faq_entries_peer_answer_source` **whenever `sourceKind = 'peer_answer'`**, which is
+   * why it is optional here rather than required: an `ai_candidate`, `query_reply` or `tutor_authored`
+   * entry has no discussion post to point at. It is the CHECK and not this interface that enforces the
+   * condition, which is `0006`'s reading A7: "Structural enforcement beats handler validation ... The
+   * promotion itself stays explicit (D29, O8): there is no automatic promotion path in the API, and this
+   * CHECK does not create one."
+   */
+  readonly sourceDiscussionPostId?: string | null;
+  /**
    * Null for a row that is not published.
    *
    * `06` section 7.4.4 permits null and enforces the rule with
@@ -174,6 +185,14 @@ export async function appendQueryMessage(
  * (`ck_faq_entries_published_by`, `ck_faq_entries_approval`), which is why the writer takes the
  * publisher separately from the approver: in the MVP they are both the tutor, but the schema
  * distinguishes "approved" from "released to the cohort".
+ *
+ * **Every nullable uuid column is cast conditionally.** `06` section 5.1 types `milestoneId` and the
+ * three source columns as `string | null`, and `NewFaqEntry` honours that -- but `null::uuid` is
+ * `NULL`, whereas a bare `${null}::uuid` sends a null parameter the driver cannot cast, and the
+ * statement fails. `publishedByUserId` and `approvedByUserId` are genuinely nullable for the same
+ * reason (`06` section 7.4.4 permits an unapproved candidate row). The conditional cast is the same
+ * shape every other writer in this codebase uses; Phase 5 hit its absence as a live `500` twice
+ * (trap **T33**'s neighbour), so it is fixed here before a third caller exists.
  */
 export async function insertFaqEntryIfAbsent(
   ex: Executor,
@@ -182,26 +201,27 @@ export async function insertFaqEntryIfAbsent(
   const rows = await ex<{ id: string }[]>`
     insert into faq_entries (
       id, assignment_id, milestone_id, question, answer, source_kind,
-      source_query_id, source_query_message_id, published_by_user_id, display_order,
-      publication_status, origin, provenance, grounding_chunk_ids,
+      source_query_id, source_query_message_id, source_discussion_post_id, published_by_user_id,
+      display_order, publication_status, origin, provenance, grounding_chunk_ids,
       approved_by_user_id, approved_at, published_at
     )
     values (
       ${entry.id}::uuid,
       ${entry.assignmentId}::uuid,
-      ${entry.milestoneId}::uuid,
+      ${entry.milestoneId === null ? null : entry.milestoneId}::uuid,
       ${entry.question},
       ${entry.answer},
       ${entry.sourceKind},
-      ${entry.sourceQueryId}::uuid,
-      ${entry.sourceQueryMessageId}::uuid,
-      ${entry.publishedByUserId}::uuid,
+      ${entry.sourceQueryId === null ? null : entry.sourceQueryId}::uuid,
+      ${entry.sourceQueryMessageId === null ? null : entry.sourceQueryMessageId}::uuid,
+      ${entry.sourceDiscussionPostId === null || entry.sourceDiscussionPostId === undefined ? null : entry.sourceDiscussionPostId}::uuid,
+      ${entry.publishedByUserId === null ? null : entry.publishedByUserId}::uuid,
       ${entry.displayOrder},
       ${entry.publicationStatus},
       ${entry.origin},
       ${entry.provenance === null || entry.origin !== 'ai' ? null : JSON.stringify(entry.provenance)}::jsonb,
       ${entry.groundingChunkIds}::uuid[],
-      ${entry.approvedByUserId}::uuid,
+      ${entry.approvedByUserId === null ? null : entry.approvedByUserId}::uuid,
       ${entry.approvedAt}::timestamptz,
       ${entry.publishedAt}::timestamptz
     )

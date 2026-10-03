@@ -10,14 +10,20 @@
  */
 
 import type { SessionContext } from '@/lib/auth/roles';
-import type { VisibleScope } from '@/lib/db/queries/student-visibility';
 import { getConfig } from '@/lib/config';
 import type { DiscussionViewer } from '@/features/discussion/service';
 
-/** The guarded pair a discussion route holds after its guard succeeded. */
+/**
+ * The guarded pair a discussion route holds after its guard succeeded.
+ *
+ * `assignmentId` is the **only** scope field this needs, and typing it structurally rather than as
+ * `VisibleScope` is deliberate: `guardTutorAssignment` returns an `AssignmentScope` and
+ * `guardStudentVisibleAssignment` a `VisibleScope`, and the two are different shapes with different
+ * meanings. Requiring either one would force the other route group to fabricate the missing fields.
+ */
 export interface DiscussionGuardValue {
   readonly session: SessionContext;
-  readonly scope: VisibleScope;
+  readonly scope: { readonly assignmentId: string };
 }
 
 /**
@@ -35,20 +41,30 @@ export function readAnonIdSecret(): string | null {
 /**
  * The viewer the feature needs, or `null` when the secret is missing.
  *
- * `isTutor` is passed in rather than read from `session.role`, because `06` section 5.2 makes the role
- * per **course** (`enrollments.role_in_course`): a user who tutors one course and studies another has
- * both, and the global role would be wrong for one of them. Each route group knows which guard it ran,
- * so each passes the answer that guard implies.
+ * **`scope` is the union of the two guard shapes, and the union is the point.** `06` section 5.2 makes
+ * the role per **course** (`enrollments.role_in_course`): a user who tutors one course and studies
+ * another has both, and the global role would be wrong for one of them. So every route group passes the
+ * answer its own guard implies rather than the session's role.
+ *
+ * `assignmentId` is read from whichever field the guard produced: `VisibleScope` names it
+ * `assignmentId`, and `AssignmentScope` names it `id` because a tutor's scope carries the whole
+ * assignment record. One `??` is cheaper and clearer than forcing one guard to reshape the other's
+ * output.
  */
 export function viewerFor(
-  value: DiscussionGuardValue,
+  value: {
+    readonly session: { readonly userId: string };
+    readonly scope: { readonly assignmentId?: string; readonly id?: string };
+  },
   role: 'student' | 'tutor',
 ): DiscussionViewer | null {
   const anonIdSecret = readAnonIdSecret();
   if (anonIdSecret === null) return null;
+  const assignmentId = value.scope.assignmentId ?? value.scope.id;
+  if (assignmentId === undefined) return null;
   return {
     userId: value.session.userId,
-    assignmentId: value.scope.assignmentId,
+    assignmentId,
     anonIdSecret,
     isTutor: role === 'tutor',
   };
