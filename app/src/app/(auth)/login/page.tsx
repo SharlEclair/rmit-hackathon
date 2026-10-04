@@ -10,11 +10,24 @@ import { useState, type FormEvent } from 'react';
  * agent or a model. The only actor visible to a user is a person signing in, and the product name.
  * This is why the copy says "AssignMate" and never names the thing behind it.
  *
- * **Markup.** Minimal and semantic: one `main`, one `h1`, one `form`, `label`-bound inputs, and a
- * `<p role="alert">` for the error. No Tailwind utility classes, because the design tokens land
- * with the first UI phase (D75) and a utility class referencing a custom property that does not
- * exist yet is a broken style, not a style. The username/password autocomplete hints are the one
- * added affordance, because they cost nothing and are what makes the screen usable on a phone.
+ * **Markup.** One `main`, one `h1`, one `form`, `label`-bound inputs, and a `<p role="alert">` for
+ * the error. Every control is labelled and keyboard-reachable.
+ *
+ * **Styled against the token layer, which now exists.** An earlier revision of this file carried no
+ * Tailwind classes, on the reasoning that "the design tokens land with the first UI phase (D75) and
+ * a utility class referencing a custom property that does not exist yet is a broken style, not a
+ * style." That was correct when written and became false the moment D75 landed -- and nothing in the
+ * build checks comments, so this page stayed bare while the rest of the product was styled (I-63).
+ * The stale rationale is removed rather than left to mislead the next reader.
+ *
+ * The conventions here are copied from the components rather than invented: `rounded-card
+ * border border-solid border-default bg-card` is `state-panel.tsx`'s card, `rounded-control` is
+ * `assistant-panel.tsx`'s composer, and the type utilities (`heading-1`, `heading-3`, `body`,
+ * `tight`, `ui-sm`) come from `typography.css`. **No hex value appears in this file** -- every colour
+ * is a token (`17` S6.1 rule 2).
+ *
+ * The panel is deliberately narrow and centred: one column, one action, no navigation. A sign-in
+ * screen that offers choices is a sign-in screen that delays the product.
  *
  * **Client-side, deliberately.** `07` S3.1 requires an inline error panel that keeps the email
  * value and clears the password, plus a `Signing in...` button state. A plain `<form action=...>`
@@ -126,48 +139,77 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
-      <h1>AssignMate</h1>
-      <h2>Sign in</h2>
+    <main className="flex min-h-screen items-center justify-center bg-page px-4 py-12">
+      <div className="w-full max-w-sm">
+        <header className="mb-6 flex flex-col gap-1">
+          <h1 className="heading-1 text-ink">AssignMate</h1>
+          <p className="tight text-muted">An assignment workspace for RMIT students and tutors.</p>
+        </header>
 
-      {error !== null ? (
-        <p role="alert">{error}</p>
-      ) : null}
+        <div className="rounded-card border border-solid border-default bg-card p-4">
+          <h2 className="heading-3 mb-4 text-ink">Sign in</h2>
 
-      <form onSubmit={onSubmit} method="post" action={LOGIN_PATH}>
-        <p>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </p>
-        <p>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </p>
-        <p>
-          <button type="submit" disabled={pending}>
-            {pending ? 'Signing in...' : 'Sign in'}
-          </button>
-        </p>
-      </form>
+          {error !== null ? (
+            // `07` S2.1: the error treatment is `--state-error` on the border and the message. It is
+            // `role="alert"` so a screen reader announces it without moving focus off the form.
+            <p
+              role="alert"
+              className="mb-4 rounded-control border border-solid border-error bg-card px-3 py-2 tight text-error"
+            >
+              {error}
+            </p>
+          ) : null}
 
-      <p>Students: your workspace. Tutors: your courses.</p>
-      {/* D42: no "forgot password" link, no SSO and no Canvas sign-in in the MVP. */}
+          <form onSubmit={onSubmit} method="post" action={LOGIN_PATH} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="ui-sm text-muted" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="username"
+                required
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                }}
+                className="rounded-control border border-solid border-default bg-card px-3 py-2 body text-ink"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="ui-sm text-muted" htmlFor="password">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                }}
+                className="rounded-control border border-solid border-default bg-card px-3 py-2 body text-ink"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={pending}
+              className="rounded-control border border-solid border-default bg-ink px-4 py-2 tight text-inverse disabled:opacity-60"
+            >
+              {pending ? 'Signing in...' : 'Sign in'}
+            </button>
+          </form>
+        </div>
+
+        <p className="ui-sm mt-4 text-muted">Students: your workspace. Tutors: your courses.</p>
+        {/* D42: no "forgot password" link, no SSO and no Canvas sign-in in the MVP. */}
+      </div>
     </main>
   );
 }
