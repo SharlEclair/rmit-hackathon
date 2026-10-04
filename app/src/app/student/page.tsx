@@ -61,7 +61,7 @@ export default async function StudentDashboardPage() {
                     principle removes. The padding steps 16/20/24 with the breakpoint, which is
                     `17` section 4.1 rule 4's scale applied to a card. */}
                 <Link
-                  className="block rounded-card border border-solid border-default bg-card p-4 transition-colors duration-fast ease-out hover:border-ink md:p-6 lg:p-6"
+                  className="block rounded-card border border-solid border-default bg-card p-4 shadow-card transition duration-base ease-out hover:-translate-y-px hover:border-ink hover:shadow-lift md:p-6 lg:p-6"
                   href={`/student/courses/${course.id}`}
                 >
                   <span className="mono block text-muted">{course.code}</span>

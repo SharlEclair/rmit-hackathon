@@ -46,6 +46,17 @@ const config = {
     boxShadow: {
       card: 'var(--shadow-card)',
       overlay: 'var(--shadow-overlay)',
+      // **A lift for interactive surfaces, composed from the two existing tokens rather than a new
+      // literal.** `--shadow-card` is the resting shadow (`0 1px 2px` at 6% ink) and `--shadow-overlay`
+      // is the raised one (`0 8px 24px` at 12%), and both already exist in `tokens.css` from `07`
+      // section 2.3 -- so a hover lift needs no new value and no new hex, which keeps `17` section 6.1
+      // rule 2 intact: hex lives in `tokens.css` and nowhere else.
+      //
+      // This is D111: `17` section 1.3 principle 4 reserved elevation for overlays, and now allows it on
+      // a surface the reader can act on, because a card that cannot be told apart from the page cannot
+      // be told to be clickable either. Content-class frames stay flat -- that exception is asserted by
+      // the design-law test.
+      lift: 'var(--shadow-overlay)',
     },
     spacing: { 0: '0', 1: '4px', 2: '8px', 3: '12px', 4: '16px', 6: '24px', 8: '32px', 12: '48px' },
     // **Motion utilities that name a token rather than a literal.** `17` section 10.4 caps motion at

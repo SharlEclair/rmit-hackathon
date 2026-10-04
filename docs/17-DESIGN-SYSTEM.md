@@ -36,7 +36,11 @@ That produces a hard requirement. The product cannot look like an AI product. If
 1. **A document is a sheet; an interpretation is an annotation.** The frame, the grain, and the page anchor are reserved for T1. The dashed rule, the tint, and the badge are reserved for T5. Neither vocabulary is borrowed by the other.
 2. **Authority is typographic.** The serif family appears only where the text is authored by a human or is a verbatim excerpt of an official document. A serif paragraph of AI interpretation is a C2 defect expressed as a font choice.
 3. **Structure is visible before content is.** Every panel states what it is (badge, source label, tier) in its first line, at every breakpoint, before its body is read.
-4. **Flat by default, elevated only when floating.** Content panels carry no shadow. Shadow means "this is not part of the page" and is reserved for overlays.
+4. **Flat by default, elevated when interactive or floating.** Content panels carry no shadow: a
+   document, a transcript or a policy card is part of the page, and shadowing it would say "this is not
+   part of the page", which is the opposite of the claim the product makes about the brief. A surface
+   the reader can **act on** may lift, because a card that cannot be told apart from the page cannot be
+   told to be clickable either. That allowance is narrow and the rules are in section 3.7.
 5. **No state depends on colour.** This is `07` section 2.1 rule 1 and the greyscale test in `07` section 2.2 rule 6; this doc supplies the border styles, type treatments, and badges that satisfy it (`07` section 2.2 fixes the styles; this doc fixes how they are built).
 6. **Calm is a feature.** No motion carries meaning, no number animates, no surface competes with the document. The interface's job is to be out-read by the brief.
 
@@ -300,16 +304,18 @@ Decision: **keep `07`'s radius scale and shadow token, and restrict where they a
 | Radius `control` | **4px** (`07`) | Buttons, inputs, selects, badges, chips | Cards |
 | Radius `overlay` | **6px** (`07`) | Dialog, popover, sheet, dropdown, tooltip | Content |
 | Radius `full` | 9999px | Avatars and the Assistant floating action button only | Anything else |
-| Shadow `--shadow-card` | `0 1px 2px rgba(16,24,40,0.06)` (`07`) | Cards, and only cards | Content-class frames |
-| Shadow `--shadow-overlay` | **new**: `0 8px 24px rgba(16,24,40,0.12), 0 1px 2px rgba(16,24,40,0.08)` | Dialog, popover, sheet, dropdown, the Assistant panel when it floats | Anything in the document flow |
+| Shadow `--shadow-card` | `0 1px 2px rgba(16,24,40,0.06)` (`07`) | Cards, and only cards, at rest | Content-class frames |
+| Shadow `--shadow-overlay` | **new**: `0 8px 24px rgba(16,24,40,0.12), 0 1px 2px rgba(16,24,40,0.08)` | Dialog, popover, sheet, dropdown, the Assistant panel when it floats; **and a card's hover, as the `lift` shadow** (D111) | Anything in the document flow at rest |
 | Border `hairline` | `1px solid var(--border-default)` | Structural dividers, table rules, card edges | Truth-tier boundaries |
 | Border `tier` | `07` section 2.3, per class | The five content classes, always as specified in `07` section 2.2 | Decorative use anywhere |
 
 Three rules make this enforceable:
 
-1. **A content-class frame is flat.** No shadow, 2px radius, 1px border, and the 4px left rule. This is what makes a T1 panel read as a sheet rather than a floating card, and it is the cheapest single move in the whole direction.
-2. **Elevation means "not part of the page".** If an element casts a shadow and the user cannot dismiss it, the shadow is wrong.
+1. **A content-class frame is flat.** No shadow, 2px radius, 1px border, and the 4px left rule. This is what makes a T1 panel read as a sheet rather than a floating card, and it is the cheapest single move in the whole direction. **This rule is unqualified and is the one the shadow allowance does not touch.**
+2. **Elevation means "not part of the page".** If an element casts a shadow and the user cannot dismiss it, the shadow is wrong. **The exception, from D111: a surface the reader can act on may lift on hover**, and only on hover -- `--shadow-overlay` arrives under the pointer, on a card, with the 120ms `base` token, and leaves with it. A card that rests flat and lifts when touched is still "part of the page"; it is telling you it is a control. A card that rests *shadowed* is claiming not to be part of the page, which is the claim rule 2 forbids, so the resting shadow is the smaller token and the resting state stays nearly flat.
 3. **Borders carry meaning or they carry nothing.** A border that separates content is decorative and may be `--border-default` (1.47:1). A border that distinguishes one truth tier from another is meaningful and must reach 3:1 (see 3.6).
+
+**What the allowance is not.** It is not a licence for drop-shadowed content, for a shadow under every panel, or for a lift without a hover. It adds exactly one transition to exactly one surface kind, and the design-law test still refuses any shadow on a content-class frame.
 
 ### 3.6 Contrast measurements, and the token that fails
 
