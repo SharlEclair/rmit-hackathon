@@ -85,9 +85,10 @@ Beat 5 is 48 seconds and splits internally: 22 seconds for the text refusal, 26 
 > badge present**, where the seeded assignment still fails that check; state 1 is a `draft` with no current
 > structure, so gate rule G1 hides it and a student request returns `404`.
 >
-> **Which assignment to open depends on the beat.** Beats 2 and 3 open `Demo state 2 -- after ingest
-> (proposal awaiting review)`. Beats 4-8 open the seeded cohort assignment, `Case Analysis and Design
-> Proposal Report`, because gate rule G1 makes `PUBLISHED` the only student-visible status.
+> **Which assignment to open depends on the beat.** Beats 2 and 3 open `Case Analysis -- proposal
+> awaiting review` (the after-ingest state, titled that way so the sidebar reads as product content
+> rather than as an internal fixture name). Beats 4-8 open the seeded cohort assignment, `Case Analysis
+> and Design Proposal Report`, because gate rule G1 makes `PUBLISHED` the only student-visible status.
 
 **Fallback.** See S9, scenario 2 and scenario 3. The pre-seeded after-ingest state is the fallback, and the narration adapts to it with one changed sentence: *"this was generated a moment ago; here is the proposal."*
 

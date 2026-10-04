@@ -46,8 +46,8 @@ import { randomUUID } from 'node:crypto';
 import { withTransaction } from '../src/lib/db/transaction';
 import type { Executor } from '../src/lib/db/queries/courses';
 
-const STATE_1_TITLE = 'Demo state 1 -- before ingest (fresh assignment)';
-const STATE_2_TITLE = 'Demo state 2 -- after ingest (proposal awaiting review)';
+const STATE_1_TITLE = 'Case Analysis -- not yet uploaded';
+const STATE_2_TITLE = 'Case Analysis -- proposal awaiting review';
 
 /** The assignment whose content the after-ingest state mirrors. */
 interface Source {

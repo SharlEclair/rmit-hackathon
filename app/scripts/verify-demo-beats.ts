@@ -112,12 +112,12 @@ async function main(): Promise<void> {
   // **Asserted against the after-ingest demo state, not the seeded assignment.** D81 makes the seeded
   // assignment fully `PUBLISHED` on purpose (beats 4-8 need gate rule G1 to admit it), and assigns the
   // pre-approval states to `demo/reset.ps1` -- which did not produce them until **I-56** was fixed. So the
-  // badge check belongs on `Demo state 2 -- after ingest (proposal awaiting review)`, which is the
+  // badge check belongs on `Case Analysis -- proposal awaiting review`, which is the
   // assignment beats 2 and 3 actually open.
   const afterIngest = await withTransaction(async (tx) => {
     const rows = await tx<{ id: string }[]>`
       select id from assignments
-       where title = 'Demo state 2 -- after ingest (proposal awaiting review)'
+       where title = 'Case Analysis -- proposal awaiting review'
        limit 1
     `;
     return rows[0]?.id ?? null;
