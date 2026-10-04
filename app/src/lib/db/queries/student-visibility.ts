@@ -38,6 +38,7 @@
  */
 
 import type { Executor } from './courses';
+import { isoTimestamp } from '@/lib/db/values';
 
 /** A resolved gate: the assignment is published and this is its current structure. */
 export interface VisibleScope {
@@ -132,6 +133,13 @@ export interface VisibleFaqEntry {
   readonly question: string;
   readonly answer: string;
   readonly displayOrder: number;
+  /**
+   * When the entry became PUBLISHED, so the student surface can render the T2 marker
+   * `Published by your tutor on <date>` (`07` section 2.2). It is read rather than derived because
+   * the marker is a claim about a fact, and a date recomputed at render time would be a different
+   * fact. `null` only if a PUBLISHED row somehow carries no stamp.
+   */
+  readonly publishedAt: string | null;
 }
 
 export interface VisiblePolicyRule {
@@ -302,9 +310,10 @@ export async function listVisibleFaqEntries(
       question: string;
       answer: string;
       display_order: number;
+      published_at: Date | string | null;
     }[]
   >`
-    select id, milestone_id, question, answer, display_order
+    select id, milestone_id, question, answer, display_order, published_at
       from faq_entries
      where assignment_id = ${scope.assignmentId}::uuid
        and publication_status = 'PUBLISHED'
@@ -317,6 +326,7 @@ export async function listVisibleFaqEntries(
     question: row.question,
     answer: row.answer,
     displayOrder: row.display_order,
+    publishedAt: isoTimestamp(row.published_at),
   }));
 }
 
@@ -346,9 +356,10 @@ export async function listPublishedFaqEntries(
       question: string;
       answer: string;
       display_order: number;
+      published_at: Date | string | null;
     }[]
   >`
-    select id, milestone_id, question, answer, display_order
+    select id, milestone_id, question, answer, display_order, published_at
       from faq_entries
      where assignment_id = ${assignmentId}::uuid
        and publication_status = 'PUBLISHED'
@@ -361,6 +372,7 @@ export async function listPublishedFaqEntries(
     question: row.question,
     answer: row.answer,
     displayOrder: row.display_order,
+    publishedAt: isoTimestamp(row.published_at),
   }));
 }
 

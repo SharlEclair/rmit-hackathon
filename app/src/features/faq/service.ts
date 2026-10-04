@@ -106,7 +106,7 @@ export async function buildStudentFaq(
     isPublished: true,
     displayOrder: row.displayOrder,
     createdAt: '',
-    publishedAt: null,
+    publishedAt: row.publishedAt,
     revision: 1,
   }));
 }

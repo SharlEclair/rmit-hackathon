@@ -308,8 +308,16 @@ this beat is the only place its output is on screen.
 > with 9 threads and **no identifying field** every time, the Query list returned `grouping: "milestone"`
 > with 6 groups every time, and both shapes were identical across runs. Beat 7 needs no special handling --
 > unlike beat 6, whose question must be chosen from a measured list (**I-53**, **I-55**).
+>
+> **Corrected in session 09, because the seeded thread this beat assumes did not exist.** `scripts/seed.ts`
+> writes the cohort assignment, its structure, the private Query threads and the FAQ, and creates **no**
+> `discussion_threads` row -- so "a thread exists" was true only of a database a previous session had
+> already driven by hand, and the fallback below had nothing to fall back to. `pnpm demo:discussions` (step
+> 5 of `demo/reset.ps1`) now seeds three threads into the demo assignment, one of them anonymous with a
+> reply. That is why the `9 threads` in the measurement above is not the count a fresh reset produces: it
+> was a measurement of the hand-driven database, and it is kept as what it was rather than restated.
 
-**Screen.** Switch to the student's Discussions tab. A thread exists, posted as `Anonymous Student #482`. The driver posts a short reply. Then switch to the tutor tab, Discussions: the same thread, still `Anonymous Student #482`, with no name anywhere, and the driver clicks Publish.
+**Screen.** Switch to the student's Discussions tab. A thread exists, posted under a pseudonym (`Anonymous Student #<n>` -- the number is derived from `ANON_ID_SECRET` and stable for the assignment, so read it off the screen rather than assuming a value). The driver posts a short reply. Then switch to the tutor tab, Discussions: the same thread, still the same pseudonym, with no name anywhere, and the driver clicks Publish.
 
 **Say** (44 seconds -- the narration below is trimmed to the two sentences the beat is worth; do not add to it, this is the beat that absorbs the image half of beat 5):
 
@@ -319,7 +327,10 @@ this beat is the only place its output is on screen.
 
 **Audience should notice.** Both screens show the same pseudonym, and the tutor's screen shows nothing else. This is constraint C4, and D26 is absolute on purpose.
 
-**Setup requirement.** The anonymous thread and its reply are pre-seeded. The driver posts the reply only if the run-through proved it lands quickly; otherwise the seeded reply is on screen and the narration is past tense about it.
+**Setup requirement.** The anonymous thread and its reply are pre-seeded, by `pnpm demo:discussions` --
+which step 5 of `demo/reset.ps1` runs, and which is idempotent by thread title, so running a reset before
+the demo is enough. The driver posts the reply only if the run-through proved it lands quickly; otherwise
+the seeded reply is on screen and the narration is past tense about it.
 
 **Fallback.** If Discussion interactions fail, show the seeded thread in both tabs and say: *"this thread was created by the seeded student account; the point is what the tutor's screen does and does not return."* If Publish fails, show the already-published FAQ entry and say the same. **The guarantee is the visual, not the interaction.**
 

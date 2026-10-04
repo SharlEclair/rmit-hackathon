@@ -162,7 +162,9 @@ function faqOf(row: VisibleFaqEntry): FaqEntryResponse {
     isPublished: true,
     displayOrder: row.displayOrder,
     createdAt: '',
-    publishedAt: null,
+    // Read, not derived: the T2 marker `Published by your tutor on <date>` is a claim about when the
+    // tutor published this answer, so it comes from `faq_entries.published_at`.
+    publishedAt: row.publishedAt,
     revision: 1,
   };
 }

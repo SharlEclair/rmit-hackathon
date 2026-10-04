@@ -76,6 +76,7 @@ const FAQ: VisibleFaqEntry = {
   question: 'How many references are required?',
   answer: 'The brief requires at least ten peer-reviewed references.',
   displayOrder: 1,
+  publishedAt: '2026-10-02T04:00:00.000Z',
 };
 
 const MILESTONE: VisibleMilestone = {

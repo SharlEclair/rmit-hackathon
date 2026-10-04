@@ -22,18 +22,18 @@ $app = Join-Path $root 'app'
 
 Write-Host 'demo reset' -ForegroundColor Cyan
 
-Write-Host '  1/4 migrations' -ForegroundColor DarkGray
+Write-Host '  1/5 migrations' -ForegroundColor DarkGray
 Push-Location $app
 try {
     & pnpm db:migrate
     if ($LASTEXITCODE -ne 0) { throw "pnpm db:migrate exited $LASTEXITCODE" }
 
-    Write-Host '  2/4 schema drift' -ForegroundColor DarkGray
+    Write-Host '  2/5 schema drift' -ForegroundColor DarkGray
     Test-Path -LiteralPath (Join-Path $app 'scripts') | Out-Null
     & pnpm exec tsx --env-file-if-exists=.env scripts/verify-schema.ts
     if ($LASTEXITCODE -ne 0) { throw "schema drift check exited $LASTEXITCODE" }
 
-    Write-Host '  3/4 seed' -ForegroundColor DarkGray
+    Write-Host '  3/5 seed' -ForegroundColor DarkGray
     & pnpm db:seed
     if ($LASTEXITCODE -ne 0) { throw "pnpm db:seed exited $LASTEXITCODE" }
 
@@ -43,14 +43,22 @@ try {
     # step beats 2 and 3 have almost nothing to show: the seeded assignment carries 54 PUBLISHED artifacts
     # against 1 NEEDS_REVIEW, so the `AI generated - requires tutor approval` badge renders for almost
     # nothing and the "discard a candidate" action has no candidates.
-    Write-Host '  4/4 demo states' -ForegroundColor DarkGray
+    Write-Host '  4/5 demo states' -ForegroundColor DarkGray
     & pnpm demo:state
     if ($LASTEXITCODE -ne 0) { throw "pnpm demo:state exited $LASTEXITCODE" }
+
+    # **Step 5 was missing and beat 7 needs it.** The seed writes no discussion thread, and beat 7 opens
+    # with "a thread exists" and falls back to "the seeded thread" -- so a freshly reset database left the
+    # beat's first screen empty. `demo:discussions` is idempotent by thread title, so running it twice
+    # changes nothing.
+    Write-Host '  5/5 demo discussions' -ForegroundColor DarkGray
+    & pnpm demo:discussions
+    if ($LASTEXITCODE -ne 0) { throw "pnpm demo:discussions exited $LASTEXITCODE" }
 }
 finally {
     Pop-Location
 }
 
 Write-Host ''
-Write-Host 'demo state reset, including the two pre-approval states.' -ForegroundColor Green
+Write-Host 'demo state reset, including the two pre-approval states and the seeded discussion.' -ForegroundColor Green
 Write-Host 'Start the server with "cd app; pnpm dev", then run "pnpm demo:smoke".' -ForegroundColor Green

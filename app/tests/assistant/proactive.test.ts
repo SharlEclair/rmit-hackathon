@@ -76,6 +76,7 @@ const FAQ: VisibleFaqEntry = {
   question: 'Which diagram notation is expected?',
   answer: 'Use a component diagram. The brief does not require a UML profile.',
   displayOrder: 1,
+  publishedAt: '2026-10-02T04:00:00.000Z',
 };
 
 describe('at most three bullets, each cited (07 section 4.7.1 rule 2)', () => {
