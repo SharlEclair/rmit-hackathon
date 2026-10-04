@@ -19,6 +19,13 @@
  * `input: [{role, parts}]` -> HTTP 400 (unknown parameter `parts`); a structured call -> HTTP 200
  * whose `model_output` text was exactly `{"ok": true}`.
  *
+ * **`input: <string>` is the text-only form, not the only form.** Because every structured-array shape
+ * was rejected, this adapter originally sent the flat string for *every* request -- which meant a binary
+ * content part was rendered to nothing and an image was never actually transmitted (I-60). The
+ * multimodal form was established separately against the live API and is used for `image` and
+ * `document` payloads only: `input: { type, mime_type, data }`, with the prompt still in
+ * `system_instruction`. See `binaryInputPart` for the branch and why it keys off the request's content.
+ *
  * No vendor SDK is imported: the Interactions REST shape is used directly, so this module depends
  * on `fetch` and nothing else. `04` section 5.3 names `@google/genai` as the SDK; the SDK's own
  * surface is `generateContent`, which D73 documents as **legacy and not built by default**. The
@@ -35,6 +42,7 @@ import {
   LlmError,
   type AiCapability,
   type LlmCapabilities,
+  type LlmContentPart,
   type LlmMessage,
   type LlmProvider,
   type LlmRequest,
@@ -236,12 +244,26 @@ export function createGeminiProvider(deps: GeminiDeps): LlmProvider {
         );
       }
 
+      const binary = binaryInputPart(request.messages);
       const body: Record<string, unknown> = {
         model: request.modelId,
         // Mandatory (D73): the API stores interactions server-side by default.
         store: false,
         system_instruction: systemText(request.messages),
-        input: inputText(request.messages),
+        // **Two input forms, and which one applies is decided by the request's content, not a flag.**
+        //
+        // A text-only request keeps the flat string: that form is verified live and every capability
+        // except attachment extraction uses it, so it must not change.
+        //
+        // A request carrying an image or a document uses the **typed input entry** instead, because the
+        // flat form renders content through `textOf()` and a binary part contributes the empty string --
+        // which silently sent no bytes at all (I-60). The input-level `type` vocabulary is the same as
+        // the content-level one, and `data` is a plain base64 string, not an object. Verified live: the
+        // usage block reports `input_tokens_by_modality: [{text: 32}, {image: 1083}]`, so the bytes
+        // arrive, and the model transcribes the image rather than answering from the prompt alone.
+        //
+        // The prompt still travels in `system_instruction`, so the typed entry carries only the payload.
+        input: binary === null ? inputText(request.messages) : typedInput(binary),
         generation_config: {
           thinking_level: deps.thinkingLevels[thinkingKeyFor(request.capability)],
           temperature: request.temperature,
@@ -314,6 +336,47 @@ function textOf(message: LlmMessage): string {
     .map((part) => (part.type === 'text' ? part.text : ''))
     .filter((text) => text !== '')
     .join('\n');
+}
+
+/** A content part that carries bytes rather than text. */
+type BinaryPart = Extract<LlmContentPart, { dataBase64: string }>;
+
+/**
+ * The first binary part in the request, or `null` for a text-only request.
+ *
+ * **One part per request is a property of every capability, not an assumption made here.** D68 gives
+ * `attachment_extraction` exactly one file per call, and the other five capabilities are text-only, so
+ * there is no request that needs two payloads. Taking the first rather than folding them keeps the
+ * failure obvious: a future capability that attaches several files must be handled deliberately instead
+ * of silently losing all but one.
+ *
+ * System messages are skipped. The prompt lives in `system_instruction`, and a binary part there would
+ * not be reachable by this API's input form.
+ */
+function binaryInputPart(messages: readonly LlmMessage[]): BinaryPart | null {
+  for (const message of messages) {
+    if (message.role === 'system') continue;
+    for (const part of message.content) {
+      if (part.type !== 'text') return part;
+    }
+  }
+  return null;
+}
+
+/**
+ * The typed input entry for a binary part.
+ *
+ * `type` is passed through from the content part because the two vocabularies coincide: the API accepts
+ * `image`, `document`, `audio` and `video` at the input level, which are exactly the content-part
+ * discriminators. `data` is the base64 string itself -- an object here is rejected with "Expected
+ * string, unexpected character: '{'".
+ */
+function typedInput(part: BinaryPart): Record<string, unknown> {
+  return {
+    type: part.type,
+    mime_type: part.mimeType,
+    data: part.dataBase64,
+  };
 }
 
 /** Concatenate the last `model_output` step's text parts; skip `thought` steps entirely. */
