@@ -1,5 +1,8 @@
 import { DiscussionComposer } from '@/components/discussion-composer';
 import { EmptyState } from '@/components/ui/empty-state';
+import { viewerFor } from '@/features/discussion/routes';
+import { buildStudentDiscussion } from '@/features/discussion/service';
+import { withTransaction } from '@/lib/db/transaction';
 import { loadWorkspace, requireStudentPage } from '@/features/workspace/server-data';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +30,21 @@ export default async function DiscussionsTabPage(props: {
 }) {
   const { assignmentId } = await props.params;
   const session = await requireStudentPage(`/student/assignments/${assignmentId}/discussions`);
-  const { workspace } = await loadWorkspace(session, assignmentId);
+  const { workspace, scope } = await loadWorkspace(session, assignmentId);
+
+  /**
+   * The threads, read through the same builder the route uses.
+   *
+   * `buildStudentDiscussion` applies the visibility rule itself, so a thread still awaiting moderation
+   * cannot reach this page by being passed in -- the page does not filter, it receives an already-gated
+   * list. The viewer is resolved by `viewerFor`, which is the union of the guard scopes the routes use,
+   * so a student sees their own threads marked as their own and everyone else's as anonymous.
+   */
+  const viewer = viewerFor({ session, scope }, 'student');
+  const discussion =
+    viewer === null
+      ? { officialFaq: [], threads: [] }
+      : await withTransaction((tx) => buildStudentDiscussion(tx, scope, viewer));
 
   return (
     <div className="flex flex-col gap-12">
@@ -50,6 +67,28 @@ export default async function DiscussionsTabPage(props: {
           Ask your cohort. Threads are anonymous by default, and your tutor cannot see who asked.
         </p>
         <DiscussionComposer assignmentId={assignmentId} />
+
+        {discussion.threads.length === 0 ? (
+          <EmptyState message="No discussion threads yet. Ask the first question above." />
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {discussion.threads.map((thread) => (
+              <li key={thread.id}>
+                <div className="flex flex-col gap-2 rounded-card border border-solid border-default bg-card p-4">
+                  <p className="heading-3 text-ink">{thread.title}</p>
+                  <p className="ui-sm text-muted">
+                    {thread.author.displayLabel}
+                    {thread.isOwnThread ? ' (you)' : ''} - {thread.postCount}{' '}
+                    {thread.postCount === 1 ? 'post' : 'posts'}
+                  </p>
+                  {thread.posts.length === 0 ? null : (
+                    <p className="body text-ink">{thread.posts[0]?.body}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );
