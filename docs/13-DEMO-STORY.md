@@ -201,6 +201,20 @@ things outside the code are missing, and all three are demo-day prerequisites ra
 | **The server-side guardrail scan gate** | **WORKS and fails closed.** An upload whose extraction failed (`extractionStatus: failed`) is refused entry to an Assistant turn: `400 VALIDATION_FAILED`, `details.uploadIds`, *"One or more attachments have not passed the guardrail scan and cannot be sent."* A malformed image cannot reach the model | live `POST .../assistant/messages` with that upload id |
 | **The classifier reaches a live model** | **WIRED.** `createGuardrailClassifierPort` defaults to `getLlmClient()`, so a real screenshot is classified by the real vision path | `src/lib/guardrail/classifier-port.ts:160` |
 | **`demo/assets/failing-code-screenshot.png`** | **ABSENT.** `demo/assets/` does not exist | `Test-Path demo/assets` -> False |
+| **The image cannot be sent even when it exists** | **BLOCKED BY A SECOND CAUSE, independent of the picker.** Measured with a **valid 4448-byte PNG containing real text**: upload returns `201` with `extractionStatus: "failed"`; attaching it returns **`400 VALIDATION_FAILED`** from the *pre-send* check, so the classifier never sees it (**I-60**) | `POST /api/student/uploads` -> `extractionStatus: "failed"`; turn -> `400` |
+
+> **The second row above corrects this table, and the correction matters more than the defect.** The
+> `ABSENT` note implied that producing the screenshot would complete the beat. **It would not** -- a real
+> image is refused at the pre-send check before classification, so the refusal the beat narrates cannot be
+> produced by any screenshot. **Do not send anyone hunting for an image.** The vision path *is* wired and
+> budgeted (a real `attachment_extraction` counter exists at 6/12 and increments), so the open question is
+> what the provider returns, not whether the plumbing exists.
+>
+> **The demonstration does not depend on resolving it.** The refusal the beat is built around is
+> **text**, and it is verified: `guardrail -> message -> done`, zero token frames, `REFUSE` with rules
+> `P6+DE12`. The image half was always the optional second half, and the recording already documented for
+> it remains the plan. What changes is that the recording is now **required rather than preferred**, and
+> the narration must not claim the presenter is about to attach an image live.
 
 **What this means for the beat, stated plainly.** Without the picker there is no way to attach a file *on
 camera*, so beat 5's second half cannot be performed live through the UI. The two options are (a) capture
