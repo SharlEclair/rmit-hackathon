@@ -77,7 +77,7 @@ deliberately **not** restated -- see `handoff/03-INVARIANTS.md` **T42**.
 
 | Fact | Evidence | Consequence |
 |---|---|---|
-| The repository **is** a git repo with a remote and 7 commits (pre-Phase-0 HEAD `da00f71`) | `.git` present; `origin https://github.com/SharlEclair/rmit-hackathon.git`; `git log` -> `da00f71 feat(analytics): make the insight engine deterministic-only`. **Public visibility was NOT verified:** an anonymous fetch of the repository URL returns HTTP 404 | WP-01's `git init` and remote steps are done, so `11` and `12` were corrected in Phase 0. What is *not* done is public readability, which is now a submission risk (`14` S8) |
+| The repository **is** a git repo with a remote and 7 commits (pre-Phase-0 HEAD `da00f71`) | `.git` present; `origin https://github.com/SharlEclair/rmit-hackathon-demo.git`; `git log` -> `da00f71 feat(analytics): make the insight engine deterministic-only`. **Public visibility was NOT verified:** an anonymous fetch of the repository URL returns HTTP 404 | WP-01's `git init` and remote steps are done, so `11` and `12` were corrected in Phase 0. What is *not* done is public readability, which is now a submission risk (`14` S8) |
 | `app/` does not exist | `Test-Path app` -> `False` | Every packet from WP-01's skeleton onward is unstarted |
 | `docs/fixtures/` does not exist | `Test-Path docs/fixtures` -> `False` | D46's four fixture files are unbuilt |
 | Native Postgres 18.6 is **running on 5432**, and `assignment_assistant` exists | `Get-Service postgresql-x64-18` -> `Running`; `psql -l` lists `assignment_assistant` owned by `user` | Path C is live (D66). No provisioning needed |

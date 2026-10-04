@@ -50,7 +50,7 @@ Internal deadlines, set 30 minutes ahead of every official one so a failure has 
 | R2 | Team of **up to 4** students | Info: What to Build | `NOT STARTED` | Lead | Names and member count below |
 | R3 | **Team registration form** completed by one member | Info: What to Submit | `NOT STARTED` | Lead | Submission confirmation; deadline Sat 2:00 PM |
 | R4 | Register on **Devpost** | Info: Get Started | `NOT STARTED` | Lead | Devpost account(s) |
-| R5 | **Public GitHub repository** created | Info: Get Started | `DONE` | Track A | The repository exists and is pushed: `origin https://github.com/SharlEclair/rmit-hackathon.git`, **66 commits**, tagged `phase-06-complete`. **Public visibility must still be confirmed by an anonymous fetch before the Devpost text claims it** -- see S4.1. An earlier entry recorded a 404 from that fetch, and a 404 is also what a private repository returns |
+| R5 | **Public GitHub repository** created | Info: Get Started | `DONE` | Track A | The repository exists and is pushed: `origin https://github.com/SharlEclair/rmit-hackathon-demo.git`, **66 commits**, tagged `phase-06-complete`. **Public visibility must still be confirmed by an anonymous fetch before the Devpost text claims it** -- see S4.1. An earlier entry recorded a 404 from that fetch, and a 404 is also what a private repository returns |
 | R6 | Commit often, as proof of progress | Info: Requirements | `DONE` | All | `git log --format=%ad --date=short \| sort -u` -> **exactly one date, `2026-10-04`**, so every commit falls inside the event window. The **count** is deliberately not quoted here: it changes with every commit including the one that edits this line (`T42`). Each commit is one logical change whose message names what it did and why |
 | R7 | Only work inside the hackathon timeline; **no old projects or schoolwork** | Info: Requirements | `DONE` | Lead | All application code is inside the event window, evidenced by R6's commit dates. Prior design material is disclosed in S5 and is not submitted as output |
 | R8 | Only work within the team; **no external assistance** | Info: Requirements | `DONE` (acknowledged) | All | [`CONTRIBUTING.md`](../CONTRIBUTING.md); no outside implementation help accepted |
@@ -66,7 +66,7 @@ Internal deadlines, set 30 minutes ahead of every official one so a failure has 
 |---|---|
 | Team name | `TBD` |
 | Team members (names, student numbers if required) | `TBD` |
-| Public repository URL | https://github.com/SharlEclair/rmit-hackathon.git (**public visibility unverified**) |
+| Public repository URL | https://github.com/SharlEclair/rmit-hackathon-demo.git (**public visibility unverified**) |
 | Devpost project URL | `TBD` |
 | Demo/presentation slot | From the schedule: Sun 4 Oct, 1:00 PM |
 | Registration form submitted by / at | `TBD` |

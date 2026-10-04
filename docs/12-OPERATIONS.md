@@ -171,7 +171,7 @@ Three consequences that shape everything below:
 
 ### 3.2 Repository bootstrap (WP-01 -- already done; verify, do not re-run)
 
-The repository **is** under version control: `origin` is `https://github.com/SharlEclair/rmit-hackathon.git`, history stands at 7 commits (HEAD `da00f71`), and `origin/main` is pushed. Steps 1 and 2 in the block below are **already executed**; do not re-run `git init` or re-add `origin`. **Public visibility of the remote is not verified** -- an anonymous fetch of the repository URL returns HTTP 404 -- so confirming the GitHub visibility setting is a live to-do. The deadline attached to this section is unchanged: the hackathon scores visible progress, and the AI-use disclosure must be reconstructable from history (`AGENTS.md` S7).
+The repository **is** under version control: `origin` is `https://github.com/SharlEclair/rmit-hackathon-demo.git`, history stands at 7 commits (HEAD `da00f71`), and `origin/main` is pushed. Steps 1 and 2 in the block below are **already executed**; do not re-run `git init` or re-add `origin`. **Public visibility of the remote is not verified** -- an anonymous fetch of the repository URL returns HTTP 404 -- so confirming the GitHub visibility setting is a live to-do. The deadline attached to this section is unchanged: the hackathon scores visible progress, and the AI-use disclosure must be reconstructable from history (`AGENTS.md` S7).
 
 > **Superseded at the Phase 7 freeze.** **Public visibility is now verified**: an anonymous GitHub API
 > fetch returns `private=false, visibility=public, default_branch=main`, so the to-do above is closed and
@@ -187,7 +187,7 @@ git status --porcelain          # MUST NOT list .env, cookies.txt, .storage/, ar
 git commit -m "chore(repo): initial commit of the design doc set and frozen inputs"
 
 # 2. The remote already exists (anonymous fetch returns 404, so confirm it is public):
-git remote -v                    # origin https://github.com/SharlEclair/rmit-hackathon.git
+git remote -v                    # origin https://github.com/SharlEclair/rmit-hackathon-demo.git
 
 # 3. Verify
 git remote -v

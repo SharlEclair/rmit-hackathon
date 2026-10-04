@@ -2,7 +2,7 @@
 
 **Purpose.** Turn the committed scope in [`02-SCOPE.md`](02-SCOPE.md) into sequenced, verifiable work that four people can finish in one hackathon weekend.
 
-**Status of the repository at the time of writing.** Documentation only. `app/` does not exist. The repository **is** under version control: `origin` is `https://github.com/SharlEclair/rmit-hackathon.git` and history stands at 7 commits (HEAD `da00f71`). What remains genuinely unstarted in WP-01 is the application skeleton, the package manifest and the typecheck/lint configuration -- not `git init`. Public visibility of the remote is not verified (an anonymous fetch returns HTTP 404).
+**Status of the repository at the time of writing.** Documentation only. `app/` does not exist. The repository **is** under version control: `origin` is `https://github.com/SharlEclair/rmit-hackathon-demo.git` and history stands at 7 commits (HEAD `da00f71`). What remains genuinely unstarted in WP-01 is the application skeleton, the package manifest and the typecheck/lint configuration -- not `git init`. Public visibility of the remote is not verified (an anonymous fetch returns HTTP 404).
 
 > **Superseded at the Phase 7 freeze (`24bdf64`'s successor).** The paragraph above is the state at the
 > time of writing and is kept as history. What is true now: `app/` **exists and is built** through Phase 6,
@@ -123,7 +123,7 @@ git remote -v              # origin -> a public GitHub URL
 ```
 
 **Acceptance criteria**
-- [x] `git init` was run, a GitHub remote exists, and the first commit is inside the hackathon window (`AGENTS.md` S7). **Done:** `origin` = `https://github.com/SharlEclair/rmit-hackathon.git`, 7 commits, HEAD `da00f71`. Public visibility still unverified (anonymous fetch returns HTTP 404).
+- [x] `git init` was run, a GitHub remote exists, and the first commit is inside the hackathon window (`AGENTS.md` S7). **Done:** `origin` = `https://github.com/SharlEclair/rmit-hackathon-demo.git`, 7 commits, HEAD `da00f71`. Public visibility still unverified (anonymous fetch returns HTTP 404).
 - [ ] `/api/health` reports `db: "up"` with `DATABASE_URL` set and `db: "down"` with it unset, without crashing the process.
 - [ ] `app/src/lib/config.ts` is the only module that reads `process.env`; every variable name matches [`.env.example`](../.env.example) exactly (see [`12-OPERATIONS.md`](12-OPERATIONS.md) S2).
 - [x] `git remote -v` shows the GitHub remote, and `git log --format=%cI` contains dates inside the hackathon window. **Done** (verified read-only); visibility, not existence, is the open item.

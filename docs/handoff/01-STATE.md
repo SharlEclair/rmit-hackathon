@@ -77,7 +77,7 @@ silently matches nothing -- which is how a removed route file survived on disk a
 | Shell | **Windows PowerShell 5.1** -- the tool name `pwsh` is misleading (I-09) | `$PSVersionTable` |
 | Node / pnpm | `v24.15.0` / `12.4.2` | `node -v`, `pnpm -v` |
 | Postgres | service `postgresql-x64-18` -> `Running`, native, port 5432 (**D66**) | `Get-Service` |
-| Git | `main` = the Phase 6 exit commit; `origin` = `SharlEclair/rmit-hackathon`, public | `git log`, `git remote -v` |
+| Git | `main` = the Phase 6 exit commit; `origin` = `SharlEclair/rmit-hackathon-demo`, public | `git log`, `git remote -v` |
 | Registry pins | **no dependency was added in Phase 6** | `app/package.json` |
 | Database | 35 base tables + 2 views, 471 columns, no drift; **13 migrations** | `scripts/verify-schema.ts` |
 | Live LLM provider | the resolved `.env` provider is **`gemini`** with `gemini-3.8-flash`, not `mock` | a direct `getLlmClient().complete()` probe |
@@ -192,7 +192,7 @@ Regenerate rather than trust any of it; where a file and `docs/**` disagree, the
 `git push origin main` for each commit; the Phase 6 exit push is recorded in the session log's
 **Commit range** and in this file's tag line. `git ls-remote` should show `refs/heads/main` and
 `refs/tags/phase-06-complete` at the same commit, and an anonymous
-`GET https://api.github.com/repos/SharlEclair/rmit-hackathon` must return `private: false`,
+`GET https://api.github.com/repos/SharlEclair/rmit-hackathon-demo` must return `private: false`,
 `visibility: public`, `default_branch: main` (**I-07** stays resolved).
 `git rev-list --left-right --count origin/main...HEAD` reads `0  0`. **If it does not, the push is the
 first thing to re-run** -- the hackathon's submission evidence is the public repository, not this
