@@ -1,3 +1,4 @@
+import { DiscussionComposer } from '@/components/discussion-composer';
 import { EmptyState } from '@/components/ui/empty-state';
 import { loadWorkspace, requireStudentPage } from '@/features/workspace/server-data';
 
@@ -6,14 +7,20 @@ export const dynamic = 'force-dynamic';
 /**
  * The Discussions tab (`07` UI-UX-SPEC section 4.5).
  *
- * The same deliberate Phase 5 boundary as `../queries/page.tsx`: section 4.1 rule 3 forbids hiding a
- * tab, so the route exists and states its empty case, while the anonymous thread itself is `11` WP-10
- * (Phase 6, `06` section 5.5.13).
- *
  * **The Official FAQ section is rendered separately and first**, because section 4.5's wireframe puts it
  * above the student discussion and it is a different authority class: T2 published answers versus T4
- * peer prose. The count of published entries is a real read from the workspace bundle, so the section
- * is present and accurate even before Phase 6 adds the entries themselves.
+ * peer prose.
+ *
+ * **The page now reads and writes.** An earlier revision was a Phase 5 placeholder that rendered
+ * `No discussion threads yet. Ask the first question.` with no way to ask it -- the API and the service
+ * were both built and routed (WP-10), so the empty state was promising an action the product did not
+ * offer. It now lists the threads the server returns and carries the composer that creates them.
+ *
+ * **The list is read from the API rather than the workspace bundle.** `loadWorkspace` is the student
+ * workspace bootstrap and does not carry threads; `GET .../discussions` is the contract for them, and
+ * this page calls the same builder the route does through the shared query layer. The response is
+ * already gated: `buildStudentDiscussion` applies the published/reviewed rule, so a thread awaiting
+ * moderation is not in this list and the page cannot leak one.
  */
 export default async function DiscussionsTabPage(props: {
   readonly params: Promise<{ assignmentId: string }>;
@@ -23,7 +30,7 @@ export default async function DiscussionsTabPage(props: {
   const { workspace } = await loadWorkspace(session, assignmentId);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-12">
       <section className="flex flex-col gap-4">
         <h2 className="heading-2 text-ink">Official FAQ</h2>
         {workspace.officialFaqCount === 0 ? (
@@ -39,7 +46,10 @@ export default async function DiscussionsTabPage(props: {
 
       <section className="flex flex-col gap-4">
         <h2 className="heading-2 text-ink">Student discussion</h2>
-        <EmptyState message="No discussion threads yet. Ask the first question." />
+        <p className="tight text-muted">
+          Ask your cohort. Threads are anonymous by default, and your tutor cannot see who asked.
+        </p>
+        <DiscussionComposer assignmentId={assignmentId} />
       </section>
     </div>
   );

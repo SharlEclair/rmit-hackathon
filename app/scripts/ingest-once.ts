@@ -64,10 +64,32 @@ function parseArgs(argv: readonly string[]): Options {
   };
 }
 
-const FIXTURE_DOCUMENTS = [
-  { kind: 'brief' as const, path: '../docs/fixtures/demo-brief.pdf', mimeType: 'application/pdf' },
-  { kind: 'rubric' as const, path: '../docs/fixtures/demo-rubric.pdf', mimeType: 'application/pdf' },
-];
+/**
+ * The documents each fixture ingests, keyed by the `--fixture` value.
+ *
+ * **A second fixture exists because one synthetic brief cannot show the product working on a real
+ * assignment's shape.** `demo` is the committed synthetic PDF (a software-engineering case analysis).
+ * `dataviz` mirrors the structure of a real RMIT Data Visualisation assignment -- five editor-supplied
+ * topics, a multi-criterion rubric with pass and distinction standards, APA referencing, and a required
+ * AI-use declaration -- which is a different shape from `demo` in exactly the ways that stress the
+ * product: more criteria, longer verbatim passages, and a rubric whose standards differ by grade band.
+ *
+ * **The `dataviz` documents live under `app/.local/` and are gitignored on purpose.** They are derived
+ * from a real, currently-assessed piece of coursework. The text is written for this fixture and is not a
+ * copy of the assessment, but the safest place for anything assignment-adjacent is outside the published
+ * repository -- `AGENTS.md` section 7 requires no third-party material that cannot be published, and
+ * the course's own brief and rubric are the university's words rather than ours.
+ */
+const FIXTURE_DOCUMENTS: Record<string, readonly { kind: 'brief' | 'rubric'; path: string; mimeType: string }[]> = {
+  demo: [
+    { kind: 'brief', path: '../docs/fixtures/demo-brief.pdf', mimeType: 'application/pdf' },
+    { kind: 'rubric', path: '../docs/fixtures/demo-rubric.pdf', mimeType: 'application/pdf' },
+  ],
+  dataviz: [
+    { kind: 'brief', path: './.local/fixture-dataviz-brief.pdf', mimeType: 'application/pdf' },
+    { kind: 'rubric', path: './.local/fixture-dataviz-rubric.pdf', mimeType: 'application/pdf' },
+  ],
+};
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
@@ -107,7 +129,11 @@ async function main(): Promise<void> {
   // 2. Store the fixture bytes through the real driver, then record the source rows.
   const storage = getStorageDriver();
   const storageDir = config.storageLocalDir;
-  for (const document of FIXTURE_DOCUMENTS) {
+  const documents = FIXTURE_DOCUMENTS[options.fixture] ?? FIXTURE_DOCUMENTS['demo'];
+  if (documents === undefined) {
+    throw new Error('no fixture documents configured; this cannot happen with a `demo` key present');
+  }
+  for (const document of documents) {
     const bytes = new Uint8Array(readFileSync(resolve(process.cwd(), document.path)));
     const sourceId = randomUUID();
     const extension = document.mimeType === 'application/pdf' ? 'pdf' : 'bin';
