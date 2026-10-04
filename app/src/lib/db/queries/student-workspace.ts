@@ -36,6 +36,18 @@ export interface StudentCourseRow {
  * one invisible, so counting it would show a course with nothing in it), while a tutor counts every
  * assignment they can see in review. `06` section 5.5.2 gives `assignmentCount` no such qualification,
  * so this is the reading taken and is recorded in the module rather than left implicit.
+ *
+ * **Test fixtures are excluded from the count, and this must match `loadSidebar`.** The four
+ * acceptance runs create assignments and never delete them -- by design, since deleting one would take
+ * the audit trail the run produces -- and they share a database with the demo. Without the exclusion
+ * this count read "50 assignments" beside a sidebar that listed two, so the same course showed two
+ * numbers that disagreed on one screen. The fixture patterns are the ones `verify-student.ts`,
+ * `verify-review.ts` and the Phase 6 scripts generate.
+ *
+ * **The exclusion lines sit inside the SQL, so they carry no `--` or `//` comments of their own.** A
+ * `--` inside this template literal is a syntax error in the enclosing TypeScript, and a `//` is sent
+ * to Postgres as SQL and rejected at runtime, which is how the first version of this change blanked the
+ * dashboard. The reasoning lives here, at the JavaScript level, instead.
  */
 export async function listCoursesForUser(ex: Executor, userId: string): Promise<StudentCourseRow[]> {
   const rows = await ex<
@@ -58,6 +70,10 @@ export async function listCoursesForUser(ex: Executor, userId: string): Promise<
                from assignments a
               where a.course_id = c.id
                 and (e.role_in_course = 'tutor' or a.status = 'published')
+                and a.title not like 'Review demo (%'
+                and a.title not like 'Student workspace demo (%'
+                and a.title not like 'Ingestion verification (%'
+                and a.title not like 'Phase % fixture %'
            )::int as assignment_count
       from enrollments e
       join courses c on c.id = e.course_id
@@ -122,6 +138,10 @@ export async function countAnsweredQueriesPerCourse(
                from assignments a
               where a.course_id = c.id
                 and (e.role_in_course = 'tutor' or a.status = 'published')
+                and a.title not like 'Review demo (%'
+                and a.title not like 'Student workspace demo (%'
+                and a.title not like 'Ingestion verification (%'
+                and a.title not like 'Phase % fixture %'
            )::int as assignment_count
       from enrollments e
       join courses c on c.id = e.course_id

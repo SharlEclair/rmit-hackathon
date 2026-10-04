@@ -21,8 +21,10 @@ export default async function TutorDashboardPage() {
   const courses = await loadTutorCourses(session);
 
   return (
-    <main className="min-h-screen bg-page px-4 py-8 md:px-8">
-      <div className="mx-auto flex max-w-4xl flex-col gap-6">
+    <main className="min-h-screen bg-page px-4 py-8 md:px-6 lg:px-8">
+      {/* The same composition rules as the student dashboard, so the two read as one product:
+          `17` section 4.1's 1200px cap and its 4/8/12/16/24/32/48 rhythm. */}
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-8">
         <header className="flex flex-col gap-1">
           <h1 className="heading-1 text-ink">Courses I tutor</h1>
           <p className="tight text-muted">Signed in as {session.profile.displayName}</p>
@@ -38,16 +40,19 @@ export default async function TutorDashboardPage() {
             }
           />
         ) : (
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col gap-6">
             {courses.items.map((course) => (
               <li key={course.id}>
+                {/* No shadow: `17` section 1.3 principle 4 reserves elevation for overlays, and a
+                    course card is part of the page. The hover moves the border rather than
+                    de-emphasising the card, which the design law forbids. */}
                 <Link
-                  className="block rounded-card border border-solid border-default bg-card p-4 shadow-card"
+                  className="block rounded-card border border-solid border-default bg-card p-4 hover:border-ink md:p-6"
                   href={`/tutor/courses/${course.id}`}
                 >
-                  <span className="mb-1 block mono text-muted">{course.code}</span>
-                  <span className="mb-2 block heading-3 text-ink">{course.title}</span>
-                  <span className="block tight text-muted">
+                  <span className="mono block text-muted">{course.code}</span>
+                  <span className="heading-3 mb-2 mt-1 block text-ink">{course.title}</span>
+                  <span className="tight block text-muted">
                     {course.term} - {course.assignmentCount}{' '}
                     {course.assignmentCount === 1 ? 'assignment' : 'assignments'}
                   </span>

@@ -162,22 +162,38 @@ export function ChecklistPanel(props: {
                   const uiState = uiStateOf(live);
                   const elapsedLabel = formatElapsed(live.elapsedSeconds ?? 0);
 
+                  /*
+                    **No wrapping `<li>`: `ChecklistItemRow` already renders one.**
+                    Wrapping it produced `<li><li>` -- invalid HTML, and React reported it as a
+                    hydration error on every checklist render. The row owns the list item because it
+                    owns the row's semantics: the progress mark, the title and the action are one
+                    list item, not three siblings inside one, and a wrapper here would also make
+                    `ChecklistItemRow` unusable anywhere its own `<li>` is wrong.
+
+                    `key` therefore moves onto the row. Exactly one of the four branches renders, so
+                    the key is unique per item without a wrapper to carry it.
+                  */
+                  const rowProps = { ...common, key: item.id };
                   return (
-                    <li key={item.id}>
-                      {uiState === 'not-started' ? <ChecklistItemRow {...common} state="not-started" /> : null}
-                      {uiState === 'in-progress' ? <ChecklistItemRow {...common} state="in-progress" /> : null}
+                    <>
+                      {uiState === 'not-started' ? (
+                        <ChecklistItemRow {...rowProps} state="not-started" />
+                      ) : null}
+                      {uiState === 'in-progress' ? (
+                        <ChecklistItemRow {...rowProps} state="in-progress" />
+                      ) : null}
                       {uiState === 'complete' ? (
-                        <ChecklistItemRow {...common} state="complete" elapsed={elapsedLabel} />
+                        <ChecklistItemRow {...rowProps} state="complete" elapsed={elapsedLabel} />
                       ) : null}
                       {uiState === 'reopened' ? (
                         <ChecklistItemRow
-                          {...common}
+                          {...rowProps}
                           state="reopened"
                           elapsed={elapsedLabel}
                           reopenedCount={live.reopenCount}
                         />
                       ) : null}
-                    </li>
+                    </>
                   );
                 })}
               </ul>
