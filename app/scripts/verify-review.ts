@@ -34,9 +34,14 @@
  * `.local/phase4-review-verify.json` (gitignored) and prints a pass/fail line per step.
  *
  * **It creates rows and does not delete them.** The fixture assignment is named
- * `Phase 4 verification <timestamp>`, so it is obvious in the database and harmless if left: it is
- * published, it belongs to the seeded course, and no student is enrolled in a way that its presence
- * changes. Deleting it would also delete the audit trail this run exists to produce.
+ * `Review demo (<HH:MM>)`, so it is readable in the database and harmless if left: it is published, it
+ * belongs to the seeded course, and no student is enrolled in a way that its presence changes.
+ * Deleting it would also delete the audit trail this run exists to produce.
+ *
+ * **The name was `Phase 4 verification <ISO timestamp>` until it was noticed in the sidebar.** That
+ * form is unambiguous in a database and unreadable in the product, and the fixtures share a database
+ * with the demo -- so every run added a row of raw ISO digits to the course tree a person actually
+ * looks at. A fixture name is part of the demo's surface when the two share a database.
  */
 
 import { randomUUID } from 'node:crypto';
@@ -234,7 +239,7 @@ async function main(): Promise<void> {
     await insertAssignmentIfAbsent(tx, {
       id: ids.assignment,
       courseId,
-      title: `Phase 4 verification ${now}`,
+      title: `Review demo (${now.slice(11, 16)})`,
       status: 'draft',
       dueAt: null,
       createdByUserId: tutor.id,

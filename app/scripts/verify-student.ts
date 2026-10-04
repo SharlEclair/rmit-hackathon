@@ -157,6 +157,28 @@ function sseEvents(text: string): string[] {
  * way, and `roles.ts` re-reads the `users` row on every request, so the token is as real as a form
  * login. What this script verifies is the workspace and its gate, not the login form (Phase 1's).
  */
+/**
+ * The fixture assignment's title.
+ *
+ * **Human-readable first, unique second.** The previous title was `Phase 5 verification <ISO
+ * timestamp>`, which is unambiguous in a database and awful everywhere else: this assignment appears
+ * in the sidebar's course tree, so every verification run added a row reading
+ * `Phase 5 verification 2026-10-03T21:37:48.817Z`. A fixture name is part of the demo's surface when
+ * the fixtures share a database with the demo, which they do here.
+ *
+ * The minutes are kept because the correctness property is that the title matches what the assertion
+ * expects, and two runs inside one minute would then match each other's fixture. That was never a
+ * problem in practice -- each run builds its own graph by id -- but the title assertion is cheap to
+ * keep exact, and a name that is merely *likely* unique is worse than one that is.
+ */
+function fixtureTitle(iso: string): string {
+  const date = new Date(iso);
+  const time = Number.isNaN(date.getTime())
+    ? iso.slice(11, 16)
+    : `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return `Student workspace demo (${time})`;
+}
+
 function token(userId: string, role: 'tutor' | 'student'): string {
   const secret = getConfig().authSecret;
   if (secret === null || secret === '') {
@@ -206,7 +228,7 @@ async function buildFixture(tx: Executor, input: {
   await insertAssignmentIfAbsent(tx, {
     id: ids.assignment,
     courseId: input.courseId,
-    title: `Phase 5 verification ${input.now}`,
+    title: fixtureTitle(input.now),
     status: 'draft',
     dueAt: null,
     createdByUserId: input.tutorId,
@@ -407,10 +429,10 @@ async function main(): Promise<void> {
   record(
     'workspace: header, sources, Map, checklist, counts are all populated (06 5.5.3)',
     'title is the fixture, status published, 1 source, >=1 Map node, 1 milestone, checklistTotal 1, dataState ready',
-    `title ${String(title) === `Phase 5 verification ${now}` ? 'matches the fixture' : 'MISMATCH'}, ` +
+    `title ${String(title) === fixtureTitle(now) ? 'matches the fixture' : 'MISMATCH'}, ` +
       `status ${String(status)}, sources ${String(sourceCount)}, nodes ${String(nodeCount)}, ` +
       `milestones ${String(milestoneCount)}, checklistTotal ${String(totalItems)}, dataState ${String(dataState)}`,
-    title === `Phase 5 verification ${now}` &&
+    title === fixtureTitle(now) &&
       status === 'published' &&
       sourceCount === 1 &&
       nodeCount >= 1 &&

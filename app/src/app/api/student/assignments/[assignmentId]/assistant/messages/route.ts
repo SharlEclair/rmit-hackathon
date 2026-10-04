@@ -150,7 +150,24 @@ export async function POST(
   }
   const { body, uploadIds, milestoneId } = parsed.parsed;
 
-  // (3) Every attached upload must be this student's, on this assignment, and scan-clear (C6).
+  // (3) Every attached upload must be this student's, on this assignment, and not scan-blocked (C6).
+  //
+  // **`pending` is allowed, and that is the fix for I-61.** The previous predicate required
+  // `=== 'clear'`, but nothing ever writes `clear`: `features/uploads/attachments.ts` reaches it only
+  // through a `scan` hook that no caller supplies, because Phase 2 deliberately left the scan to
+  // Phase 3 and Phase 3 never filled the seam -- the comment there says a permissive scanner would be
+  // "the C6 failure this path exists to prevent". So the strict predicate rejected *every* attachment,
+  // text included, and the whole picker was dead.
+  //
+  // Allowing `pending` does not weaken C6, because **the attachment text is not exempt from the
+  // guardrail -- it is part of the turn the guardrail classifies.** `answer.ts`'s `composeTurnText`
+  // folds the excerpts in under an `ATTACHED UPLOAD EXCERPTS (student input)` heading, and `decide()`
+  // classifies the composed text, which is precisely why it is given no separate `uploads` argument.
+  // An upload carrying a prohibited request is therefore still refused, and by the same policy engine
+  // that refuses the typed sentence.
+  //
+  // `blocked` stays rejected even though no code path writes it yet: it is the status a real scan
+  // would produce, and the predicate should already mean what it says when one arrives.
   const uploads = await withTransaction(async (tx) => {
     const blocked: string[] = [];
     const excerpts: string[] = [];
@@ -159,7 +176,7 @@ export async function POST(
       if (
         upload === null ||
         upload.assignmentId !== assignmentId ||
-        upload.guardrailScanStatus !== 'clear'
+        upload.guardrailScanStatus === 'blocked'
       ) {
         blocked.push(uploadId);
         continue;

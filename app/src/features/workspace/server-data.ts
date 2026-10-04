@@ -166,3 +166,105 @@ export async function loadChecklist(
 export async function loadBrief(scope: VisibleScope): Promise<BriefResponse> {
   return withTransaction((tx) => buildBriefResponse(tx, scope));
 }
+
+/** One assignment as the sidebar needs it. Deliberately tiny: the sidebar renders names, not facts. */
+export interface SidebarAssignment {
+  readonly id: string;
+  readonly title: string;
+}
+
+/** One course and its visible assignments, for the sidebar tree. */
+export interface SidebarCourse {
+  readonly id: string;
+  readonly code: string;
+  readonly title: string;
+  readonly term: string;
+  readonly roleInCourse: 'student' | 'tutor';
+  readonly assignments: readonly SidebarAssignment[];
+}
+
+/**
+ * Courses and their assignments, for the persistent sidebar.
+ *
+ * **Why one query rather than one per course.** The sidebar renders on every page, so a per-course
+ * follow-up would put an N+1 on the critical path of every navigation. One statement returning
+ * courses joined to their visible assignments keeps the whole tree in a single round trip.
+ *
+ * **Visibility is the role's, and it is the same rule the rest of the app uses.** A student sees only
+ * `status = 'published'` assignments, which is gate rule G1 stated as a join predicate; a tutor sees
+ * every assignment on a course they teach, because a draft or in-review assignment is precisely what
+ * they are working on. A single `or` on `role_in_course` expresses both without a second code path
+ * that could drift from `listCoursesForUser`'s own count.
+ *
+ * **Test fixtures are excluded, and that is a deliberate exception rather than a tidy-up.** The four
+ * acceptance runs build their own assignments and never delete them, by design: deleting one would
+ * take the audit trail the run exists to produce. They share a database with the demo, so after a few
+ * rounds of verification the course tree was thirty-three rows of `Review demo (20:34)` and
+ * `Student workspace demo (21:37)` with the one real assignment buried at the top. A navigation tree
+ * that shows test residue teaches a reader that the sidebar is not worth reading.
+ *
+ * The exclusion is a **name predicate, not a status one**: those fixtures are genuinely published
+ * assignments in the database, so nothing about their state distinguishes them. The predicate is kept
+ * in one place, matches the two names `verify-student.ts` and `verify-review.ts` generate, and is
+ * commented at both ends so a future fixture that forgets to match it is a one-line fix rather than a
+ * mystery.
+ *
+ * **This is navigation, not content.** It carries a title and an id and nothing else: no status, no
+ * progress, no dates. A sidebar that showed a status would be a second place for the product's
+ * visibility rules to be stated, and a second place for them to be wrong (`06` section 3.4, trap T3).
+ */
+export async function loadSidebar(session: SessionContext): Promise<readonly SidebarCourse[]> {
+  const rows = await withTransaction(
+    (tx) =>
+      tx<
+        {
+          course_id: string;
+          course_code: string;
+          course_title: string;
+          course_term: string;
+          role_in_course: string;
+          assignment_id: string | null;
+          assignment_title: string | null;
+        }[]
+      >`
+        select c.id           as course_id,
+               c.code         as course_code,
+               c.title        as course_title,
+               c.term         as course_term,
+               e.role_in_course,
+               a.id           as assignment_id,
+               a.title        as assignment_title
+          from enrollments e
+          join courses c on c.id = e.course_id
+          left join assignments a
+                 on a.course_id = c.id
+                and (e.role_in_course = 'tutor' or a.status = 'published')
+                and a.title not like 'Review demo (%'
+                and a.title not like 'Student workspace demo (%'
+                and a.title not like 'Ingestion verification (%'
+                and a.title not like 'Phase % discussion fixture %'
+                and a.title not like 'Phase % analytics fixture %'
+                and a.title not like 'Phase % fixture %'
+         where e.user_id = ${session.userId}::uuid
+         order by c.code asc, a.created_at asc
+      `,
+  );
+
+  const byCourse = new Map<string, SidebarCourse & { assignments: SidebarAssignment[] }>();
+  for (const row of rows) {
+    const existing = byCourse.get(row.course_id) ?? {
+      id: row.course_id,
+      code: row.course_code,
+      title: row.course_title,
+      term: row.course_term,
+      roleInCourse: row.role_in_course === 'tutor' ? ('tutor' as const) : ('student' as const),
+      assignments: [] as SidebarAssignment[],
+    };
+    if (row.assignment_id !== null && row.assignment_title !== null) {
+      existing.assignments.push({ id: row.assignment_id, title: row.assignment_title });
+    }
+    byCourse.set(row.course_id, existing);
+  }
+
+  return [...byCourse.values()];
+}
