@@ -8,7 +8,7 @@ import { useState, type FormEvent } from 'react';
  *
  * **Naming (`04` D13).** Nothing on this screen or in this file names an internal capability as an
  * agent or a model. The only actor visible to a user is a person signing in, and the product name.
- * This is why the copy says "Assignment Assistant" and never names the thing behind it.
+ * This is why the copy says "AssignMate" and never names the thing behind it.
  *
  * **Markup.** Minimal and semantic: one `main`, one `h1`, one `form`, `label`-bound inputs, and a
  * `<p role="alert">` for the error. No Tailwind utility classes, because the design tokens land
@@ -127,7 +127,7 @@ export default function LoginPage() {
 
   return (
     <main>
-      <h1>Assignment Assistant</h1>
+      <h1>AssignMate</h1>
       <h2>Sign in</h2>
 
       {error !== null ? (

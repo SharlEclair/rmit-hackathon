@@ -1,4 +1,4 @@
-# Assignment Assistant
+# AssignMate
 
 **An AI-native assignment workspace for university students and tutors.**
 

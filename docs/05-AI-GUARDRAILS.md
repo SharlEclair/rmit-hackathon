@@ -1,6 +1,6 @@
 # 05 - AI Guardrails
 
-**Purpose.** Specify the policy layer that decides what the Assignment Assistant may do, precisely enough to implement and test. This doc owns D7, D8, D11, D14, D15, D16 and the enforcement points for C1 and C6. It is the highest-risk document in the set: it is the spec a later agent implements against, and the demo's most important moment is the assistant correctly refusing a prohibited request.
+**Purpose.** Specify the policy layer that decides what the Assistant may do, precisely enough to implement and test. This doc owns D7, D8, D11, D14, D15, D16 and the enforcement points for C1 and C6. It is the highest-risk document in the set: it is the spec a later agent implements against, and the demo's most important moment is the assistant correctly refusing a prohibited request.
 
 **Read with.** `AGENTS.md` section 2 (C1, C6) and section 6 (guardrail rules) are normative and are not restated as options here. `01-DECISIONS.md` D6-D16. `04-TECH-ARCHITECTURE.md` section 9.2 for where these layers are wired into the request path. `15-GLOSSARY.md` for the verdict enum and vocabulary.
 

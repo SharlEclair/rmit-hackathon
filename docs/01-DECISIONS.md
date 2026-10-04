@@ -137,7 +137,7 @@ Each of these is a real gap. The build plan assumes the default. If implementati
 | O4 | Tutor permission model | Flat: any tutor on the course can edit milestones, publish FAQs, and approve answers. A single `owner` flag exists in the schema but is not enforced in the UI. | `06` section3.5 |
 | O5 | Exact supported file formats | Tutor: PDF, DOCX, PPTX, PNG/JPEG, plus plain text and Markdown. Student: PNG/JPEG, PDF, plain text (**O11** -- audio and video are not accepted; they are refused at the picker). Anything else is rejected at upload with a clear message, not silently. | `04` section6 |
 | O6 | Exact MVP scope | Committed in `02-SCOPE.md`. No handoff Tier 1 item is dropped; one item is **added** (T6, the per-assignment AI Usage Policy editor, **O12**), and the Tier 2 items are placed in `02` section3 or in the MVP with reasons recorded. | `02` |
-| O7 | Product name | **Assignment Assistant** for the repository and demo. Branding is cosmetic and must not block work. | `14` |
+| O7 | Product name | **AssignMate** for the repository and demo. Branding is cosmetic and must not block work. | `14` |
 | O8 | Whether approved student answers auto-promote to FAQ | No. Promotion is always an explicit separate tutor action, so authority is never granted implicitly. | `03` section6 |
 | O9 | Whether the assistant may see a student's private tutor queries | Yes, read-only, and only that student's own -- it is genuine context for "what have I already been told?". Never surfaced in analytics. | `05` section5.2 |
 | O10 | Whether discussions feed the assistant's retrieval set | Only **tutor-published FAQ entries**. Raw peer discussion is T4 and must never ground an authoritative answer. | `06` section2 |

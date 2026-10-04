@@ -1,6 +1,6 @@
 # 00 -- Documentation Index
 
-**Project:** Assignment Assistant -- CSIT RE:Uni Hackathon 2026 (theme: *Innovating Education*)
+**Project:** AssignMate -- CSIT RE:Uni Hackathon 2026 (theme: *Innovating Education*)
 **Status of this doc set:** implementation-ready. No application code has been written yet; that is deliberate.
 
 > **Superseded at the Phase 7 freeze.** The line above was true when the doc set was written and is kept as

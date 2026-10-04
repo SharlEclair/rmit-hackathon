@@ -756,7 +756,7 @@ Primitive source: `shadcn` means vendored and re-themed per 7.2; `hand-built` me
 4. **Decorative icons are `aria-hidden="true"`; a meaningful icon takes its accessible name from adjacent text, not from an `aria-label` on the glyph.**
 5. **No icon is invented for a truth tier.** The badge text and the border style are the tier signal; a tier icon would be a third, redundant cue and a second thing to keep synchronised.
 6. **No icon buttons in the document viewer or the Map.** Page navigation uses labelled controls, because `07` section 4.2 rule 10 makes page navigation the only control the viewer adds and it must be unambiguous.
-7. **The Assistant floating action button** is the one circular control (`radius: full`), labelled `Assignment Assistant`, with the unread dot implemented as a border plus a visually hidden count rather than a colour-only dot (`07` section 3.3 rule 4).
+7. **The Assistant floating action button** is the one circular control (`radius: full`), labelled `AssignMate`, with the unread dot implemented as a border plus a visually hidden count rather than a colour-only dot (`07` section 3.3 rule 4).
 
 ---
 

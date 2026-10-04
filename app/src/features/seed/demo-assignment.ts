@@ -728,7 +728,7 @@ export const FAQ_ENTRIES: readonly FaqDefinition[] = [
   },
   {
     milestoneKey: 'M5',
-    question: 'May I ask the Assignment Assistant about the rubric?',
+    question: 'May I ask AssignMate about the rubric?',
     answer:
       'Yes. Section 4.2 of the AI Usage Policy permits AI help to understand the assessment documents -- explaining a sentence in the brief, saying what a rubric criterion is asking for in plain language, or listing the sections the brief requires -- and Section 6.1 permits the policy-bound assistant to explain what a criterion rewards by quoting it. Section 3.1 still prohibits any use that produces the analysis, the Part B reasoning, or a decomposition that would lead to the answer, and that prohibition has no exceptions.',
     sourceKind: 'ai_candidate',

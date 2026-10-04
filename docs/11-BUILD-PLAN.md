@@ -574,7 +574,7 @@ Observable behaviour: with the network cable unplugged, the guardrail test suite
 
 ---
 
-### WP-09 -- Assignment Assistant: grounding, refusal path and proactive message
+### WP-09 -- AssignMate: grounding, refusal path and proactive message
 
 **Goal.** The student talks to one coach. Permitted questions are answered from approved content with citations to the highest truth tier available. Prohibited questions hit the refusal path from WP-08 and are not softened by the model. One proactive message appears per milestone from approved content only.
 

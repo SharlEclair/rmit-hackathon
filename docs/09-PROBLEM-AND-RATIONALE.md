@@ -10,7 +10,7 @@
 
 A university assignment is a specification with a marking scheme attached, written once and read by hundreds of people who are each working alone. The specification is authoritative but not interactive: it cannot answer the question a student actually has. The support channels around it are interactive but not authoritative, or not safe, or both. So students either ask nothing -- and lose marks to a misreading -- or they ask a general-purpose AI, which will happily write the code and thereby convert a clarification problem into an academic integrity problem. Meanwhile the tutor, who could resolve most of it in one sentence, cannot see where the confusion is concentrated until the marks come in. **The gap is not intelligence. It is authority plus channel: nobody can answer a student's question with the assignment's own rules in hand, in a place where asking is cheap.**
 
-Assignment Assistant closes that gap by making the assignment itself the object, constraining the AI to the assignment's own AI policy, and turning the questions students ask into aggregate insight for the tutor. The single constraint that shapes everything else:
+AssignMate closes that gap by making the assignment itself the object, constraining the AI to the assignment's own AI policy, and turning the questions students ask into aggregate insight for the tutor. The single constraint that shapes everything else:
 
 > **The AI must never do the assignment for the student.**
 
@@ -54,7 +54,7 @@ Academic integrity is the institution's exposure, and it is currently enforced b
 | **A general-purpose AI assistant** | Instant, patient, never judges the question. | Two failures, both structural. It has no authoritative knowledge of *this* assignment's brief, rubric, or tutor interpretation, so it answers from the general case; and it has no notion of the assignment's AI rules, so it will do the work. The second failure is the one that turns a study aid into a misconduct risk. |
 | **A generic "AI tutor" wrapper** | Better-placed answers than a raw chatbot. | Still no authority hierarchy, no tutor approval boundary, and no aggregate view for the tutor. It makes the student side friendlier without changing who holds the truth or how the tutor sees the cohort. |
 
-The pattern across all six: **the channels that can answer are not authoritative, and the artefact that is authoritative cannot answer.** Assignment Assistant exists to close exactly that gap, and it does so with the assignment as the object rather than a chat window as the object (D1, D2).
+The pattern across all six: **the channels that can answer are not authoritative, and the artefact that is authoritative cannot answer.** AssignMate exists to close exactly that gap, and it does so with the assignment as the object rather than a chat window as the object (D1, D2).
 
 ---
 
@@ -174,7 +174,7 @@ For the opening of the pitch (`13-DEMO-STORY.md` S2, beat 1), the short version:
 
 > A tutor writes one assignment brief. Three hundred students read it alone, at night, and every one of them has the same handful of questions. The brief cannot answer them -- it is a PDF. The forum can, but posting there costs something. So students either guess, or they paste the brief into a general-purpose AI, which will happily write the code for them and turn an ambiguity into a misconduct case. The tutor finds out which parts were confusing when the marks come in.
 >
-> That is the gap: the thing with the authority cannot answer, and the things that can answer have none. Assignment Assistant makes the assignment itself the thing you work inside -- the original brief, kept verbatim; a tutor-approved structure; an anonymous place to ask; and an AI that reads this assignment's own rules and refuses the rest. The refusal is the feature.
+> That is the gap: the thing with the authority cannot answer, and the things that can answer have none. AssignMate makes the assignment itself the thing you work inside -- the original brief, kept verbatim; a tutor-approved structure; an anonymous place to ask; and an AI that reads this assignment's own rules and refuses the rest. The refusal is the feature.
 
 ---
 

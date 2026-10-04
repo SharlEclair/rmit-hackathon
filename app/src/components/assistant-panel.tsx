@@ -14,7 +14,7 @@ import { ContentClassPanel } from '@/components/ui/content-class-panel';
 import { STATE_COPY } from '@/components/ui/fixed-strings';
 
 /**
- * The Assignment Assistant panel (`07` UI-UX-SPEC section 4.7.2, plus the refusal panel of 4.7.3).
+ * The AssignMate panel (`07` UI-UX-SPEC section 4.7.2, plus the refusal panel of 4.7.3).
  *
  * **The one rule this component exists to keep: the boundary treatment is not the error treatment.**
  * A guardrail refusal is a `200` carrying a refusal-shaped payload (I4, `06` section 5.3, trap T13),
@@ -222,7 +222,7 @@ export function AssistantPanel(props: {
    */
   if (!props.policyAvailable) {
     return (
-      <ContentClassPanel contentClass="interpretation" title="Assignment Assistant">
+      <ContentClassPanel contentClass="interpretation" title="AssignMate">
         <p className="body text-ink">{STATE_COPY.refusalUnavailable}</p>
       </ContentClassPanel>
     );
@@ -235,8 +235,8 @@ export function AssistantPanel(props: {
       contentClass="interpretation"
       title={
         props.milestoneTitle === null
-          ? 'Assignment Assistant'
-          : `Assignment Assistant \u2014 ${props.milestoneTitle}`
+          ? 'AssignMate'
+          : `AssignMate \u2014 ${props.milestoneTitle}`
       }
     >
       <div className="flex flex-col gap-4">

@@ -8,7 +8,7 @@ import '../styles/globals.css';
 // nothing here may pre-empt one -- in particular there is no navigation, no assignment
 // list, and no placeholder for the Assistant.
 export const metadata: Metadata = {
-  title: 'Assignment Assistant',
+  title: 'AssignMate',
   description:
     'An AI-native assignment workspace. The Assistant never does the assignment for the student.',
 };

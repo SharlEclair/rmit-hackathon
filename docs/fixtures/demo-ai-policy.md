@@ -30,7 +30,7 @@ Read it before you begin, and read it again before you submit.
   generators, transcription tools, and AI features built into word processors and browsers.
 - **Your work** -- anything you produce for this assessment, including drafts, notes, outlines,
   diagrams, and the submitted report.
-- **The policy-bound assistant** -- the Assignment Assistant provided for this course. It is
+- **The policy-bound assistant** -- the AssignMate provided for this course. It is
   bound by the rules in Section 4 and by the prohibitions in Section 3, and it will refuse a
   request that this policy prohibits.
 
@@ -101,7 +101,7 @@ is not mechanical editing and is prohibited under Section 3.3.
 course concepts, to test your own understanding of a topic, or to explain a worked example
 from the course materials. Practice questions must not be about the case in the case pack.
 
-**4.6 -- Use of the policy-bound assistant.** The Assignment Assistant provided for this course
+**4.6 -- Use of the policy-bound assistant.** The AssignMate provided for this course
 is permitted. It is designed to answer questions about the assessment's requirements, retrieve
 the exact wording of the brief and the rubric, explain what a rubric criterion rewards, and help
 you plan your own next steps. It is bound by Section 3: it will refuse any request that asks it

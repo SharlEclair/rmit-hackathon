@@ -198,7 +198,7 @@ Route: `/login`. Roles: public. One screen serves both roles; the server decides
 
 ```text
 +---------------------------------------------------+
-|  Assignment Assistant                             |
+|  AssignMate                             |
 |                                                   |
 |  +---------------------------------------------+  |
 |  | Email          [___________________________]|  |
@@ -240,7 +240,7 @@ Additional rules: no "forgot password" link in the MVP (D42); no SSO, no Canvas 
 ```text
 STUDENT SHELL                                   TUTOR SHELL
 +-----------------------------------------+     +-----------------------------------------+
-| Assignment Assistant    <name> [Menu]   |     | Assignment Assistant    <name> [Menu]   |
+| AssignMate    <name> [Menu]   |     | AssignMate    <name> [Menu]   |
 |-----------------------------------------|     |-----------------------------------------|
 | Courses > COSC1234 > Assignment A       |     | Courses > COSC1234 > Assignment A       |
 |-----------------------------------------|     |-----------------------------------------|
@@ -257,7 +257,7 @@ Rules:
 1. The tab strip is the only navigation inside a workspace. Tabs are deep-linkable.
 2. Notification counts appear on the Discussion and Queries tabs where the API provides them (unanswered Queries for tutors, new tutor replies for students). A count is never shown for the moderation queue to a student.
 3. The Assistant floating action button (FAB) sits bottom-right on all four student workspace tabs and nowhere else. A tutor has no Assistant FAB: the Assistant is a student-facing capability (D13).
-4. The FAB is reachable by keyboard, labelled `Assignment Assistant`, and shows an unread dot only while a proactive message is undismissed.
+4. The FAB is reachable by keyboard, labelled `AssignMate`, and shows an unread dot only while a proactive message is undismissed.
 5. At `lg`, the Assistant opens as a right side panel and the workspace narrows; below `lg` it opens as a bottom sheet that can be dragged to full height and closed with Escape.
 6. The review status vocabulary never appears to a student: a student sees published content, or the empty state that explains it is not published yet.
 
@@ -610,7 +610,7 @@ When a student first enters a Milestone, the Assistant FAB shows an unread dot a
 
 ```text
 +---------------------------------------------------------------------------+
-| Assignment Assistant                            Milestone 2 - Design  [X]  |
+| AssignMate                            Milestone 2 - Design  [X]  |
 |---------------------------------------------------------------------------|
 | You are starting Milestone 2. Before you begin, here are 3 things the      |
 | assignment specifically requires you to consider:                          |
@@ -639,7 +639,7 @@ Rules (O2, all testable):
 
 ```text
 +---------------------------------------------------------------------------+
-| Assignment Assistant                                          [ Clear ] [X]|
+| AssignMate                                          [ Clear ] [X]|
 |---------------------------------------------------------------------------|
 |  [ transcript: student turns right, assistant turns left ]                 |
 |                                                                            |

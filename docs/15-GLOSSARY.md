@@ -24,8 +24,8 @@
 | **Verdict** | The guardrail's structured decision for one request: `ALLOW`, `ALLOW_WITH_SCOPE`, `CLARIFY`, `REFUSE`, `ESCALATE_TO_TUTOR`. | A *Moderation flag*. | Decision, result, label |
 | **Prohibited request** | A student request that would cause the assistant to do, evaluate, debug, or plan the student's assessed work. | A *Moderation flag* (which is about discussion content). | Blocked message, banned prompt |
 | **Derived effort** | Prohibited assistance delivered indirectly -- reworded, hypothetical, decomposed into steps, or "just checking". Prohibited exactly as directly as a plain request (D11). | A legitimate clarifying question. | Loophole, edge case, workaround |
-| **Assignment Assistant** | The student-facing AI coach. One conversational session per (student, assignment). | The *Assignment Analyst* or the *Insight Engine* -- internal capabilities, never shown to users. | Chatbot, bot, GPT, AI tutor |
-| **Assignment Analyst** | The internal ingestion capability that reads uploaded tutor materials and proposes structure, milestones, checklist, FAQ candidates, AI policy, and ambiguity/contradiction findings. | The *Assignment Assistant*. | Parser, extractor, ingester |
+| **AssignMate** | The student-facing AI coach. One conversational session per (student, assignment). | The *Assignment Analyst* or the *Insight Engine* -- internal capabilities, never shown to users. | Chatbot, bot, GPT, AI tutor |
+| **Assignment Analyst** | The internal ingestion capability that reads uploaded tutor materials and proposes structure, milestones, checklist, FAQ candidates, AI policy, and ambiguity/contradiction findings. | The *AssignMate*. | Parser, extractor, ingester |
 | **Discussion Moderator** | The internal capability that flags student discussion content. Advisory only -- it never deletes. | The *guardrail*. | Censor, filter |
 | **Insight Engine** | The internal capability that computes cohort insight from behaviour. Deterministic: it makes no model call in the MVP (**D67**). | Analytics UI. | Analyzer, ML model |
 | **Query** | A **private** student -> tutor thread. One student, one tutor (or tutor team). | A *Discussion* thread (public/anonymous). | Ticket, message, DM |
@@ -114,4 +114,4 @@ Discarded candidates move to `REJECTED` and are retained for audit, not deleted.
 
 ## 5. Capability names are internal
 
-`Assignment Analyst`, `Guardrail`, `Discussion Moderator`, and `Insight Engine` are architecture vocabulary. A student sees **one** thing: the Assignment Assistant. A tutor sees capabilities as product features -- never as agents, models, or a pipeline diagram.
+`Assignment Analyst`, `Guardrail`, `Discussion Moderator`, and `Insight Engine` are architecture vocabulary. A student sees **one** thing: the AssignMate. A tutor sees capabilities as product features -- never as agents, models, or a pipeline diagram.

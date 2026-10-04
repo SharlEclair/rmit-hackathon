@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export default function HomePage() {
   return (
     <main>
-      <h1>Assignment Assistant</h1>
+      <h1>AssignMate</h1>
       <p>The app is running.</p>
       <ul>
         <li>

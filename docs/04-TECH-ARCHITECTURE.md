@@ -1,6 +1,6 @@
 # 04 - Technical Architecture
 
-**Purpose.** Fix the technical shape of Assignment Assistant so that any agent can build it without re-deciding the stack. This doc owns the detail for D7, D12, D13, D36-D51, D58 and D60-D73, and the enforcement points for C1, C6, C7 and C8.
+**Purpose.** Fix the technical shape of AssignMate so that any agent can build it without re-deciding the stack. This doc owns the detail for D7, D12, D13, D36-D51, D58 and D60-D73, and the enforcement points for C1, C6, C7 and C8.
 
 **Read with.** `AGENTS.md` (constraints) -> `01-DECISIONS.md` (what is settled) -> `05-AI-GUARDRAILS.md` (the policy layer this doc wires in) -> `06-DATA-MODEL.md` (the authoritative schema; table names here are the interface expectation, not the schema of record).
 

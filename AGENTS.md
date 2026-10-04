@@ -8,7 +8,7 @@
 
 ## 1. What this project is
 
-**Assignment Assistant** -- an AI-native assignment workspace for university students and tutors, built for the CSIT RE:Uni Hackathon 2026 (theme: *Innovating Education*).
+**AssignMate** -- an AI-native assignment workspace for university students and tutors, built for the CSIT RE:Uni Hackathon 2026 (theme: *Innovating Education*).
 
 One-sentence product model:
 

@@ -34,7 +34,7 @@ Beat 5 is 48 seconds and splits internally: 22 seconds for the text refusal, 26 
 
 ## 2. Beat 1 -- Problem (0:00-0:45)
 
-**Screen.** Title slide: "Assignment Assistant". Then cut immediately to the assignment brief PDF, full screen, and scroll it slowly for the rest of the beat. Do not show the product yet.
+**Screen.** Title slide: "AssignMate". Then cut immediately to the assignment brief PDF, full screen, and scroll it slowly for the rest of the beat. Do not show the product yet.
 
 **Say, nearly verbatim:**
 

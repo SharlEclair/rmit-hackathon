@@ -4,7 +4,7 @@
 
 **Normative parents.** [`../AGENTS.md`](../AGENTS.md) (constraints C1-C8), [`01-DECISIONS.md`](01-DECISIONS.md) (D1-D73, O1-O12), [`15-GLOSSARY.md`](15-GLOSSARY.md) (vocabulary). Scope is decided in [`02-SCOPE.md`](02-SCOPE.md); where this doc appears to enlarge scope, 02 wins.
 
-**One-sentence product model.** Tutors upload an assignment and its supporting documents; the system turns them into a tutor-approved assignment structure (Assignment Map, Milestones, Checklist, FAQ entries, AI Usage Policy, ambiguity findings); students work through the assignment using the original brief, that structure, anonymous Discussions, private Queries, and a strictly constrained Assignment Assistant; tutors receive aggregate insight into where the cohort is spending time and asking questions.
+**One-sentence product model.** Tutors upload an assignment and its supporting documents; the system turns them into a tutor-approved assignment structure (Assignment Map, Milestones, Checklist, FAQ entries, AI Usage Policy, ambiguity findings); students work through the assignment using the original brief, that structure, anonymous Discussions, private Queries, and a strictly constrained AssignMate; tutors receive aggregate insight into where the cohort is spending time and asking questions.
 
 **The single most important sentence.** The AI must never do the assignment for the student. Every requirement below is subordinate to that sentence, and a requirement that improves helpfulness while weakening it is rejected rather than traded off.
 
@@ -829,7 +829,7 @@ Reproduced from [`01-DECISIONS.md`](01-DECISIONS.md) section G where the product
 | O3 | Discussion moderation workflow | AI flags with severity and reason code; high severity hidden pending review; tutors decide; students never see flag counts | US-S-20, US-T-15 |
 | O4 | Tutor permission model | Flat: any tutor on the course can edit, approve, publish, and moderate; `owner` exists in the schema and grants nothing | [`06-DATA-MODEL.md`](06-DATA-MODEL.md) section 3.5 |
 | O5 | Supported file formats | Tutor: PDF, DOCX, PPTX, PNG, JPEG, plus plain text and Markdown (**D57**). Student: superseded by O11 for the MVP - images (PNG, JPEG), PDF, and plain text; audio and video out. Anything else refused at upload with the list, never silently | US-S-13, FR-ING-2 |
-| O7 | Product name | Assignment Assistant | All copy |
+| O7 | Product name | AssignMate | All copy |
 | O8 | Auto-promotion of approved peer answers | Never; promotion is a separate explicit tutor action | Section 6, FR-PEER-6 |
 | O9 | Assistant visibility of private Queries | Own thread only, read-only, never in analytics | US-S-14, NFR-P-5 |
 | O10 | Whether discussions ground the Assistant | Only published FAQ entries are retrievable; raw peer discussion is never authoritative | US-S-11, FR-PEER-9 |

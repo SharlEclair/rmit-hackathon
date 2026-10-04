@@ -1,6 +1,6 @@
 # `docs/fixtures/` -- the committed demo fixtures
 
-These four files are the **committed demo inputs** for the Assignment Assistant. They are the
+These four files are the **committed demo inputs** for the AssignMate. They are the
 load-bearing artefact of Phase 1 (WP-02): every later phase's tests read them, and
 `docs/handoff/03-INVARIANTS.md` trap **T8** is the reason they are committed rather than generated
 on demand.

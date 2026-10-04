@@ -1743,7 +1743,7 @@ Per D48: elapsed time is the **first** start-to-complete interval. Re-opening a 
 
 #### 7.3.3 `assistant_sessions`
 
-Purpose: the one conversational session per (student, assignment) (glossary: Assignment Assistant). Class: identity-bearing, student-facing only.
+Purpose: the one conversational session per (student, assignment) (glossary: AssignMate). Class: identity-bearing, student-facing only.
 
 | Column | Type | Constraints |
 |---|---|---|
