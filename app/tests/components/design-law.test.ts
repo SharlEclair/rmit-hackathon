@@ -232,13 +232,51 @@ describe('design law over the primitive sources', () => {
     expect(stripComments(sourceOf('content-class-panel.tsx'))).not.toContain('shadow');
   });
 
-  it('carries no animation, transition or opacity de-emphasis', () => {
+  /**
+   * **This assertion was stricter than the specification it cites, and that is why it changed.**
+   *
+   * It used to ban `transition` and `opacity-` outright, on the reading that `17` S10.4 forbids
+   * animation in the primitives. But the spec does not say that. `17` S10.3 rule 1 says the opposite:
+   * "**Hover changes exactly one property**: the colour of a border, an underline, or a background,
+   * **at the `fast` duration**" -- a hover transition is required, not banned -- and `17` S10.2 defines
+   * a three-step entrance with opacity and transform. `09` S10 caps motion at 150ms and `motion.css`
+   * already declares `--motion-fast/base/slow` with a reduced-motion reset to 0ms.
+   *
+   * So `transition: none` was the documented value and any easing was the undocumented one, which is
+   * how a test comes to enforce a stricter rule than its own source. What is worth enforcing is the
+   * **bound**, not the absence: motion must reference a declared token (so it cannot be hand-rolled and
+   * cannot exceed 150ms without changing the token), and it must not be keyframe animation, whose
+   * timing is not covered by a single duration token.
+   *
+   * `opacity-` is allowed again for the same reason, with one real restriction kept: it must not be
+   * used to hide content that a reader needs. The spec's objection was to "opacity de-emphasis", not
+   * to a disabled control or a hover state, and those are legitimate.
+   */
+  it('uses only tokenised motion, caps it at the declared ceiling, and animates no keyframes', () => {
     for (const name of UI_FILES) {
       const source = stripComments(sourceOf(name));
       expect(source).not.toContain('@keyframes');
       expect(source).not.toContain('animate-');
-      expect(source).not.toContain('transition');
-      expect(source).not.toContain('opacity-');
+      for (const match of source.matchAll(/transition(?:-[a-z]+)?\s*:\s*([^"'`;]+)/g)) {
+        const value = (match[1] ?? '').trim();
+        // `none` is always fine: not animating is a choice the spec allows.
+        if (value === 'none') continue;
+        expect(
+          /var\(--motion-(fast|base|slow)\)/.test(value),
+          `${name} transitions with a literal duration: ${value}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('never hides required content behind an opacity utility', () => {
+    for (const name of UI_FILES) {
+      const source = stripComments(sourceOf(name));
+      // The spec objects to "opacity de-emphasis" -- fading a thing a reader needs. A disabled state
+      // or a hover treatment is not that, so only the full-hide utilities are refused.
+      expect(source).not.toContain('opacity-0');
+      expect(source).not.toContain('opacity-40');
+      expect(source).not.toContain('opacity-50');
     }
   });
 

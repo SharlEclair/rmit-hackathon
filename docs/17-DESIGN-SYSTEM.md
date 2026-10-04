@@ -834,6 +834,24 @@ Rules:
 
 Animated counters and ticking numbers; animated progress on mount as opposed to on a state change; a typing indicator with sequential dots; a bouncing or pulsing Assistant floating action button; a shimmer as the only loading signal; parallax; auto-playing anything; a page-level route transition; confetti or celebration states; a hover lift with a shadow change; a colour pulse that draws the eye to an unchanged element. The animated-counter prohibition has a product reason in addition to an aesthetic one: an animated resolution rate implies a precision that a cohort aggregate subject to the D32 k-anonymity floor does not have.
 
+**The list above is what is prohibited, and it is worth reading as such rather than as "motion is prohibited".**
+Every entry performs for its own sake: it moves something the reader did not ask to move, in order to make
+the interface feel busy. What it deliberately leaves out is **motion that acknowledges an interaction** --
+the hover of 10.3, which eases the one property it changes (a card's border, a row's background, a link's
+colour), and the sidebar's disclosure chevron, which may ease its rotation. Those are transitions, they
+belong in the primitives, and 10.4's tokens exist for them.
+
+**A correction, recorded because the enforcement had drifted from this document.** The design-law test
+banned `transition` and `opacity-` **outright** in `src/components/ui/`, citing this section. That reading
+was wrong and this document is the authority it was wrong about: 10.3 rule 1 **requires** a hover
+transition "at the `fast` duration", and 10.2 defines an entrance using opacity. The test was therefore
+stricter than its own source, which had two costs -- hover states snapped rather than eased across the
+whole product, and a reader could not tell from the test what the real rule was. The assertion now
+enforces the **bound** instead of the absence: no `@keyframes`, no `animate-` utilities, and any
+`transition` must name a motion token, which is what keeps the 150ms ceiling and the reduced-motion reset
+in force. `opacity-` is permitted again except where it hides content a reader needs, so `opacity-0`,
+`opacity-40` and `opacity-50` remain refused while a disabled control or a hover treatment is allowed.
+
 ---
 
 ## 11. Accessibility mechanics

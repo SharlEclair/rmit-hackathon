@@ -193,7 +193,7 @@ export function Sidebar({ courses, displayName, role }: SidebarProps): React.Rea
                       aria-expanded={isOpen}
                       aria-controls={panelId}
                       aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${course.code}`}
-                      className="flex w-6 shrink-0 items-start justify-center rounded-control pt-2 text-muted hover:text-ink"
+                      className="flex w-6 shrink-0 items-start justify-center rounded-control pt-2 text-muted transition-colors duration-fast ease-out hover:text-ink"
                     >
                       {/* Two glyphs rather than one rotated node. The design law forbids `transition`
                           in the primitives, and a chevron that snaps is honest about a state change
@@ -204,7 +204,7 @@ export function Sidebar({ courses, displayName, role }: SidebarProps): React.Rea
                     <Link
                       href={`/${role}/courses/${course.id}`}
                       className={cn(
-                        'flex min-w-0 flex-1 items-start gap-2 rounded-control px-1 py-2 tight text-ink',
+                        'flex min-w-0 flex-1 items-start gap-2 rounded-control px-1 py-2 tight text-ink transition-colors duration-fast ease-out',
                         isActiveCourse && activeAssignmentId === null ? null : 'hover:bg-page',
                       )}
                     >
@@ -245,7 +245,7 @@ export function Sidebar({ courses, displayName, role }: SidebarProps): React.Rea
                                   // icon's column so the two levels line up rather than merely being
                                   // offset. Assignment titles wrap for the same reason course titles
                                   // do -- a half-shown assignment name is worse than a taller row.
-                                  'block rounded-control py-2 pr-2 pl-9 tight',
+                                  'block rounded-control py-2 pr-2 pl-9 tight transition-colors duration-fast ease-out',
                                   isActive
                                     ? 'bg-page text-ink'
                                     : 'text-muted hover:bg-page hover:text-ink',

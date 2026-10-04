@@ -29,13 +29,29 @@ export default async function AssignmentTabPage(props: {
   const brief = await loadBrief(scope);
 
   return (
-    <div className="flex flex-col gap-6">
+    /*
+      **`gap-12` (48px), not `gap-6`.** `17` section 4.1 rule 3: "48px between the three major regions of
+      the Assignment/Info tab (official documents, Assignment Map, published AI Usage Policy), in the
+      order `07` section 4.2 fixes." The three regions previously sat 24px apart, which is the
+      inside-a-panel step rather than the between-regions one, so the tab read as one dense stack
+      instead of the argument it is meant to be -- document, then interpretation of it, then the rules
+      for using AI on it.
+    */
+    <div className="flex flex-col gap-12">
       <section className="flex flex-col gap-3">
         <h2 className="heading-2 text-ink">Original assignment documents</h2>
         <DocumentViewer brief={brief} />
       </section>
 
-      <section className="flex flex-col gap-3">
+      {/*
+        **The T5 containment inset, `17` section 4.3 rule 2.** The Map "begins below it, inset by 16px on
+        both sides at `lg`, so its dashed left edge sits inside the T1 frame's solid left edge. The
+        visual message is containment: interpretation is subordinate, and the inset makes it structural
+        rather than stated." Rule 4 removes the inset at `sm`, where the width is not there to spend.
+        Rule 3 is why the inset is never reversed: a T5 panel is never wider than, or above, a T1 panel,
+        and the order is fixed here rather than by a prop.
+      */}
+      <section className="flex flex-col gap-3 lg:px-4">
         <h2 className="heading-2 text-ink">Assignment Map</h2>
         {workspace.structure === null ? (
           // `07` section 4.3's empty state, verbatim: a sentence plus the standing reminder that the

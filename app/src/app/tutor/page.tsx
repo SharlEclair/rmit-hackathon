@@ -47,7 +47,7 @@ export default async function TutorDashboardPage() {
                     course card is part of the page. The hover moves the border rather than
                     de-emphasising the card, which the design law forbids. */}
                 <Link
-                  className="block rounded-card border border-solid border-default bg-card p-4 hover:border-ink md:p-6"
+                  className="block rounded-card border border-solid border-default bg-card p-4 transition-colors duration-fast ease-out hover:border-ink md:p-6"
                   href={`/tutor/courses/${course.id}`}
                 >
                   <span className="mono block text-muted">{course.code}</span>

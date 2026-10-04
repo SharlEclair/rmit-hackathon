@@ -1,16 +1,18 @@
 import type { AiPolicyResponse } from '@/lib/api/types';
 import { ContentClassPanel } from '@/components/ui/content-class-panel';
-import { STATE_COPY } from '@/components/ui/fixed-strings';
 
 /**
  * The published AI Usage Policy card (`07` UI-UX-SPEC section 4.2.1).
  *
  * Five rules shape it, and each is visible in the markup:
  *
- *   1. "The card is present only when at least one policy rule is `PUBLISHED`. Before that the card is
- *      absent and the Assistant is in the unavailable state" (rule 1). `available === false` renders
- *      the unavailable state rather than a card with no rules, because an empty policy card would read
- *      as "the policy places no limits", which is the permissive default D47 forbids.
+ *   1. "The card is present only when at least one policy rule is `PUBLISHED`. Before that **the card
+ *      is absent** and the Assistant is in the unavailable state" (rule 1). An earlier revision
+ *      rendered the unavailable sentence here instead, reasoning that an empty card would read as "the
+ *      policy places no limits". The worry is real, but the sentence already appears -- `AssistantPanel`
+ *      renders `STATE_COPY.refusalUnavailable` whenever `policyAvailable` is false -- so rendering it
+ *      here as well printed the same lines twice on one screen, and the rule says absent. Absence is
+ *      safe precisely because the Assistant covers the state.
  *   2. "Each rule is shown verbatim, exactly as the tutor approved it. The interface never summarises,
  *      merges, or rewords a rule, and never presents a policy rule as an assignment requirement"
  *      (rule 2). `ruleText` is rendered as it is stored, in its own row, with no grouping.
@@ -22,16 +24,9 @@ import { STATE_COPY } from '@/components/ui/fixed-strings';
  */
 export function PolicyCard(props: { readonly policy: AiPolicyResponse }) {
   if (!props.policy.available) {
-    return (
-      <p className="rounded-card border border-solid border-default bg-card p-4 body text-ink">
-        {/*
-          `07` section 2.5's fixed string for this state, from the one module that owns the copy. When
-          no rule is published the guardrail refuses every turn with `POL_ABSENT` and makes no model
-          call (D47), so this is the whole story the student needs, plus the human route out.
-        */}
-        {STATE_COPY.refusalUnavailable}
-      </p>
-    );
+    // Absent, not empty -- `07` section 4.2.1 rule 1 and its Empty row. The unavailable state is the
+    // Assistant's to show, and it does (`assistant-panel.tsx`, the `policyAvailable` branch).
+    return null;
   }
 
   return (

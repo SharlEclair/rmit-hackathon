@@ -48,6 +48,20 @@ const config = {
       overlay: 'var(--shadow-overlay)',
     },
     spacing: { 0: '0', 1: '4px', 2: '8px', 3: '12px', 4: '16px', 6: '24px', 8: '32px', 12: '48px' },
+    // **Motion utilities that name a token rather than a literal.** `17` section 10.4 caps motion at
+    // 150ms and `motion.css` resets those tokens to `0ms` under `prefers-reduced-motion`, so a component
+    // that eases through one of these inherits both the ceiling and the reset. A hand-rolled
+    // `transition-colors duration-200` would satisfy neither -- which is exactly why the design-law test
+    // refuses a literal duration, and why the tokenised form is made the convenient one here.
+    transitionDuration: {
+      fast: 'var(--motion-fast)',
+      base: 'var(--motion-base)',
+      slow: 'var(--motion-slow)',
+    },
+    transitionTimingFunction: {
+      out: 'var(--ease-out)',
+      'in-out': 'var(--ease-in-out)',
+    },
     screens: { sm: '640px', md: '768px', lg: '1024px', xl: '1280px' },
   },
   plugins: [],
