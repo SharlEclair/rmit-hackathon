@@ -1,199 +1,194 @@
-# 01 -- Current State
+# 01 -- Live State
 
-**Purpose.** What is actually built, what is not, and the command that proves each claim. **This
-file is rewritten every session.** It records commands and observed output, never adjectives.
+> **Read this first, and do not infer the build's state from anywhere else.** This file is rewritten at
+> every session exit and is the authoritative answer to "what exists". `AGENTS.md` section 3 says the
+> same and links here.
 
-**Tag:** `phase-06-complete` -- the Phase 6 exit commit. Phase 6's commits are `c7787aa` (the anonymity
-contract and its structural gates, plus the first student routes), `22a7e77` (the post routes, the tutor
-moderation surface and the FAQ promotion path), `d5bf87f` (the private Query thread), `978694c` (the FAQ
-lifecycle), `743ceaa` (assignment health analytics), `7fdd1d8` (the Discussion Moderator's schema, I-49),
-`de626d5` (the moderation pass), `50d01d7` (the moderator wired into post creation, D109), `8bcb3e4` and
-`bf47b88` and `aa2c386` (the trap register and two route fixes), `087f9c2` (the `06`/`05` doc corrections)
-and `194e69e` (Phase 6's acceptance run).
-**Pushed:** see section 7. Tags run `phase-00` -> `phase-01` -> `phase-03` -> `phase-02` -> `phase-04` ->
-`phase-05` -> `phase-06` -> `phase-07-freeze`, which is **not** the commit order (Phases 2 and 3 ran
-concurrently).
-**Last session:** 07.
-**Next phase:** **none -- Phase 7 is the last phase in `18-IMPLEMENTATION-PLAN.md`.** Phases 0-7 are code-complete
-and the feature set is frozen at `phase-07-freeze`. Phase 7 is a non-code phase and **four of its deliverables
-need a human at a keyboard** and are not done: the fallback recordings, the screenshot asset, the three
-rehearsals, and the Devpost filing. See section 3's Phase 7 rows for the exact state rather than a summary,
-because "Phase 7 complete" would overstate it.
-
-**Phase 7 note on `/compact`, carried from Phases 5 and 6:** the objective text asks for a `/compact` after
-each of those phases. There is no compact tool available in this environment, so it was never run; the
-handoff artefacts are written and pushed, which is what it was for. Recorded here so a later session does
-not read the omission as a skipped step.
-
-**Authority:** below `AGENTS.md`, [`../01-DECISIONS.md`](../01-DECISIONS.md) and
-[`../02-SCOPE.md`](../02-SCOPE.md). If this file contradicts the register, this file is the bug.
+**Last session:** 08.
+**Tag:** `phase-07-freeze` (points at `c4aede7`; it marks the freeze boundary, not the current tip).
+**HEAD at session close:** `0cd4be2`.
+**Remote:** `origin` = `https://github.com/SharlEclair/rmit-hackathon-demo.git`. The repository was
+**renamed** from `rmit-hackathon` mid-session; all history and eight tags are on the new name.
 
 ---
 
-## 1. Re-verify before trusting this file
+## 1. The one-paragraph version
 
-```powershell
-git log --oneline -1                 # expect the Phase 6 exit commit
-git status --porcelain               # expect clean
-git tag                              # expect phase-00..phase-06-complete
-Test-Path app/src/lib/llm/types.ts                     # expect True (frozen in Phase 2)
-Test-Path app/src/lib/guardrail/index.ts               # expect True (frozen in Phase 3)
-Test-Path app/src/lib/db/queries/student-visibility.ts # expect True (gate rule G1)
-Test-Path app/src/features/discussion/anon-identity.ts # expect True (the ONE reader of anon_identities)
-Test-Path app/src/features/discussion/moderation.ts    # expect True (the moderation pass)
-Test-Path app/src/lib/db/migrations/0013_moderation_reason_codes.sql  # expect True
-Test-Path app/scripts/verify-discussion.ts             # expect True (Phase 6's acceptance run)
-cd app
-pnpm typecheck                       # expect no output, 0 errors
-pnpm lint                            # expect "C8 import/endpoint gate: ok" THEN
-                                     #        "design gates: ok (13 checks)", exit 0
-pnpm test                            # expect 48 passed in 48 files, 757 tests, no network, no provider key
-pnpm build                           # expect exit 0, "Compiled successfully"
-pnpm db:migrate                      # expect "no pending migrations (13 already applied)"
-pnpm exec tsx --env-file-if-exists=.env scripts/verify-schema.ts
-                                     # expect "schema drift: none (35 tables, 471 columns)"
-Get-Service postgresql-x64-18 | Select-Object Status   # expect Running
-```
+Phases 0-7 are **code-complete** and the feature set is frozen. Session 08 was not a feature session: it
+was spent **looking at the running product** rather than at the diff, and that is where every finding came
+from. It closed four real defects (two functionally serious), relaxed two design rules that the
+enforcement had made stricter than their own specification, and left the remaining Phase 7 work where it
+has always been -- human-only.
 
-**All four acceptance runs need a running server** (`pnpm dev` in another terminal):
+**If you have one session, do section 5's first item.**
 
-```powershell
-cd app; pnpm exec tsx --env-file-if-exists=.env scripts/verify-student.ts    # expect 18/18
-cd app; pnpm exec tsx --env-file-if-exists=.env scripts/verify-review.ts     # expect 20/20
-cd app; pnpm exec tsx --env-file-if-exists=.env scripts/verify-analytics.ts  # expect 13/13
-cd app; pnpm exec tsx --env-file-if-exists=.env scripts/verify-discussion.ts # expect 20/20
-```
+---
 
-Reports land in `app/.local/phase{4,5,6}-*-verify.json`.
-
-**PowerShell treats `[` and `]` as wildcards** (trap **T40**). Any `Remove-Item`, `Copy-Item`,
-`Get-ChildItem` or `Test-Path` against a path under `app/src/app/**` must use `-LiteralPath`, or it
-silently matches nothing -- which is how a removed route file survived on disk across three commits.
-
-## 2. Environment fingerprint (observed, Session 06)
-
-| Fact | Observed value | How |
-|---|---|---|
-| Shell | **Windows PowerShell 5.1** -- the tool name `pwsh` is misleading (I-09) | `$PSVersionTable` |
-| Node / pnpm | `v24.15.0` / `12.4.2` | `node -v`, `pnpm -v` |
-| Postgres | service `postgresql-x64-18` -> `Running`, native, port 5432 (**D66**) | `Get-Service` |
-| Git | `main` = the Phase 6 exit commit; `origin` = `SharlEclair/rmit-hackathon-demo`, public | `git log`, `git remote -v` |
-| Registry pins | **no dependency was added in Phase 6** | `app/package.json` |
-| Database | 35 base tables + 2 views, 471 columns, no drift; **13 migrations** | `scripts/verify-schema.ts` |
-| Live LLM provider | the resolved `.env` provider is **`gemini`** with `gemini-3.8-flash`, not `mock` | a direct `getLlmClient().complete()` probe |
-
-**That last row matters and cost time.** Phase 6's live probes assumed `LLM_PROVIDER=mock`; the resolved
-provider is Gemini, so a request with `modelId: 'mock'` failed with `Model 'mock' not found`. The live
-moderation path was therefore verified against Gemini (a valid `{flags:[], overallSeverity:0}` for a
-benign post) and the **failure** path against the mock provider deliberately. Both halves are evidence;
-neither alone is. Two shell traps also cost time and are recorded: PowerShell 5.1 mangles a multi-line
-`git commit -m` (use `-F <file>`), and `Invoke-WebRequest`'s pipeline corrupts a captured JSON body (use a
-Node or `tsx` probe).
-
-## 3. State of the build
+## 2. What exists, and the command that proves it
 
 | Area | State | Evidence |
 |---|---|---|
-| Phases 0-1 (docs, skeleton, schema, seed, auth) | **built** | `pnpm db:migrate`, `pnpm test` |
-| Phase 2: `src/lib/llm/`, `storage/`, `extract/`, `features/ingest/`, `features/uploads/` | **built and frozen** | Session 02 |
-| Phase 2's **live** Analyst run | **VERIFIED in Phase 4** | `07-ARCHIVE/phase-04/` |
-| Phase 3: `src/lib/guardrail/` + the 53-case golden set | **built and frozen** | `pnpm test -- tests/guardrail` |
-| Phase 4: `features/review/`, migration `0012`, gate rule G1, the six tutor routes | **built** | `verify-review.ts` 20/20 |
-| Phase 5: the design layer, `features/workspace/`, the 14 student routes, both UIs, the SSE stream | **built** | `verify-student.ts` 18/18 |
-| **Phase 6: the anonymity contract, structurally gated** | **built** | `tests/discussion/imports.test.ts` (A-ID-2/5/6); `verify-discussion.ts` checks 1-5 |
-| **Phase 6: WP-10 discussions** -- 9 routes, student and tutor | **built and exercised over HTTP** | `verify-discussion.ts` checks 1-7 |
-| **Phase 6: WP-10 Queries** -- 7 routes, student and tutor | **built and exercised over HTTP** | `verify-discussion.ts` checks 8-12 |
-| **Phase 6: WP-10 FAQ** -- 4 routes plus the promotion path | **built and exercised over HTTP** | `verify-discussion.ts` checks 13-19 |
-| **Phase 6: WP-11 analytics** -- `milestone_metrics`, `assignment_metrics`, difficulty rule | **built** | `verify-analytics.ts` 13/13; `tests/analytics/` |
-| **Phase 6: the Discussion Moderator** -- schema, prompt, service, wired into post creation | **built** | `tests/discussion/moderator-*.test.ts`, `moderation.test.ts` (51 tests); D109; migration `0013` |
-| Phase 6: the design-system gates G1/G2/G3/G6/G7/G10 | **NOT IMPLEMENTED** | no browser gate; `check-design.mjs` names them as uncovered |
-| Phase 6: the Attachment UI | **NOT STARTED, deliberately** | `05-ISSUES.md` **I-48** |
-| Phase 6: the proactive notice wiring | **NOT STARTED** | route and builder exist; no milestone focus is supplied, so the panel receives `proactive: null` |
-| **A mock fixture for `discussion_moderator`** | **NOT PRESENT, deliberately** | the mock's refusal is what makes binding rule 5's failure path exercisable offline |
-| Anything mocked | **the `mock` provider is a first-class mode** | D90 |
-| **Phase 7: the smoke test and the reset script** | **built and run** | `pnpm demo:smoke` -> **11/12**; `demo/reset.ps1` exists |
-| **Phase 7: the AI-use disclosure** | **written, and the spoken version reconciled to it** | `14-HACKATHON-SUBMISSION.md` S5, with the per-packet log filled from the commit history |
-| **Phase 7: the feature freeze** | **tagged** | `phase-07-freeze`, pushed, pointing at the current HEAD |
-| Phase 7: the four fallback recordings | **NOT DONE -- needs a human** | `demo/fallback/` holds only a README; the smoke test reports the gap as a failing check |
-| Phase 7: `demo/assets/failing-code-screenshot.png` | **NOT DONE -- needs a human** | `Test-Path demo/assets` -> False |
-| Phase 7: the three rehearsals (one offline) | **NOT DONE -- needs a human** | `14-HACKATHON-SUBMISSION.md` S3's run sheet |
-| Phase 7: the Devpost submission filed | **NOT DONE -- the team's** | S2's project URL is `TBD`; S5.3's per-member disclosure is unfilled |
-| Phase 7: beat 5's second half performable live | **NOT POSSIBLE as built** | `13-DEMO-STORY.md` S6.2a: the attachment picker is I-48; the server-side refusal works, the UI does not offer it |
+| Application | Next.js App Router under `app/`, frozen at `phase-07-freeze` | `pnpm build` exit 0 |
+| Student workspace | Brief viewer, Assignment Map, Checklist, AI policy card, Assistant + SSE | four acceptance runs |
+| Tutor review screen | 55 artifacts, `AI GENERATED - REQUIRES TUTOR APPROVAL` badge, provenance, approve/reject | seen in a browser, session 08 |
+| Discussions | composer + thread list (session 08); **no thread detail, no FAQ answer list** | POST 201; list renders |
+| Queries | **never inspected in a browser** -- likely the same half-built state as Discussions | unverified |
+| Analytics | assignment health, k-anonymity floors 5 and 8 | `verify-analytics` 13/13 |
+| Navigation | persistent course/assignment sidebar, student and tutor | seen in a browser |
+| Ingestion | S0-S8, provider adapter, budget counters | `pnpm demo:beats` 11/11 |
 
-**48 route files** under `src/app/api` (26 student, 18 tutor, plus the public health and auth routes).
+### Gates and what each means
 
-## 4. Session 06 evidence, condensed
+```
+pnpm typecheck   -> 0 errors
+pnpm lint        -> "C8 import/endpoint gate: ok" + "design gates: ok (13 checks)"
+pnpm test        -> 758 passed (48 files)      # must pass with no network and no database
+pnpm build       -> exit 0
+pnpm db:migrate  -> 13 applied, 0 pending
+verify-*.ts      -> need a LIVE server; these are HTTP runs and are deliberately NOT in pnpm test
+```
 
-Full evidence is in [`06-SESSION-LOG.md`](06-SESSION-LOG.md) Session 06.
+---
 
-| # | Claim | Command and observed result |
+## 3. Defects found in session 08
+
+Full rows in `05-ISSUES.md`. In the order they matter:
+
+| ID | What it was | State |
 |---|---|---|
-| 1 | **The repository is green, including a production build** | `pnpm typecheck` -> 0 errors; `pnpm lint` -> `C8 import/endpoint gate: ok` then `design gates: ok (13 checks)`, exit 0; `pnpm test` -> **48 passed in 48 files, 757 tests**; `pnpm build` -> exit 0, `Compiled successfully` |
-| 2 | **The anonymity contract holds at runtime, not only in types** | `verify-discussion.ts` checks 1-5: an anonymous thread is labelled `Anonymous Student #<n>` from the persisted identity; a reply **adopts** the thread's anonymity rather than re-choosing it; the tutor payload contains none of `studentId`, `studentName`, `email`, `userId`, `anonIdentityId`, `subjectRef` -- while still carrying `displayLabel`, which A-ID-5 requires a tutor to have |
-| 3 | **The Query machine has one edge per actor** | checks 8-12: always attributed (D24, D50); `409` when resolved before a tutor replies; the tutor's reply **is** the `open -> answered` transition; only the asking student resolves; a peer reading the thread gets `404 NOT_FOUND` rather than a refusal |
-| 4 | **The FAQ chain, asserted in both intermediate states** | checks 13-19: `NEEDS_REVIEW` -> invisible; `APPROVED` -> **still invisible** (D99); `PUBLISHED` -> visible as T2; a stale `revision` -> `409 STALE_REVISION` (D98) |
-| 5 | **M4 is a mean of per-student means, and the doc's sample query is not** | `verify-analytics.ts` checks 1-1c: five contributors, one completing 20 items at 600s and four completing 1 at 100s each -> stored `averageElapsedSeconds` **200**, where the flat `avg(duration_seconds)` would give **516.67**. Trap **T38** |
-| 6 | **Both k-anonymity floors hold** | checks 2-3: a four-contributor bucket produces **no row at all** (absence is uniform, so 0 and 4 are indistinguishable); a five-contributor bucket has a mean and a **null** median, because `08` section 4.3's median floor is 8. Trap **T39**, I-51 |
-| 7 | **The moderation failure path writes a real flag and leaves the post visible** | `moderation.test.ts` (12 tests) + a live probe: `action: mark`, `failure: CONTENT_FILTERED`, `flagsWritten: 1`, and a real row `source=ai severity=medium reason_code=MOD_INCIVILITY` with the tutor-facing note. `05` section 9.4 binding rule 5 |
-| 8 | **The moderation happy path works against the live provider** | a direct `getLlmClient().complete()` probe returned `{"flags":[],"overallSeverity":0,"containsPersonalData":false}` for a benign post, and the post stayed visible with no flag |
-| 9 | **The schema is undrifted, with one new migration** | `pnpm db:migrate` -> `13 already applied, 0 pending`; `verify-schema.ts` -> `schema drift: none (35 tables, 471 columns)`. `0013` widens `ck_moderation_flags_reason_code` (D109) |
-| 10 | **Four acceptance runs, all green** | `verify-student.ts` 18/18; `verify-review.ts` 20/20; `verify-analytics.ts` 13/13; `verify-discussion.ts` 20/20 |
+| **I-60** | The Gemini adapter **discarded image bytes**. `inputText()` rendered parts with `part.type === 'text' ? part.text : ''`, so an image contributed nothing and the base64 never left the process. | **FIXED**, verified live |
+| **I-61** | Every attachment was **refused**, text as well as images: `guardrail_scan_status` never left `pending`, because the `scan` seam Phase 2 left for Phase 3 was never supplied by any caller. | **FIXED**, verified on both halves |
+| **I-62** | The dev server serves **stale code** after edits. `/api/health` exposes the serving commit. It bit session 08 **four times**, each time producing a wrong conclusion. | **A practice, not a fix** -- section 6 |
+| **I-63** | Three user-facing pages were genuinely unstyled. Two carried a comment explaining why they were bare; the tokens landed and the comments did not. | **FIXED** |
 
-## 5. What a later phase must NOT assume
+**Still open, and found the same way:** the Discussions page renders only the FAQ **count**, not the
+answers, and has no thread detail view. See section 5.
 
-1. **`moderation_flags.reason_code` admits two vocabularies** (**D109**). The six generic values are the
-   **student's**; the fourteen `MOD_*` codes are the **moderator's**. Read the `source` column. A writer
-   using the wrong set fails the `CHECK`.
-2. **The live provider is Gemini, not `mock`.** A request built with `modelId: 'mock'` against the live
-   provider fails with a model-not-found error that reads like a configuration bug. Check
-   `getConfig().llmProvider` before assuming either.
-3. **A `catch` that converts a defect into a spec-mandated outcome is correct and hiding**
-   (trap **T41**). `moderatorHookFor` returns `mark` on a fault because binding rule 5 requires it -- so a
-   moderation defect leaves the post visible and the queue empty, which looks like working software.
-4. **`student_checklist_progress` has no `assignment_id`.** It joins `student_assignments` (**I-50**).
-   Trap **T36**'s neighbours in `lib/db/queries/questions.ts` were the same class of fault.
-5. **Four defects of one class have now been found in fixture code**: a status set without its required
-   stamp. `ck_milestones_approval`/`ck_milestones_published_at` (analytics fixture),
-   `ck_assignments_published_at` (discussion fixture), `ck_faq_entries_approval`/
-   `ck_faq_entries_published_by` (the FAQ write). Read `pg_constraint` before writing a status
-   (**T37**).
-6. **Gate rule G1's resolver joins `assignment_structures` on `is_current = true`.** An assignment marked
-   `published` with no current structure resolves to `null`, so every student route answers `404` -- which
-   is a correct `404` for a fixture that was built wrong.
-7. **Do not add a `verify-*.ts` script to `pnpm test`.** `12` section 3.7 requires the suite to pass with
-   no network and no database; the four acceptance runs need both by design (D72).
-8. **`displayLabel` is not an identity leak.** A-ID-5 requires a tutor to see `Anonymous Student #880`;
-   what must not appear is anything resolving that label to a person. A check that forbids `displayLabel`
-   is testing the wrong thing.
-9. **The mock provider refuses the moderator capability** (no template), returning
-   `finishReason: content_filter`. That is deliberate and is what makes the failure path exercisable
-   offline; do not "fix" it by inventing a fixture without also testing the refusal.
-10. **`08` section 6.1's illustrative query is not implementable** (**I-50**), and **`06` section 4.7.2's
-    sample build query computes M4 wrongly** (**T38**). Neither doc is normative SQL.
-11. **`pnpm lint` runs `check-design.mjs` as well as the C8 gate.** A clean `eslint` run is not a clean
-    `lint`.
-12. **Do not trust `.local/`** as current (**I-14**). It holds four reports and several probes; they are
-    diagnostics, not contracts.
+---
 
-## 6. Local-only preparation for the next session
+## 4. Design-system changes, and why they are not vandalism
 
-| Path | Contents | Survives a clone? |
-|---|---|---|
-| `.local/phase6-discussion-verify.json` | Phase 6's 20-check HTTP report | **No** (gitignored) |
-| `.local/phase6-analytics-verify.json` | WP-11's 13-check report, including the M4 discrimination | **No** |
-| `.local/phase5-student-verify.json`, `.local/phase4-review-verify.json` | The two earlier runs | **No** |
-| `.local/probe-*.mjs` | The manual probes: SSE frames, rendered-page strings, the C3 badge, the C4 anonymity read, the moderation paths | **No**, and **not normative** |
-| `.local/dev-server-5.log` | The dev server's output, including the provider-mismatch error and the two `500`s that became T33 | **No** |
+`17-DESIGN-SYSTEM.md` is normative and describes an **Institutional Editorial** direction whose point is
+that the product must not look like an AI product -- because a reader who thinks it does will reasonably
+conclude the brief-versus-interpretation distinction is cosmetic.
 
-Regenerate rather than trust any of it; where a file and `docs/**` disagree, the doc wins.
+Two rules were relaxed, both recorded as decisions:
 
-## 7. Push state
+- **D110 -- motion.** The *test* banned `transition` and `opacity-` outright. The *spec* **requires** a
+  hover transition at the `fast` duration (section 10.3 rule 1) and defines an entrance using opacity
+  (10.2). The test was stricter than its own source, so every hover in the product snapped. The assertion
+  now enforces the **bound** -- no keyframes, and any transition must name a motion token -- instead of
+  the absence.
+- **D111 -- a hover lift.** Elevation was reserved for overlays. A card may now rest on `--shadow-card`
+  and lift to `--shadow-overlay`, **on hover only**, because a card that cannot be told apart from the
+  page cannot be told to be clickable either. Content-class frames stay flat, unqualified, and the
+  design-law test still refuses any shadow in `content-class-panel.tsx`.
 
-`git push origin main` for each commit; the Phase 6 exit push is recorded in the session log's
-**Commit range** and in this file's tag line. `git ls-remote` should show `refs/heads/main` and
-`refs/tags/phase-06-complete` at the same commit, and an anonymous
-`GET https://api.github.com/repos/SharlEclair/rmit-hackathon-demo` must return `private: false`,
-`visibility: public`, `default_branch: main` (**I-07** stays resolved).
-`git rev-list --left-right --count origin/main...HEAD` reads `0  0`. **If it does not, the push is the
-first thing to re-run** -- the hackathon's submission evidence is the public repository, not this
-checkout (**I-08**).
+**What did NOT change:** no gradients, no glassmorphism, no backdrop blur, no card soup, no default
+component-library appearance, no emoji chrome, and **no truncation of document facts** (section 2.4 rule
+7 -- relaxing that would undercut C2, not just the aesthetic).
+
+---
+
+## 5. What to do next, in priority order
+
+1. **Finish the Discussions page.** The Official FAQ section renders *"5 official answers have been
+   published"* -- the count, not the answers -- although `buildStudentDiscussion` **already returns**
+   `officialFaq`. There is also no thread detail view, so a student sees a title and the first post but
+   cannot open a thread or reply, although `buildThreadDetail` and `createPost` exist in
+   `features/discussion/service.ts`. Bounded work against a built backend.
+2. **Inspect My Queries in a browser.** Never looked at. Discussions was half-built in exactly this way,
+   so assume the same until proven otherwise: check whether the list renders, whether a Query opens, and
+   whether a student can send a message.
+3. **Re-verify the four acceptance runs** after any change to `src/lib/llm/`, the guardrail, or a route.
+   They are the only end-to-end evidence and need a live server.
+4. **Phase 7's human items** -- the four fallback recordings, `demo/assets/failing-code-screenshot.png`,
+   the three rehearsals, the Devpost filing, and section 5.3's per-member disclosure. None is
+   machine-doable; see `14-HACKATHON-SUBMISSION.md` and `13-DEMO-STORY.md` section 12.
+
+---
+
+## 6. Environment, and the traps that will cost you time
+
+**Fingerprint.** Windows PowerShell 5.1; Node `v24.15.0`; pnpm `12.4.2`; Postgres service
+`postgresql-x64-18` on 5432, database `assignment_assistant`, 13 migrations; provider `gemini` with
+`gemini-3.8-flash`; dev server at `http://localhost:3000`.
+
+**Start the server as a managed background job, then check its commit before trusting anything:**
+
+```powershell
+Set-Location app; pnpm dev 2>&1 | Out-File -FilePath '.local\dev.log' -Encoding utf8   # run_in_background
+(Invoke-WebRequest -Uri "http://127.0.0.1:3000/api/health" -UseBasicParsing).Content
+git rev-parse --short HEAD     # the `commit` field must match this
+```
+
+If they disagree, **restart**. A stale server reports the previous commit's behaviour while looking like a
+live test. That is I-62, and it produced four wrong conclusions in session 08.
+
+**Windows hazards, already recorded as traps `T40` and `T43`:**
+
+- Any path containing `[` or `]` -- every `[assignmentId]` route -- needs `-LiteralPath`.
+  `Remove-Item` on such a path **silently no-ops**, so a delete that "succeeded" left the file in place.
+- Never use a multi-line `git commit -m`. PowerShell 5.1 mangles it, **git still exits 0**, and the
+  message arrives truncated. Write the message to a file and use `git commit -F <file>`.
+- Use `[System.IO.File]::WriteAllText($p, $t, [System.Text.UTF8Encoding]::new($false))`; `Set-Content`
+  writes a BOM, which Next.js refuses to parse in `package.json`.
+- Verify with `git ls-files` and `git log -1 --format=%B`, never with an exit code alone.
+
+**A `--` or `//` comment inside a SQL template literal is a defect.** `--` is a TypeScript syntax error;
+`//` is valid TypeScript and **invalid SQL**, so the query fails at runtime and the page renders nothing
+while returning HTTP 200. This blanked the student dashboard in session 08. Put the reasoning above the
+function, at the JavaScript level.
+
+**Sessions and probes.** `POST /api/auth/login` is rate-limited, so a repeatable probe should mint a
+session with `signSessionToken` -- see `scripts/verify-*.ts`. The Assistant has a **12-call budget per
+session**, after which every turn returns `429` **with no SSE frames at all** (I-54); clear it with
+`delete from llm_call_counters where scope_kind = 'assistant_session'`.
+
+---
+
+## 7. Accounts, fixtures, and demo state
+
+| What | Value |
+|---|---|
+| Student account | `student@demo.rmit` / `demo1234` |
+| Tutor account | `tutor@demo.rmit` / `demo1234` |
+| Seeded cohort assignment | `9bcc22f0-61ba-49e0-870b-f85b57a86bfd` -- "Case Analysis and Design Proposal Report" |
+| After-ingest demo state | `c890e50a-1f8b-4f5a-aa54-2879738f230d` -- "Case Analysis -- proposal awaiting review" |
+| Real-content assignment (session 08) | `55f76b59-f06c-46c0-ad09-1b83820c7fa3` -- "Interactive Data Visualisation and Narrative Design" |
+| Course | `0a8e65f8-c50b-4632-afbf-185e6e482155` (COSC2407) |
+
+**Demo states come from `pnpm demo:state`**, step 4 of `demo/reset.ps1`. It is idempotent **by title**, so
+renaming one of its assignments in the database requires renaming the constant in `scripts/demo-state.ts`
+in the same breath, or the next run inserts a **second** pair.
+
+**Test fixtures are filtered out of the sidebar and the course count** by a name predicate
+(`Review demo (%`, `Student workspace demo (%`, `Ingestion verification (%`, `Phase % fixture %`) in two
+places that must agree: `loadSidebar` and `listCoursesForUser`. The acceptance runs create assignments and
+never delete them -- by design, since deleting one would take the audit trail they produce -- so without
+the exclusion the tree fills with test residue.
+
+**Session 08 added a `dataviz` ingestion fixture:**
+`pnpm exec tsx scripts/ingest-once.ts --fixture dataviz`. Its documents live in `app/.local/`
+(gitignored) because they mirror a real, currently-assessed piece of coursework. **Do not commit them.**
+The context folder at `C:\Users\91704\Downloads\Data Science\Sem 3\Data Viz\Ass 3\context v2` contains
+**published textbook chapters** and the student's own assessed drafts -- ingesting the former is what the
+product's own policy section 3.5 forbids, and publishing the latter misrepresents prior work as
+submission-time material.
+
+**Publishing an ingested structure** for demo purposes is a two-step the product models deliberately:
+`app/.local/publish-ingested.ts <assignmentId>` is a development helper that writes the same stamps the
+review screen writes. It is not a product path and it does not bypass a rule.
+
+---
+
+## 8. Standing rules for the next session
+
+- **Report evidence, not adjectives.** Quote the command and its output.
+- **Do not push unless asked.** The repository is public. Session 08 was asked to keep changes local for
+  part of its run and then asked to add them to the renamed repository, so **confirm which** before
+  pushing. Check `git rev-list --count origin/main..HEAD` first -- some commits may still be unpushed.
+- **Look at the product.** Every finding in session 08 came from opening a page, and none from reading a
+  diff. The untested surfaces are named in section 5.
+- **A claim about the repository, written into a file the repository contains, is stale on commit**
+  (trap `T42`). Never quote counts or shas from memory; quote the command that recomputes them.

@@ -95,3 +95,36 @@ with a reason) / `RESOLVED` (kept for history, with the evidence).
 | Beat 5 -- THE REFUSAL | **Once, and it is the strongest result in the phase** | `200`, events `guardrail -> message -> done`, **0 token frames**, verdict `REFUSE`, rules `P6+DE12`, reason `CHANGE_INSTRUCTION_REQUESTED` |
 | Beat 6 -- a permitted, cited answer | **13 questions measured; 9 answered** | See I-53. The demo question is now chosen from the measured working class |
 | Beats 7 and 8 | **Five runs each, 15/15, stable** | See I-55 |
+
+---
+
+## Session 08 -- open items and resolutions (appended at the session-08 boundary)
+
+### Resolved
+
+| ID | What it was | Resolved by |
+|---|---|---|
+| **I-60** | The Gemini adapter **discarded image bytes**: `inputText()` mapped content parts with `part.type === 'text' ? part.text : ''`, so an image contributed nothing and `dataBase64` never left the process. | `binaryInputPart()` + `typedInput()` in `gemini.ts`; text-only requests keep the verified flat-string form. Verified live: `input_tokens_by_modality` reports the image, and the model transcribes it. |
+| **I-61** | **Every** attachment was refused -- text as well as images -- because `guardrail_scan_status` never left `pending`: the `scan` seam Phase 2 left for Phase 3 has no caller. | One predicate in the messages route: reject only `blocked`, which no code path writes. Safe because `composeTurnText` already folds attachment excerpts into the turn `decide()` classifies. Verified on **both** halves. |
+| **I-63** | `/login`, `/` and the checklist page carried **zero** classes. Two documented a D75 deferral that had since expired; the checklist page had a different fault. | Both comments replaced with what is true; all three styled from existing components; the checklist wrapper added. |
+| `<li>` nesting | `ChecklistPanel` wrapped `ChecklistItemRow` in an `<li>` although the row renders its own -- invalid HTML, reported by React as a hydration error. | Wrapper removed, `key` moved onto the row. Every other component rendering an `<li>` was checked; this was the only nesting. |
+| Fixture leakage | Acceptance-run assignments and the demo states exposed database identifiers in the sidebar. | Fixture names made readable and filtered in `loadSidebar` **and** `listCoursesForUser`, which must agree; demo-state titles renamed in constants **and** database. |
+
+### Open, with the evidence needed to start
+
+| ID | Finding | Why it matters | Evidence already gathered |
+|---|---|---|---|
+| **I-64** | **The Discussions page is half-implemented.** Session 08 added the composer and the thread list, but the **Official FAQ section still renders only the published count** -- `"5 official answers have been published by your tutor."` -- although `buildStudentDiscussion` already returns `officialFaq` in the same response the page already fetches. | A section headed "Official FAQ" that never shows an answer reads as broken. The T2 published answers are the highest-authority student-visible content in the product, and they are exactly what beats 6-7 of the demo depend on. | `buildStudentDiscussion` returns `{ officialFaq, threads }`; the page currently uses only `workspace.officialFaqCount` from the workspace bundle. `listVisibleFaqEntries` is already called inside the builder, so the data is one `.map` away. |
+| **I-65** | **There is no thread detail view.** A student can see a thread's title, its author label and its first post, but cannot open it or reply -- although `buildThreadDetail` and `createPost` both exist in `features/discussion/service.ts`. | The Discussion tab is a read-only list with no conversation. `07` section 4.5 specifies a thread view, and the reply path is the one that exercises moderation on a *post* rather than on an opening thread. | `GET`/`POST` routes exist for posts; `buildThreadDetail` and `createPost` are exported. The list page currently renders `thread.posts[0]?.body` only. |
+| **I-66** | **My Queries has never been inspected in a browser at all.** `verify-discussion` and `verify-queries`-equivalent HTTP runs pass, so the API is exercised, but nobody has looked at the page. | **Discussions was half-built in exactly this way** -- API and service complete, page a Phase 5 placeholder -- and that was found only by opening it. The prior probability that Queries has the same shape is high, and the tab is one of the four the demo visits. | `app/src/app/student/assignments/[assignmentId]/queries/page.tsx` exists; the workspace tabs link to it; `features/queries/service.ts` exports `openQuery`, `addStudentMessage`, `addTutorReply`, `resolveOwnQuery`, `publishReplyAsFaq`. |
+| **I-67** | **The register itself was corrupted twice by careless edits**, once leaving the I-62 row holding I-60's body -- a row labelled with the dev-server finding described the image-extraction defect. | Not a product defect, but a real one: the register is the first thing the next session reads, and a mislabelled row sends it to the wrong place. | Both were rebuilt from the file rather than by re-editing, and the content verified per row. |
+
+### A method note, recorded because it changed the outcome
+
+Every defect in session 08 came from **opening the product**, and none from reading a diff. All four had
+survived `pnpm test`, `pnpm lint` and four green acceptance runs, because none of those asserts what a
+page *looks like* or whether a control a user needs actually exists. Two of the four were functionally
+serious (I-60, I-61) and both were invisible to the entire automated suite.
+
+The corollary is the first two items above: **My Queries has never been looked at**, and the last surface
+nobody opened is the most likely place for the same class of defect.
