@@ -128,3 +128,23 @@ serious (I-60, I-61) and both were invisible to the entire automated suite.
 
 The corollary is the first two items above: **My Queries has never been looked at**, and the last surface
 nobody opened is the most likely place for the same class of defect.
+
+---
+
+## Session 09 -- the three carried-over items closed, and one environment defect found (appended at the session-09 boundary)
+
+### Resolved
+
+| ID | What it was | Resolution, with evidence |
+|---|---|---|
+| **I-64** | The Official FAQ section rendered the published **count** and not one answer. | Each entry now renders with the T2 treatment and its own publish date. The date is read from `faq_entries.published_at` (added to `VisibleFaqEntry` and both of its readers) rather than faked, so `Published by your tutor on <date>` is a claim about a stored fact. Seen live: five entries with question and answer text, dated `2026-09-28` and `2026-10-03`. |
+| **I-65** | No thread detail view: a student could see a title and the first post and could not open the thread or reply. | `discussions/[threadId]/page.tsx` renders the posts (pseudonym, `(you)`, `Edited <time>`, tombstone, hidden-pending-review copy, accepted-answer line) and carries a reply composer. Verified end to end against the production build: a reply was posted through the composer, the server answered `Your reply is posted.`, and the post appeared as the third in the thread. |
+| **I-66** | My Queries had never been looked at in a browser; the page was a Phase 5 placeholder with no way to ask anything. | The same shape as Discussions, confirmed by opening it. The tab now lists the student's threads (status word, timestamps, message count), opens one, sends a follow-up and offers `Flag Resolved` only when a tutor has answered. Exercised live: `Send privately` created an `Open` thread, a follow-up message appended to another, `Flag Resolved` appeared at `Answered` and flipped the header to `Resolved`. |
+| -- | **Beat 7's "seeded thread" did not exist.** `13-DEMO-STORY.md` opened on "a thread exists" and its fallback was "show the seeded thread", but `scripts/seed.ts` writes no `discussion_threads` row, so a freshly reset database left the beat empty. | `pnpm demo:discussions` (`app/scripts/demo-discussions.ts`) seeds three threads into the demo assignment, one anonymous with a reply; it is idempotent by thread title and `demo/reset.ps1` runs it as step 5. Verified: first run created three, second run created none. |
+
+### Open, with the evidence needed to start
+
+| ID | Finding | Why it matters | Evidence already gathered |
+|---|---|---|---|
+| **I-68** | **Client components do not hydrate against `pnpm dev` in this environment.** The server output is complete and correct, but no React handler is ever attached: the login form -- a component this session did not touch -- submits **natively** as `POST /login` with a urlencoded body instead of calling `fetch('/api/auth/login')`, and typing into the Assistant composer leaves its `Send` button disabled. The HMR WebSocket fails with `net::ERR_INVALID_HTTP_RESPONSE`, and the Turbopack dev client appears to wait on it indefinitely. | Every interactive surface in the product -- the discussion and Query composers, the checklist controls, the Assistant -- is a client component, so a demo run on `pnpm dev` would show none of them working. This is a rehearsal-day defect, not a coding nicety. | Reproduced in two independent browsers on the untouched login page. Against `next start -p 3100` (the same build, production) hydration completes: `#assistant-composer` carries React props, `Send` enables on input, and every interaction listed above works. The defect is therefore in the dev path, not in the components or the build. **Not fixed, and deliberately not worked around**: the cause is in Next 16.3.8's Turbopack dev client plus this environment, and a workaround checked in today would hide a defect the team still has to decide about. Until it is diagnosed, rehearse and demo from `pnpm build` followed by `pnpm exec next start` (see `01-STATE.md` section 6). |
+| **I-69** | **The browser evidence in this session came from a production server on port 3100, not from the dev server the run sheet names.** | `13-DEMO-STORY.md`'s run sheet says `cd app; pnpm dev`. If I-68 stands, that command is wrong for the demo, and the team should choose between fixing the dev path and changing the sheet. | `pnpm dev` on :3000 (stale server replaced; serving `76568cd`) does not hydrate; `next start` on :3100 does. Both are reproducible in a minute. |

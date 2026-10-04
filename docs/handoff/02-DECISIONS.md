@@ -141,3 +141,26 @@ follows is the equivalent of the `A3`-`A15` block: choices taken inside a docume
 tests in 10 files, all passing with no network and no provider key; `LLM_PROVIDER=mock pnpm exec tsx
 scripts/ingest-once.ts --fixture demo` -> `ok: true`, `stage: S7`, and the SQL checks in
 `01-STATE.md` section 4. The live structured call is **not** verified (**I-35**).
+
+---
+
+## Session 09 -- the Discussions/Queries front ends and the demo's seeded thread *(implementation readings that change no contract)*
+
+The three items `01-STATE.md` section 5 carried into this session were UI gaps against backends that were
+already built and routed. Nothing in this session changed an API contract, a state machine, a guardrail
+rule or the schema. The readings below are the choices taken inside the existing contract.
+
+| # | Reading | Why, and what it would overturn | 
+|---|---|---|
+| `H6` | **The T2 marker's date is read from `faq_entries.published_at`, so `VisibleFaqEntry` gained a `publishedAt` field.** Both readers (`listVisibleFaqEntries`, `listPublishedFaqEntries`) select the column, and both builders pass it through. | `07` section 6.1 rule 1 requires every FAQ entry to show `Published by your tutor on <date>`. The field was previously hard-set to `null` at both builders, so the marker could only have been rendered with a placeholder -- a date-shaped string the product could not substantiate. Reading the column is one line per reader and makes the marker a claim about a stored fact. **Overturn by**: deleting the field and accepting that the marker is a form without a date, which `policy-card.tsx` already does for the same reason (`an earlier date`). What must not happen is a synthesized date |
+| `H7` | **The demo's Discussion threads are seeded by a new script (`pnpm demo:discussions`, `app/scripts/demo-discussions.ts`), not by `seed.ts`, and `demo/reset.ps1` runs it as step 5.** Threads are matched by title, so the script is idempotent and never touches a row it did not write. | D81 keeps the seed's job narrow -- the cohort assignment and the structure every later gate reads -- and these rows are demo *presentation*: they exist so a screen has something to render. An earlier alternative (add them to `seed.ts`) would have widened a deterministic fixture that `docs/fixtures/cohort-seed.json` and four acceptance runs depend on. **Overturn by**: moving the rows into the seed if the threads are ever needed by a test rather than by a screen -- which they are not |
+| `H8` | **A thread row shows the four fields `07` section 6.1 rule 2 names (title, opening author label, reply count, last reply time) and no longer renders the first post's body inline; the body belongs to the thread view.** | Section 6.1 rule 2 lists what a row shows, and rendering the first post in the row made the list look like the thread while the rest of it was unreachable. The row now links to `discussions/[threadId]`, which is where the posts and the reply composer live. **Overturn by**: showing an excerpt in the row, which would need `07` section 6.1 rule 2 to name an excerpt and would compete with the detail view |
+
+**Register rows cited.** `D24`, `D50`, `D55`, `D81`, `D99`, `T35`, `T42`, `T44`, `T45`, `I-64`-`I-69`.
+
+**How these were verified.** `pnpm typecheck` -> 0 errors; `pnpm lint` -> C8 gate ok and 13 design gates
+ok; `pnpm test` -> 765 passed in 49 files; `pnpm build` -> exit 0 with both new routes listed; four
+acceptance runs against a live server -> `verify-student` 18/18, `verify-review` 20/20,
+`verify-analytics` 13/13, `verify-discussion` 20/20; and the interactions themselves in a hydrated
+browser against the production build (see `05-ISSUES.md` **I-68** for why it had to be the production
+build).
