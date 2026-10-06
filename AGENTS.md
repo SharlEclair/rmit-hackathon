@@ -2,7 +2,7 @@
 
 > **Audience:** any AI agent (DSH, Claude Code, Cursor, Codex) working in this repository.
 > **Status:** normative. If code, comments, or another doc contradicts this file, this file wins -- or the contradiction is a bug to report.
-> **Read next, in order:** `docs/00-INDEX.md` -> `docs/01-DECISIONS.md` -> [`docs/handoff/00-README.md`](docs/handoff/00-README.md) -> whichever doc the task names.
+> **Read next, in order:** `docs/SPEC.md` -> [`docs/handoff/00-README.md`](docs/handoff/00-README.md) -> whichever doc the task names.
 
 ---
 
@@ -26,14 +26,14 @@ Every design and code decision is subordinate to that constraint. A feature that
 
 | # | Constraint | Enforcement point |
 |---|---|---|
-| C1 | The Assistant never generates assignment answers, code, or solution steps; never debugs, evaluates, or critiques student work; never tells a student what to change. | `docs/05-AI-GUARDRAILS.md` |
-| C2 | Official assignment requirements are **never paraphrased and presented as the requirement**. The original document is the source of truth. | `docs/06-DATA-MODEL.md`, UI spec |
-| C3 | Nothing AI-generated becomes student-facing until a tutor **approves** it. AI output is always marked `AI generated -- requires tutor approval`. | `docs/11-BUILD-PLAN.md` |
-| C4 | Tutors cannot see the identity behind an anonymous discussion post. | `docs/07-UI-UX-SPEC.md`, `docs/06-DATA-MODEL.md` |
-| C5 | Tutor analytics are **aggregate only**. No per-student identification, no individual activity histories. | `docs/08-ANALYTICS-SPEC.md` |
-| C6 | Student uploads (text/image/audio/video/PDF) never become a route around C1. Same guard, all modalities. | `docs/05-AI-GUARDRAILS.md` |
-| C7 | Secrets (`cookies.txt`, API keys, `.env`) are never committed, never logged, never returned in an API response. | `.gitignore`, `docs/12-OPERATIONS.md` |
-| C8 | Every LLM call goes through the provider adapter. No vendor SDK is imported outside `src/lib/llm/`. | `docs/04-TECH-ARCHITECTURE.md` |
+| C1 | The Assistant never generates assignment answers, code, or solution steps; never debugs, evaluates, or critiques student work; never tells a student what to change. | `docs/SPEC.md` |
+| C2 | Official assignment requirements are **never paraphrased and presented as the requirement**. The original document is the source of truth. | `docs/SPEC.md` |
+| C3 | Nothing AI-generated becomes student-facing until a tutor **approves** it. AI output is always marked `AI generated -- requires tutor approval`. | `docs/SPEC.md` |
+| C4 | Tutors cannot see the identity behind an anonymous discussion post. | `docs/SPEC.md` |
+| C5 | Tutor analytics are **aggregate only**. No per-student identification, no individual activity histories. | `docs/SPEC.md` |
+| C6 | Student uploads (text/image/audio/video/PDF) never become a route around C1. Same guard, all modalities. | `docs/SPEC.md` |
+| C7 | Secrets (`cookies.txt`, API keys, `.env`) are never committed, never logged, never returned in an API response. | `.gitignore` |
+| C8 | Every LLM call goes through the provider adapter. No vendor SDK is imported outside `src/lib/llm/`. | `docs/SPEC.md` |
 
 If a task appears to require breaking one of these, **stop and ask** -- do not reinterpret the constraint.
 
@@ -41,7 +41,7 @@ If a task appears to require breaking one of these, **stop and ask** -- do not r
 
 ## 3. Current state -- read this before assuming anything
 
-**The application is built and frozen.** Phases 1-6 are complete and tagged; the code is under `app/` and the feature set is frozen at `phase-07-freeze`. The status line this section used to carry -- "documentation only, there is no application code yet" -- was true when it was written and is kept in this note rather than deleted, because how the docs read is downstream of it (`docs/00-INDEX.md` carries the same note).
+**The application is being actively developed.** Phases 1-6 were completed in the past. We are now working on v2 which involves building the frontend, modernizing the design, and stripping previous artificial restrictions. Read `docs/SPEC.md` for the current active requirements.
 
 **The live state is [`docs/handoff/01-STATE.md`](docs/handoff/01-STATE.md), rewritten every session.** It is the authoritative answer to "what exists", including the section listing what is deliberately **not** built. Do not infer the build's state from this section or from any other doc.
 
@@ -50,9 +50,8 @@ If a task appears to require breaking one of these, **stop and ask** -- do not r
 | `docs/project idea.md` | Original source. **Frozen.** | [x] never |
 | `docs/assignment_assistant_project_handoff.md` | Original source. **Frozen.** | [x] never |
 | `hackathon info/info.md` | Original brief + rubric. **Frozen.** | [x] never |
-| `docs/00-INDEX.md` ... `docs/18-IMPLEMENTATION-PLAN.md`, plus `docs/handoff/**` | Restructured, implementation-ready docs | [ok] update, keep in sync |
-| `archive/canvas-scraper/**` | **Retired prior work.** Read-only Canvas discussion scraper, kept for historical reference only. Not required by, and not used by, the app (D44, D45). | ! only if the task names it |
-| `app/**` | **Built through Phase 6, frozen at `phase-07-freeze`.** Next.js App Router implementation of the committed MVP. | [ok] update; the freeze means only a defect found in a rehearsal justifies touching it |
+| `docs/SPEC.md` | Restructured, implementation-ready specification | [ok] update, keep in sync |
+| `app/**` | Next.js App Router implementation of the committed MVP. | [ok] update freely |
 
 Do not "tidy" the frozen files. Do not reflow, rename, or reformat them. Their value is that they are untouched.
 
@@ -66,18 +65,18 @@ Do not "tidy" the frozen files. Do not reflow, rename, or reformat them. Their v
 
 ### 4.1 Before writing code
 
-1. Read `docs/00-INDEX.md` and `docs/01-DECISIONS.md`.
+1. Read `docs/SPEC.md`.
 2. Read the doc(s) the task names. If the task names none, find the relevant doc yourself -- do not guess at requirements.
-3. Confirm the task is inside the committed MVP scope (`docs/02-SCOPE.md`). Features listed there as *out of scope* are out of scope; do not implement them, do not scaffold them, do not leave TODO hooks for them.
-4. If a requirement is genuinely ambiguous, prefer the conservative reading (see S2) and record the interpretation in `docs/01-DECISIONS.md` as a new decision entry.
+3. Confirm the task is inside the committed MVP scope (`docs/SPEC.md`).
+4. If a requirement is genuinely ambiguous, prefer the conservative reading (see S2) and record the interpretation.
 
 ### 4.2 While writing code
 
 - **Surgical changes.** Change what the task requires and nothing else. No drive-by refactors, no renames of working code, no dependency upgrades outside the task.
 - **Small, honest increments.** A half-finished vertical slice that works end-to-end beats four half-finished subsystems.
-- **Mock behind the adapter, not in the UI.** If an integration is not ready, put the fake behind the same interface the real one will use (`src/lib/llm/`, `docs/04-TECH-ARCHITECTURE.md`).
+- **Mock behind the adapter, not in the UI.** If an integration is not ready, put the fake behind the same interface the real one will use (`src/lib/llm/`).
 - **Determinism over cleverness in the guardrail.** The policy layer must be independently testable without a live model call.
-- **Every AI-produced artifact carries provenance** -- which model, which prompt version, which source chunks. See `docs/06-DATA-MODEL.md`.
+- **Every AI-produced artifact carries provenance** -- which model, which prompt version, which source chunks.
 
 ### 4.3 Before claiming a task is done
 
@@ -85,7 +84,7 @@ Verify, then report. A claim of completion without evidence is a defect.
 
 - [ ] The thing runs -- you executed it, and can quote the output.
 - [ ] `pnpm typecheck` and `pnpm lint` pass.
-- [ ] `pnpm test` passes, including the guardrail golden set if you touched AI behaviour (`docs/05-AI-GUARDRAILS.md`).
+- [ ] `pnpm test` passes, including the guardrail golden set if you touched AI behaviour.
 - [ ] If you touched the Assistant, uploads, moderation or any HTTP surface, the relevant acceptance run passes: `verify-student`, `verify-review`, `verify-analytics`, `verify-discussion` (all four are HTTP runs and need a live server; they are deliberately **not** in `pnpm test`, which must pass with no network and no database).
 - [ ] No absolute constraint from S2 was weakened.
 - [ ] Docs updated in the same change if behaviour or interfaces changed.
@@ -99,7 +98,7 @@ State plainly what is **not** done, what is mocked, and what you did not verify.
 
 Applies to `app/`, which now exists. These are constraints on changes to it, and the stack is fixed.
 
-### 5.1 Stack (fixed -- see `docs/04-TECH-ARCHITECTURE.md`)
+### 5.1 Stack (fixed)
 
 - **TypeScript**, `strict: true`. No `any` in exported signatures.
 - **Next.js (App Router)** for both UI and API route handlers. One deployable.
@@ -126,7 +125,7 @@ app/
 - Files: `kebab-case.ts` / `kebab-case.tsx`. React components: `PascalCase` exports.
 - Database: `snake_case` tables and columns, plural table names, `id` primary keys, `created_at`/`updated_at` on every row.
 - API: REST-ish JSON under `/api/`, plural nouns, typed request/response contracts shared with the client.
-- Doc filenames: `NN-TITLE.md` under `docs/`, uppercase titles, lowercase-kebab otherwise.
+- Doc filenames: `UPPERCASE-TITLE.md` under `docs/`.
 - Markdown: ATX headings, fenced code blocks with a language tag, ASCII only (no smart quotes, no em dashes in code comments).
 
 ### 5.4 Comments
@@ -153,7 +152,7 @@ If a task touches `src/lib/guardrail/`, student uploads, the Assistant, or discu
 
 1. **Never** make the guardrail's default path permissive. Default is `REFUSE` / `NEEDS_REVIEW`.
 2. The decision must be produced by code that runs **without** a network call where possible; a model call is an enhancement, not the only line of defence.
-3. Every change to guardrail behaviour requires a new or updated case in the golden set (`docs/05-AI-GUARDRAILS.md`), including at least one case that tries to launder a prohibited request.
+3. Every change to guardrail behaviour requires a new or updated case in the golden set, including at least one case that tries to launder a prohibited request.
 4. Structured output only. An LLM response that fails schema validation is a refusal, not a retry-until-it-passes.
 5. Log the decision, the policy rule cited, and the prompt version. Do not log student content or uploads in plaintext.
 
@@ -161,11 +160,11 @@ If a task touches `src/lib/guardrail/`, student uploads, the Assistant, or discu
 
 ## 7. Hackathon-specific obligations
 
-These are submission requirements, not nice-to-haves. Track them in `docs/14-HACKATHON-SUBMISSION.md`.
+These are submission requirements, not nice-to-haves.
 
 - **Commit often.** The repository history is the evidence that the work was done inside the hackathon window. Small, frequent, meaningfully-messaged commits.
 - **Public repository.** No secrets, no credentials, no third-party material that cannot be published.
-- **AI use must be disclosed.** The Devpost submission and the live presentation must explain *how* and *why* generative AI was used. Keep `docs/14-HACKATHON-SUBMISSION.md` current as we go -- do not try to reconstruct it the night before.
+- **AI use must be disclosed.** The Devpost submission and the live presentation must explain *how* and *why* generative AI was used.
 - **No work from before the hackathon.** The code in `app/` must be written during the event. Prior context (the frozen design docs, the Canvas discussion research) informs the design; it must not be presented as submission-time code.
 - **No external assistance.** Do not accept implementation help from people outside the team.
 
