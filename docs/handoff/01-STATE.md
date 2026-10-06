@@ -59,7 +59,7 @@ and targets the missing surfaces listed in section 3.
 | 12-call LLM hard cap per assistant session | Removed. Budget retained for ingestion only. |
 | Audio/video rejection at student upload picker | Removed. All modalities accepted. |
 | `design-law.test.ts` aesthetic build failures | File to be deleted. |
-| HMAC pseudonym engine enforced by CHECK constraints | Relaxed. Simple random alias used. |
+| HMAC pseudonym engine enforced by CHECK constraints | Keep it. The logic works and is verified. Do not remove or attempt to rewrite it. |
 
 ---
 

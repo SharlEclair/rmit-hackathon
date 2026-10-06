@@ -167,7 +167,7 @@ Build a two-stage page:
   - `Identifying milestones...`
   - `Detecting ambiguities...`
   - `Done -- review ready`
-- Poll `GET /api/assignments/[id]` for status (the `ingestion_status` field in the DB).
+- Poll `GET /api/assignments/[id]` for status (the assignment's `status` and `ingestion_jobs` progress).
 - On completion, redirect to `/tutor/assignments/[id]/review`.
 
 The ingestion pipeline (S0-S8) already handles the backend. This page is purely the missing UI wrapper.
@@ -258,7 +258,7 @@ The following DeepSeek-invented constraints are **removed**:
 | Audio/video file rejection at the student upload picker | Accept all modalities (text, image, audio, video, PDF). The guardrail applies to all. |
 | AI question clustering via `GROUP BY` milestone dropdown only | Cluster by topic label returned from the ingestion analysis; fall back to milestone grouping if no topic labels exist. |
 | `design-law.test.ts` build-failing aesthetic rules | Delete the file. |
-| HMAC pseudonym engine for anonymous identities | Use a simple random alias: `Anonymous Student #NNN` where NNN is a random 3-digit number stored per-thread-per-user in `anon_identities`. The `pseudonym_hmac` column can remain in the DB but is no longer required to enforce anything. |
+| HMAC pseudonym engine for anonymous identities | Keep the `identityFor` module in `anon-identity.ts`. It works, generates an ID, and is verified. Do not remove it, but there is no need to write a new complex identity system. |
 
 ---
 
@@ -270,11 +270,11 @@ Schema lives in `src/lib/db/schema.ts` + migration files. Do not change the sche
 |---|---|
 | `users` | All users (role: `tutor` or `student`) |
 | `courses`, `enrollments` | Course membership |
-| `assignments` | One per assignment; has `ingestion_status`, `published_at` |
+| `assignments` | One per assignment; has `status`, `published_at` |
 | `assignment_structures` | AI-generated structure; tutor approval tracked here |
 | `milestones`, `checklist_items` | Approved milestone + task tree |
 | `student_checklist_progress` | Per-student progress + elapsed time |
-| `queries` | Private tutor queries; has `tutor_reply`, `published_as_faq` flag |
+| `queries` | Private tutor queries; has `status`, `message_count`, and `resolved_at` |
 | `discussion_threads`, `discussion_posts` | Anonymous-capable discussion |
 | `anon_identities` | Maps (user_id, assignment_id) to display alias |
 | `faqs` | Published FAQ entries |
