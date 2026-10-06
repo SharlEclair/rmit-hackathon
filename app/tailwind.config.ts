@@ -32,42 +32,51 @@ const config = {
       'border-approved': 'var(--border-approved)',
       'border-interpretation': 'var(--border-interpretation)',
       'border-peer': 'var(--border-peer)',
+      border: 'var(--color-border)',
+      primary: 'var(--color-primary)',
+      danger: 'var(--color-danger)',
+      bg: 'var(--color-bg)',
+      surface: 'var(--color-surface)',
+      text: 'var(--color-text)',
+      'text-muted': 'var(--color-text-muted)',
       error: 'var(--state-error)',
       warning: 'var(--state-warning)',
       success: 'var(--state-success)',
       info: 'var(--state-info)',
     },
     fontFamily: {
+      sans: 'var(--font-sans)',
       editorial: 'var(--font-editorial)',
       ui: 'var(--font-ui)',
       mono: 'var(--font-mono)',
     },
-    borderRadius: { sheet: '2px', control: '4px', card: '6px', full: '9999px' },
+    borderRadius: {
+      sheet: '2px',
+      control: '4px',
+      card: '6px',
+      md: '6px',
+      lg: '8px',
+      xl: '12px',
+      '2xl': '16px',
+      full: '9999px',
+    },
     boxShadow: {
       card: 'var(--shadow-card)',
       overlay: 'var(--shadow-overlay)',
-      // **A lift for interactive surfaces, composed from the two existing tokens rather than a new
-      // literal.** `--shadow-card` is the resting shadow (`0 1px 2px` at 6% ink) and `--shadow-overlay`
-      // is the raised one (`0 8px 24px` at 12%), and both already exist in `tokens.css` from `07`
-      // section 2.3 -- so a hover lift needs no new value and no new hex, which keeps `17` section 6.1
-      // rule 2 intact: hex lives in `tokens.css` and nowhere else.
-      //
-      // This is D111: `17` section 1.3 principle 4 reserved elevation for overlays, and now allows it on
-      // a surface the reader can act on, because a card that cannot be told apart from the page cannot
-      // be told to be clickable either. Content-class frames stay flat -- that exception is asserted by
-      // the design-law test.
       lift: 'var(--shadow-overlay)',
+      sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+      DEFAULT: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+      md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+      lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
     },
     spacing: { 0: '0', 1: '4px', 2: '8px', 3: '12px', 4: '16px', 6: '24px', 8: '32px', 12: '48px' },
-    // **Motion utilities that name a token rather than a literal.** `17` section 10.4 caps motion at
-    // 150ms and `motion.css` resets those tokens to `0ms` under `prefers-reduced-motion`, so a component
-    // that eases through one of these inherits both the ceiling and the reset. A hand-rolled
-    // `transition-colors duration-200` would satisfy neither -- which is exactly why the design-law test
-    // refuses a literal duration, and why the tokenised form is made the convenient one here.
     transitionDuration: {
       fast: 'var(--motion-fast)',
       base: 'var(--motion-base)',
       slow: 'var(--motion-slow)',
+      150: '150ms',
+      200: '200ms',
+      300: '300ms',
     },
     transitionTimingFunction: {
       out: 'var(--ease-out)',

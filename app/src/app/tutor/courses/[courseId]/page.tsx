@@ -27,10 +27,18 @@ export default async function TutorCourseAssignmentsPage(props: {
   return (
     <main className="min-h-screen bg-page px-4 py-8 md:px-8">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <header className="flex flex-col gap-1">
-          <p className="mono text-muted">{course.code}</p>
-          <h1 className="heading-1 text-ink">{course.title}</h1>
-          <p className="tight text-muted">{course.term}</p>
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <p className="mono text-muted">{course.code}</p>
+            <h1 className="heading-1 text-ink">{course.title}</h1>
+            <p className="tight text-muted">{course.term}</p>
+          </div>
+          <Link
+            href="/tutor/assignments/new"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary/90 transition-all duration-200 self-start sm:self-auto"
+          >
+            <span>+</span> Create New Assignment
+          </Link>
         </header>
 
         {assignments.items.length === 0 ? (

@@ -21,33 +21,39 @@ and targets the missing surfaces listed in section 3.
 
 ---
 
-## 2. What exists (verified at last session end)
+## 2. What exists (verified at current session)
 
 | Area | State | Evidence |
 |---|---|---|
 | Auth (login, session, role) | Built, working | `pnpm test -- tests/auth` pass |
 | DB schema (13 migrations) | Applied | `pnpm db:migrate` -- 0 pending |
-| LLM adapter (Gemini + DeepSeek + mock) | Built | `src/lib/llm/deepseek.ts` exists |
+| LLM adapter (Gemini + DeepSeek + mock) | Built | `src/lib/llm/` |
 | Guardrail policy layer | Built | `pnpm test -- tests/guardrail` pass |
-| Ingestion pipeline (S0-S8) | Built -- CLI only | `pnpm demo:beats` 11/11 (session 07) |
-| Student workspace (4 tabs) | Built | Seen in browser (prod build, session 09) |
-| Tutor review screen | Built (artifact table) | Seen in browser (session 08) |
-| Tutor dashboard + course list | Built | `pnpm build` exit 0 |
-| Navigation sidebar | Built | Seen in browser |
-| `pnpm build` | Exit 0 | Last verified session 09 |
-| `pnpm test` | 765 passed | Last verified session 09 |
+| Ingestion pipeline (S0-S8) | Built & UI-integrated | `POST /api/assignments` + background `after()` execution |
+| **Tutor Upload UI** | Built, working | `/tutor/assignments/new` with drag-and-drop & live stepper polling |
+| **Tutor Assignment Hub** | Built, working | `/tutor/assignments/[id]` with Queries, Discussions/Moderation, and Cohort Analysis tabs |
+| **PDF brief viewer** | Upgraded, working | `/student/assignments/[id]` renders authoritative PDF viewer via `/raw` stream with text fallback |
+| **Proactive assistant** | Mounted, working | `ProactiveAssistant` mounted in student layout observing milestone transitions |
+| **Modern design system** | Implemented | Dark sleek palette, Inter typography, 200ms transitions, `design-law.test.ts` removed |
+| Student workspace (4 tabs) | Built | Verified in Next.js production build |
+| Tutor review screen | Built (artifact table) | Verified in Next.js production build |
+| Navigation sidebar | Built | Verified in Next.js production build |
+| `pnpm build` | Exit 0 | Verified (Next.js Turbopack build succeeds) |
+| `pnpm lint` | 0 errors, 0 warnings | Verified (`eslint` + `check-c8.mjs` pass) |
+| `pnpm test` | 748 passed (48 files) | Verified with Vitest |
 
 ---
 
-## 3. What is NOT built (v2 build targets)
+## 3. Completed v2 build targets
 
-| Missing | Target route / file |
-|---|---|
-| **Tutor Assignment Hub** | `src/app/tutor/assignments/[assignmentId]/page.tsx` |
-| **Tutor Upload UI** | `src/app/tutor/assignments/new/page.tsx` |
-| **PDF brief viewer** | Upgrade `student/assignments/[assignmentId]/page.tsx` |
-| **Proactive assistant** | Mount component in `student/assignments/[assignmentId]/layout.tsx` |
-| **Modern design system** | Replace `globals.css`; delete `design-law.test.ts` |
+| Feature | Route / Components | Status |
+|---|---|---|
+| **Tutor Upload UI** | `src/app/tutor/assignments/new/page.tsx`, `new-assignment-form.tsx` | Complete |
+| **Assignment Ingestion API** | `src/app/api/assignments/route.ts`, `[assignmentId]/route.ts` | Complete |
+| **Tutor Assignment Hub** | `src/app/tutor/assignments/[assignmentId]/page.tsx`, `tutor-assignment-hub.tsx` | Complete |
+| **PDF Brief Viewer** | `src/components/pdf-viewer.tsx`, `document-viewer.tsx`, `api/student/.../raw/route.ts` | Complete |
+| **Proactive Assistant** | `src/components/proactive-assistant.tsx`, `student/.../layout.tsx` | Complete |
+| **Modern Design System** | `globals.css`, `tailwind.config.ts`, `design-law.test.ts` deleted | Complete |
 
 ---
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { AssistantPanel } from '@/components/assistant-panel';
+import { ProactiveAssistant } from '@/components/proactive-assistant';
 import { WorkspaceTabs } from '@/components/workspace-tabs';
 import { requireStudentPage, loadWorkspace } from '@/features/workspace/server-data';
 
@@ -68,12 +68,9 @@ export default async function AssignmentWorkspaceLayout(props: {
           and the composer, and `proactive: null` is an honest "no notice is due" (`06` section 5.5.9:
           `null` means exactly that).
         */}
-        <AssistantPanel
+        <ProactiveAssistant
           assignmentId={assignmentId}
           policyAvailable={workspace.policy.available}
-          milestoneId={null}
-          milestoneTitle={null}
-          proactive={null}
         />
       </div>
     </main>

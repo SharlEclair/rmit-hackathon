@@ -5,6 +5,7 @@ import { useMemo, useState, type ReactElement } from 'react';
 import type { BriefDocumentResponse, BriefResponse } from '@/lib/api/types';
 import { ContentClassPanel } from '@/components/ui/content-class-panel';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PdfViewer } from '@/components/pdf-viewer';
 import { cn } from '@/lib/utils';
 
 /**
@@ -70,6 +71,9 @@ export function DocumentViewer(props: { readonly brief: BriefResponse }): ReactE
     (entry) => currentPage !== null && entry.pageFrom <= currentPage.page && entry.pageTo >= currentPage.page,
   );
 
+  const isPdf = document.mimeType === 'application/pdf' || document.title.toLowerCase().endsWith('.pdf');
+  const allText = document.pages.map((p) => `--- Page ${p.page} ---\n${p.text}`).join('\n\n');
+
   return (
     <div className="flex flex-col gap-3">
       {props.brief.documents.length > 1 ? (
@@ -104,92 +108,95 @@ export function DocumentViewer(props: { readonly brief: BriefResponse }): ReactE
         </p>
       ) : null}
 
-      <ContentClassPanel
-        contentClass="official"
-        officialKind={document.kind === 'rubric' ? 'rubric' : 'brief'}
-        sourceFile={document.title}
-        sourcePage={currentPage?.page ?? 1}
-      >
-        <p className="mb-3 body text-muted">
-          {currentPage === null
-            ? 'This document has no readable pages.'
-            : section === undefined
-              ? `Page ${String(currentPage.page)}`
-              : `Page ${String(currentPage.page)} - Section: ${section.label}`}
-        </p>
-
-        <div
-          className="rounded-sheet border border-solid border-default bg-document-mat p-4"
-          // Zoom scales the frame, not the pagination (rule 6), so page anchors stay valid.
-          style={{ fontSize: `${String(zoom)}%` }}
+      {isPdf ? (
+        <PdfViewer
+          assignmentId={props.brief.assignmentId}
+          sourceId={document.id}
+          filename={document.title}
+          pageCount={document.pageCount}
+          extractedTextFallback={allText}
+        />
+      ) : (
+        <ContentClassPanel
+          contentClass="official"
+          officialKind={document.kind === 'rubric' ? 'rubric' : 'brief'}
+          sourceFile={document.title}
+          sourcePage={currentPage?.page ?? 1}
         >
-          {/*
-            The document's own text, verbatim. `whitespace-pre-wrap` preserves the extractor's own line
-            breaks and blank lines, which are part of what it read: collapsing them would be re-flowing
-            the document, which rule 1 forbids. No `dangerouslySetInnerHTML` anywhere: the text is data,
-            and React's own escaping is what keeps a document from injecting markup.
-          */}
-          <div className="doc-body whitespace-pre-wrap text-ink">
-            {currentPage === null || currentPage.text === ''
-              ? 'No text was extracted from this page.'
-              : currentPage.text}
-          </div>
-        </div>
+          <p className="mb-3 body text-muted">
+            {currentPage === null
+              ? 'This document has no readable pages.'
+              : section === undefined
+                ? `Page ${String(currentPage.page)}`
+                : `Page ${String(currentPage.page)} - Section: ${section.label}`}
+          </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            className="rounded-control border border-solid border-default bg-card px-3 py-1 tight text-ink disabled:text-muted"
-            onClick={() => {
-              setPage((value) => Math.max(lowest, value - 1));
-            }}
-            disabled={currentPage === null || currentPage.page <= lowest}
+          <div
+            className="rounded-sheet border border-solid border-default bg-document-mat p-4"
+            // Zoom scales the frame, not the pagination (rule 6), so page anchors stay valid.
+            style={{ fontSize: `${String(zoom)}%` }}
           >
-            Previous
-          </button>
-          <label className="tight text-muted">
-            <span className="sr-only">Page number</span>
-            <input
-              type="number"
-              className="w-16 rounded-control border border-solid border-default bg-card px-2 py-1 mono text-ink"
-              min={lowest}
-              max={highest}
-              value={currentPage?.page ?? 1}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                if (Number.isFinite(next)) setPage(Math.min(highest, Math.max(lowest, next)));
+            <div className="doc-body whitespace-pre-wrap text-ink">
+              {currentPage === null || currentPage.text === ''
+                ? 'No text was extracted from this page.'
+                : currentPage.text}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="rounded-control border border-solid border-default bg-card px-3 py-1 tight text-ink disabled:text-muted"
+              onClick={() => {
+                setPage((value) => Math.max(lowest, value - 1));
               }}
-            />
-            <span className="ml-1">/ {String(highest)}</span>
-          </label>
-          <button
-            type="button"
-            className="rounded-control border border-solid border-default bg-card px-3 py-1 tight text-ink disabled:text-muted"
-            onClick={() => {
-              setPage((value) => Math.min(highest, value + 1));
-            }}
-            disabled={currentPage === null || currentPage.page >= highest}
-          >
-            Next
-          </button>
-          <label className="tight text-muted">
-            <span className="sr-only">Zoom</span>
-            <select
-              className="rounded-control border border-solid border-default bg-card px-2 py-1 tight text-ink"
-              value={zoom}
-              onChange={(event) => {
-                setZoom(Number(event.target.value));
-              }}
+              disabled={currentPage === null || currentPage.page <= lowest}
             >
-              {[75, 100, 125, 150].map((step) => (
-                <option key={step} value={step}>
-                  {step}%
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </ContentClassPanel>
+              Previous
+            </button>
+            <label className="tight text-muted">
+              <span className="sr-only">Page number</span>
+              <input
+                type="number"
+                className="w-16 rounded-control border border-solid border-default bg-card px-2 py-1 mono text-ink"
+                min={lowest}
+                max={highest}
+                value={currentPage?.page ?? 1}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  if (Number.isFinite(next)) setPage(Math.min(highest, Math.max(lowest, next)));
+                }}
+              />
+              <span className="ml-1">/ {String(highest)}</span>
+            </label>
+            <button
+              type="button"
+              className="rounded-control border border-solid border-default bg-card px-3 py-1 tight text-ink disabled:text-muted"
+              onClick={() => {
+                setPage((value) => Math.min(highest, value + 1));
+              }}
+              disabled={currentPage === null || currentPage.page >= highest}
+            >
+              Next
+            </button>
+            <label className="tight text-muted">
+              <span className="sr-only">Zoom</span>
+              <select
+                className="rounded-control border border-solid border-default bg-card px-2 py-1 tight text-ink"
+                value={zoom}
+                onChange={(event) => {
+                  setZoom(Number(event.target.value));
+                }}
+              >
+                <option value={75}>75%</option>
+                <option value={100}>100%</option>
+                <option value={125}>125%</option>
+                <option value={150}>150%</option>
+              </select>
+            </label>
+          </div>
+        </ContentClassPanel>
+      )}
 
       {document.kind === 'supplementary' ? (
         // `07` section 4.2 rule 9's exact label.

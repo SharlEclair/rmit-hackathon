@@ -29,9 +29,32 @@
  * a focus class. `:focus-visible` is the only focus style in the product; `outline: none`
  * appears nowhere, in any form (`G6`).
  */
+:root {
+  /* Typography */
+  --font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* Color palette (SPEC.md Section 9) */
+  --color-bg: #0f1117;
+  --color-surface: #1a1d27;
+  --color-border: #2d3142;
+  --color-primary: #6c63ff;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-text: #e2e8f0;
+  --color-text-muted: #8892a4;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
 @layer base {
   :focus-visible {
     outline: var(--focus-ring-width) solid var(--state-info);
     outline-offset: var(--focus-ring-offset);
   }
 }
+
